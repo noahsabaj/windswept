@@ -12,8 +12,8 @@ local variables = {
 	"price",
 	-- If the door is ownable.
 	"ownable",
-	-- The faction that owns a door.
-	"faction",
+	-- The factions that own a door (table of faction indices).
+	"factions",
 	-- The class that owns a door.
 	"class",
 	-- Whether or not the door will be hidden.
@@ -84,14 +84,27 @@ function PLUGIN:LoadData()
 							door.ixParent = entity
 						end
 					end
-				elseif (k2 == "faction") then
-					for k3, v3 in pairs(ix.faction.teams) do
-						if (k3 == v2) then
-							entity.ixFactionID = k3
-							entity:SetNetVar("faction", v3.index)
-
-							break
+				elseif (k2 == "factions") then
+					-- New multi-faction format
+					local factionIDs = {}
+					local factionIndices = {}
+					for _, uniqueID in ipairs(v2) do
+						local factionData = ix.faction.teams[uniqueID]
+						if (factionData) then
+							table.insert(factionIDs, uniqueID)
+							table.insert(factionIndices, factionData.index)
 						end
+					end
+					if (#factionIDs > 0) then
+						entity.ixFactionIDs = factionIDs
+						entity:SetNetVar("factions", factionIndices)
+					end
+				elseif (k2 == "faction") then
+					-- Backwards compatibility: convert old single-faction format to multi-faction
+					local factionData = ix.faction.teams[v2]
+					if (factionData) then
+						entity.ixFactionIDs = {v2}
+						entity:SetNetVar("factions", {factionData.index})
 					end
 				else
 					entity:SetNetVar(k2, v2)
@@ -137,8 +150,8 @@ function PLUGIN:SaveDoorData()
 				doorData.class = v.ixClassID
 			end
 
-			if (v.ixFactionID) then
-				doorData.faction = v.ixFactionID
+			if (v.ixFactionIDs and #v.ixFactionIDs > 0) then
+				doorData.factions = v.ixFactionIDs
 			end
 
 			-- Add the door to the door information.
@@ -158,11 +171,15 @@ end
 
 -- Whether or not a player a player has any abilities over the door, such as locking.
 function PLUGIN:CanPlayerAccessDoor(client, door, access)
-	local faction = door:GetNetVar("faction")
+	local factions = door:GetNetVar("factions")
 
-	-- If the door has a faction set which the client is a member of, allow access.
-	if (faction and client:Team() == faction) then
-		return true
+	-- If the door has factions set, check if the client is a member of any of them.
+	if (factions) then
+		for _, factionIndex in ipairs(factions) do
+			if (client:Team() == factionIndex) then
+				return true
+			end
+		end
 	end
 
 	local class = door:GetNetVar("class")
@@ -199,7 +216,8 @@ function PLUGIN:ShowTeam(client)
 	local trace = util.TraceLine(data)
 	local entity = trace.Entity
 
-	if (IsValid(entity) and entity:IsDoor() and !entity:GetNetVar("faction") and !entity:GetNetVar("class")) then
+	local factions = entity:GetNetVar("factions")
+	if (IsValid(entity) and entity:IsDoor() and (!factions or #factions == 0) and !entity:GetNetVar("class")) then
 		if (entity:CheckDoorAccess(client, DOOR_TENANT)) then
 			local door = entity
 

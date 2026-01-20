@@ -11,7 +11,7 @@ function PLUGIN:GetDefaultDoorInfo(door)
 	local name = door:GetNetVar("title", door:GetNetVar("name", IsValid(owner) and L"dTitleOwned" or L"dTitle"))
 	local description = door:GetNetVar("ownable") and L("dIsOwnable") or L("dIsNotOwnable")
 	local color = ix.config.Get("color")
-	local faction = door:GetNetVar("faction")
+	local factions = door:GetNetVar("factions")
 	local class = door:GetNetVar("class")
 
 	if (class) then
@@ -26,12 +26,23 @@ function PLUGIN:GetDefaultDoorInfo(door)
 				description = L("dOwnedBy", L2(classData.name) or classData.name)
 			end
 		end
-	elseif (faction) then
-		local info = ix.faction.indices[faction]
-		color = team.GetColor(faction)
+	elseif (factions and #factions > 0) then
+		-- Build list of faction names
+		local names = {}
+		for _, factionIndex in ipairs(factions) do
+			local info = ix.faction.indices[factionIndex]
+			if (info) then
+				table.insert(names, L2(info.name) or info.name)
+			end
+		end
 
-		if (info and !owner) then
-			description = L("dOwnedBy", L2(info.name) or info.name)
+		if (#names > 0) then
+			-- Use first faction's color
+			color = team.GetColor(factions[1])
+
+			if (!owner) then
+				description = L("dOwnedBy", table.concat(names, ", "))
+			end
 		end
 	end
 
