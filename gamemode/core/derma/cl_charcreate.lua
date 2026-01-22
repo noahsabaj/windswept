@@ -94,11 +94,12 @@ function PANEL:Init()
 	self.descriptionModel:SetFOV(modelFOV - 13)
 	self.descriptionModel.PaintModel = self.descriptionModel.Paint
 
-	self.descriptionPanel = self.description:Add("Panel")
-	self.descriptionPanel:SetWide(halfWidth + padding * 2)
-	self.descriptionPanel:Dock(RIGHT)
+	-- Container for scroll panel and proceed button
+	local descriptionContainer = self.description:Add("Panel")
+	descriptionContainer:SetWide(halfWidth + padding * 2)
+	descriptionContainer:Dock(RIGHT)
 
-	local descriptionProceed = self.descriptionPanel:Add("ixMenuButton")
+	local descriptionProceed = descriptionContainer:Add("ixMenuButton")
 	descriptionProceed:SetText("proceed")
 	descriptionProceed:SetContentAlignment(6)
 	descriptionProceed:SizeToContents()
@@ -115,6 +116,11 @@ function PANEL:Init()
 			self:SetActiveSubpanel("attributes")
 		end
 	end
+
+	-- Scroll panel fills remaining space above PROCEED button
+	self.descriptionPanel = descriptionContainer:Add("DScrollPanel")
+	self.descriptionPanel:Dock(FILL)
+	self.descriptionPanel:GetVBar():SetWide(0) -- Hide scrollbar but allow scrolling
 
 	-- attributes subpanel
 	self.attributes = self:AddSubpanel("attributes")

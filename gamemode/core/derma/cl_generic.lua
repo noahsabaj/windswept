@@ -11,7 +11,7 @@ function PANEL:Init()
 	self:SetPaintBackground(false)
 	self:SetTextColor(color_white)
 
-	self.backgroundColor = Color(255, 255, 255, 25)
+	self.backgroundColor = Color(0, 0, 0, 77) -- Match DarkerBackground for consistency
 end
 
 function PANEL:SetFont(font)
@@ -23,7 +23,9 @@ function PANEL:SetFont(font)
 end
 
 function PANEL:Paint(width, height)
-	derma.SkinFunc("DrawImportantBackground", 0, 0, width, height, self.backgroundColor)
+	-- Use solid dark background like other fields (DarkerBackground style)
+	surface.SetDrawColor(self.backgroundColor)
+	surface.DrawRect(0, 0, width, height)
 	BaseClass.Paint(self, width, height)
 end
 
