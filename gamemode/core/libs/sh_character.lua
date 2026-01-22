@@ -360,8 +360,6 @@ do
 				panel:SetDisabled(true)
 				panel:SetEditable(false)
 			end
-
-			panel:SetBackgroundColor(faction.color or Color(255, 255, 255, 25))
 		end
 	})
 
