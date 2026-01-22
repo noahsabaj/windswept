@@ -103,7 +103,15 @@ function GM:PlayerInitialSpawn(client)
 	end)
 end
 
+-- Helix blocks USE on entities with GetEntityMenu because those entities are intended
+-- for right-click menu interaction only. The CanPlayerUseEntity hook allows plugins to
+-- override this for entities that need BOTH menu interaction AND direct USE interaction.
 function GM:PlayerUse(client, entity)
+	local override = hook.Run("CanPlayerUseEntity", client, entity)
+	if (override != nil) then
+		return override
+	end
+
 	if (client:IsRestricted() or (isfunction(entity.GetEntityMenu) and entity:GetClass() != "ix_item")) then
 		return false
 	end
