@@ -434,7 +434,7 @@ do
 			scroll:Dock(TOP)
 			scroll:SetTall(140) -- Fixed height to allow other panels below
 			scroll.Paint = function(panel, width, height)
-				surface.SetDrawColor(0, 0, 0, 77) -- Match DarkerBackground
+				surface.SetDrawColor(derma.GetColor("DarkerBackground", panel))
 				surface.DrawRect(0, 0, width, height)
 			end
 

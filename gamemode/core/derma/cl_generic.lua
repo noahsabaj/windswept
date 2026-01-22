@@ -10,8 +10,6 @@ AccessorFunc(PANEL, "backgroundColor", "BackgroundColor")
 function PANEL:Init()
 	self:SetPaintBackground(false)
 	self:SetTextColor(color_white)
-
-	self.backgroundColor = Color(0, 0, 0, 77) -- Match DarkerBackground for consistency
 end
 
 function PANEL:SetFont(font)
@@ -23,8 +21,8 @@ function PANEL:SetFont(font)
 end
 
 function PANEL:Paint(width, height)
-	-- Use solid dark background like other fields (DarkerBackground style)
-	surface.SetDrawColor(self.backgroundColor)
+	-- Use DarkerBackground by default, or custom color if SetBackgroundColor was called
+	surface.SetDrawColor(self.backgroundColor or derma.GetColor("DarkerBackground", self))
 	surface.DrawRect(0, 0, width, height)
 	BaseClass.Paint(self, width, height)
 end
