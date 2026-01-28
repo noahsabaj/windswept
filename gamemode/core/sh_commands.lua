@@ -298,17 +298,40 @@ ix.command.Add("CharGiveItem", {
 			end
 		end
 
+		local itemTable = ix.item.list[uniqueID]
+		if (!itemTable) then
+			return "@invalidItem"
+		end
+
 		amount = amount or 1
-		local bSuccess, error = target:GetInventory():Add(uniqueID, amount)
 
-		if (bSuccess) then
-			target:GetPlayer():NotifyLocalized("itemCreated")
+		-- Handle currency items specially - use stacking system
+		if (itemTable.isCurrency and ix.currency) then
+			local cents = amount * (itemTable.currencyValue or 1)
+			local bSuccess = target:GiveMoney(cents)
 
-			if (target != client:GetCharacter()) then
-				return "@itemCreated"
+			if (bSuccess) then
+				target:GetPlayer():NotifyLocalized("itemCreated")
+
+				if (target != client:GetCharacter()) then
+					return "@itemCreated"
+				end
+			else
+				return "@inventoryFull"
 			end
 		else
-			return "@" .. tostring(error)
+			-- Standard item handling
+			local bSuccess, error = target:GetInventory():Add(uniqueID, amount)
+
+			if (bSuccess) then
+				target:GetPlayer():NotifyLocalized("itemCreated")
+
+				if (target != client:GetCharacter()) then
+					return "@itemCreated"
+				end
+			else
+				return "@" .. tostring(error)
+			end
 		end
 	end
 })

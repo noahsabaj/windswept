@@ -436,3 +436,110 @@ do
         end
     end
 end
+
+-- ============================================================================
+-- CURRENCY SPLIT NETWORKING
+-- ============================================================================
+
+if SERVER then
+    util.AddNetworkString("ixCurrencySplit")
+    util.AddNetworkString("ixCurrencySplitConfirm")
+
+    net.Receive("ixCurrencySplitConfirm", function(len, client)
+        local itemID = net.ReadUInt(32)
+        local splitAmount = net.ReadUInt(16)
+
+        local character = client:GetCharacter()
+        if not character then return end
+
+        local inventory = character:GetInventory()
+        if not inventory then return end
+
+        local item = ix.item.instances[itemID]
+        if not item then
+            client:Notify("Item not found.")
+            return
+        end
+
+        -- Verify item belongs to this player's inventory
+        if item.invID != inventory:GetID() then
+            client:Notify("You don't own this item.")
+            return
+        end
+
+        -- Verify item is currency
+        if not item.isCurrency then
+            client:Notify("This item cannot be split.")
+            return
+        end
+
+        local currentQuantity = item:GetData("quantity", 1)
+        if splitAmount < 1 or splitAmount >= currentQuantity then
+            client:Notify("Invalid split amount.")
+            return
+        end
+
+        -- Find an empty slot for the new stack
+        local emptySlots = ix.currency.FindEmptySlots(inventory, 1)
+        if #emptySlots < 1 then
+            client:Notify("Not enough inventory space.")
+            return
+        end
+
+        local slot = emptySlots[1]
+
+        -- Reduce original stack
+        item:SetData("quantity", currentQuantity - splitAmount)
+
+        -- Create new stack directly (don't use AddToInventory which consolidates)
+        local bSuccess = inventory:Add(item.uniqueID, 1, {
+            quantity = splitAmount
+        }, slot.x, slot.y)
+
+        if not bSuccess then
+            -- Rollback
+            item:SetData("quantity", currentQuantity)
+            client:Notify("Failed to create new stack.")
+            return
+        end
+
+        client:Notify("Split " .. splitAmount .. " from stack.")
+    end)
+end
+
+if CLIENT then
+    net.Receive("ixCurrencySplit", function()
+        local itemID = net.ReadUInt(32)
+        local quantity = net.ReadUInt(16)
+        local currencyType = net.ReadString()
+
+        local unitLabel = currencyType == "cash" and "bills" or "coins"
+
+        Derma_StringRequest(
+            "Split Stack",
+            "Enter amount to split (1-" .. (quantity - 1) .. " " .. unitLabel .. "):",
+            tostring(math.floor(quantity / 2)),
+            function(text)
+                local splitAmount = tonumber(text)
+                if not splitAmount then
+                    LocalPlayer():Notify("Invalid number.")
+                    return
+                end
+
+                splitAmount = math.floor(splitAmount)
+                if splitAmount < 1 or splitAmount >= quantity then
+                    LocalPlayer():Notify("Amount must be between 1 and " .. (quantity - 1) .. ".")
+                    return
+                end
+
+                net.Start("ixCurrencySplitConfirm")
+                    net.WriteUInt(itemID, 32)
+                    net.WriteUInt(splitAmount, 16)
+                net.SendToServer()
+            end,
+            nil,
+            "Split",
+            "Cancel"
+        )
+    end)
+end
