@@ -542,4 +542,225 @@ if CLIENT then
             "Cancel"
         )
     end)
+
+    net.Receive("ixCurrencyMergeSelect", function()
+        local sourceItemID = net.ReadUInt(32)
+        local stackCount = net.ReadUInt(8)
+
+        local stacks = {}
+        for i = 1, stackCount do
+            stacks[i] = {
+                id = net.ReadUInt(32),
+                quantity = net.ReadUInt(16)
+            }
+        end
+
+        local currencyType = net.ReadString()
+        local unitLabel = currencyType == "cash" and "$" or "¢"
+
+        -- Build menu options
+        local options = {}
+        for _, stack in ipairs(stacks) do
+            local label = unitLabel .. stack.quantity
+            options[label] = stack.id
+        end
+
+        -- Create selection menu
+        local menu = DermaMenu()
+        menu:SetSkin("helix")
+
+        for label, stackID in SortedPairs(options) do
+            menu:AddOption(label, function()
+                net.Start("ixCurrencyMergeSelectConfirm")
+                    net.WriteUInt(sourceItemID, 32)
+                    net.WriteUInt(stackID, 32)
+                net.SendToServer()
+            end)
+        end
+
+        menu:AddSpacer()
+        menu:AddOption("Cancel", function() end)
+        menu:Open()
+    end)
+end
+
+-- ============================================================================
+-- CURRENCY MERGE NETWORKING
+-- ============================================================================
+
+if SERVER then
+    util.AddNetworkString("ixCurrencyMergeAll")
+    util.AddNetworkString("ixCurrencyMergeSelect")
+    util.AddNetworkString("ixCurrencyMergeSelectConfirm")
+
+    -- Merge all same-type currency stacks into this one
+    net.Receive("ixCurrencyMergeAll", function(len, client)
+        local itemID = net.ReadUInt(32)
+
+        local character = client:GetCharacter()
+        if not character then return end
+
+        local inventory = character:GetInventory()
+        if not inventory then return end
+
+        local item = ix.item.instances[itemID]
+        if not item then
+            client:Notify("Item not found.")
+            return
+        end
+
+        if item.invID != inventory:GetID() then
+            client:Notify("You don't own this item.")
+            return
+        end
+
+        if not item.isCurrency then
+            client:Notify("This item cannot be merged.")
+            return
+        end
+
+        local currentQuantity = item:GetData("quantity", 1)
+        local maxStack = ix.currency.MAX_STACK
+        local canAdd = maxStack - currentQuantity
+
+        if canAdd <= 0 then
+            client:Notify("This stack is already full.")
+            return
+        end
+
+        -- Find other stacks of the same currency type
+        local mergedTotal = 0
+        local itemsToRemove = {}
+
+        for _, otherItem in pairs(inventory:GetItems()) do
+            if otherItem.uniqueID == item.uniqueID and otherItem:GetID() != item:GetID() then
+                local otherQuantity = otherItem:GetData("quantity", 1)
+
+                if canAdd >= otherQuantity then
+                    -- Merge entire stack
+                    mergedTotal = mergedTotal + otherQuantity
+                    canAdd = canAdd - otherQuantity
+                    table.insert(itemsToRemove, otherItem)
+                elseif canAdd > 0 then
+                    -- Partial merge
+                    mergedTotal = mergedTotal + canAdd
+                    otherItem:SetData("quantity", otherQuantity - canAdd)
+                    canAdd = 0
+                    break
+                end
+
+                if canAdd <= 0 then break end
+            end
+        end
+
+        if mergedTotal == 0 then
+            client:Notify("No stacks to merge.")
+            return
+        end
+
+        -- Update main stack
+        item:SetData("quantity", currentQuantity + mergedTotal)
+
+        -- Remove empty stacks
+        for _, otherItem in ipairs(itemsToRemove) do
+            otherItem:Remove()
+        end
+
+        client:Notify("Merged " .. mergedTotal .. " into stack.")
+    end)
+
+    -- Handle merge select request (send list to client)
+    --- Called from item function to initiate merge select
+    function ix.currency.SendMergeSelectList(client, item)
+        local character = client:GetCharacter()
+        if not character then return end
+
+        local inventory = character:GetInventory()
+        if not inventory then return end
+
+        -- Find other stacks of the same currency type
+        local stacks = {}
+        for _, otherItem in pairs(inventory:GetItems()) do
+            if otherItem.uniqueID == item.uniqueID and otherItem:GetID() != item:GetID() then
+                table.insert(stacks, {
+                    id = otherItem:GetID(),
+                    quantity = otherItem:GetData("quantity", 1)
+                })
+            end
+        end
+
+        if #stacks == 0 then
+            client:Notify("No other stacks to merge with.")
+            return
+        end
+
+        -- Sort by quantity descending
+        table.sort(stacks, function(a, b) return a.quantity > b.quantity end)
+
+        local currencyType = item.uniqueID == ix.currency.CASH_ITEM and "cash" or "coins"
+
+        net.Start("ixCurrencyMergeSelect")
+            net.WriteUInt(item:GetID(), 32)
+            net.WriteUInt(#stacks, 8)
+            for _, stack in ipairs(stacks) do
+                net.WriteUInt(stack.id, 32)
+                net.WriteUInt(stack.quantity, 16)
+            end
+            net.WriteString(currencyType)
+        net.Send(client)
+    end
+
+    -- Handle merge select confirmation
+    net.Receive("ixCurrencyMergeSelectConfirm", function(len, client)
+        local sourceItemID = net.ReadUInt(32)
+        local targetItemID = net.ReadUInt(32)
+
+        local character = client:GetCharacter()
+        if not character then return end
+
+        local inventory = character:GetInventory()
+        if not inventory then return end
+
+        local sourceItem = ix.item.instances[sourceItemID]
+        local targetItem = ix.item.instances[targetItemID]
+
+        if not sourceItem or not targetItem then
+            client:Notify("Item not found.")
+            return
+        end
+
+        if sourceItem.invID != inventory:GetID() or targetItem.invID != inventory:GetID() then
+            client:Notify("You don't own these items.")
+            return
+        end
+
+        if sourceItem.uniqueID != targetItem.uniqueID then
+            client:Notify("Cannot merge different currency types.")
+            return
+        end
+
+        local sourceQuantity = sourceItem:GetData("quantity", 1)
+        local targetQuantity = targetItem:GetData("quantity", 1)
+        local maxStack = ix.currency.MAX_STACK
+
+        local canAdd = maxStack - sourceQuantity
+        if canAdd <= 0 then
+            client:Notify("Source stack is already full.")
+            return
+        end
+
+        local toMerge = math.min(canAdd, targetQuantity)
+
+        -- Update source stack
+        sourceItem:SetData("quantity", sourceQuantity + toMerge)
+
+        -- Update or remove target stack
+        if toMerge >= targetQuantity then
+            targetItem:Remove()
+        else
+            targetItem:SetData("quantity", targetQuantity - toMerge)
+        end
+
+        client:Notify("Merged " .. toMerge .. " into stack.")
+    end)
 end
