@@ -39,9 +39,10 @@ if (SERVER) then
 	util.AddNetworkString("ixStorageOpen")
 	util.AddNetworkString("ixStorageClose")
 	util.AddNetworkString("ixStorageExpired")
-	util.AddNetworkString("ixStorageMoneyTake")
-	util.AddNetworkString("ixStorageMoneyGive")
-	util.AddNetworkString("ixStorageMoneyUpdate")
+	-- REMOVED: Physical currency system - money is now inventory items (cash/coins)
+	-- util.AddNetworkString("ixStorageMoneyTake")
+	-- util.AddNetworkString("ixStorageMoneyGive")
+	-- util.AddNetworkString("ixStorageMoneyUpdate")
 
 	--- Returns whether or not the given inventory has a storage context and is being looked at by other players.
 	-- @realm server
@@ -125,13 +126,8 @@ if (SERVER) then
 	function ix.storage.Sync(client, inventory)
 		local info = inventory.storageInfo
 
-		-- we'll retrieve the money value as we're syncing because it may have changed while
-		-- we were waiting for the timer to finish
-		if (info.entity.GetMoney) then
-			info.data.money = info.entity:GetMoney()
-		elseif (info.entity:IsPlayer() and info.entity:GetCharacter()) then
-			info.data.money = info.entity:GetCharacter():GetMoney()
-		end
+		-- REMOVED: Physical currency system - money is now inventory items (cash/coins)
+		-- No separate money sync needed - cash is just another item in the inventory
 
 		-- bags are automatically sync'd when the owning inventory is sync'd
 		inventory:Sync(client)
@@ -280,105 +276,10 @@ if (SERVER) then
 		end
 	end)
 
-	net.Receive("ixStorageMoneyTake", function(length, client)
-		if (CurTime() < (client.ixStorageMoneyTimer or 0)) then
-			return
-		end
-
-		local character = client:GetCharacter()
-
-		if (!character) then
-			return
-		end
-
-		local storageID = net.ReadUInt(32)
-		local amount = net.ReadUInt(32)
-
-		local inventory = client.ixOpenStorage
-
-		if (!inventory or !inventory.storageInfo or storageID != inventory:GetID()) then
-			return
-		end
-
-		local entity = inventory.storageInfo.entity
-
-		if (!IsValid(entity) or
-			(!entity:IsPlayer() and (!isfunction(entity.GetMoney) or !isfunction(entity.SetMoney))) or
-			(entity:IsPlayer() and !entity:GetCharacter())) then
-			return
-		end
-
-		entity = entity:IsPlayer() and entity:GetCharacter() or entity
-		amount = math.Clamp(math.Round(tonumber(amount) or 0), 0, entity:GetMoney())
-
-		if (amount == 0) then
-			return
-		end
-
-		character:SetMoney(character:GetMoney() + amount)
-
-		local total = entity:GetMoney() - amount
-		entity:SetMoney(total)
-
-		net.Start("ixStorageMoneyUpdate")
-			net.WriteUInt(storageID, 32)
-			net.WriteUInt(total, 32)
-		net.Send(inventory:GetReceivers())
-
-		ix.log.Add(client, "storageMoneyTake", entity, amount, total)
-
-		client.ixStorageMoneyTimer = CurTime() + 0.5
-	end)
-
-	net.Receive("ixStorageMoneyGive", function(length, client)
-		if (CurTime() < (client.ixStorageMoneyTimer or 0)) then
-			return
-		end
-
-		local character = client:GetCharacter()
-
-		if (!character) then
-			return
-		end
-
-		local storageID = net.ReadUInt(32)
-		local amount = net.ReadUInt(32)
-
-		local inventory = client.ixOpenStorage
-
-		if (!inventory or !inventory.storageInfo or storageID != inventory:GetID()) then
-			return
-		end
-
-		local entity = inventory.storageInfo.entity
-
-		if (!IsValid(entity) or
-			(!entity:IsPlayer() and (!isfunction(entity.GetMoney) or !isfunction(entity.SetMoney))) or
-			(entity:IsPlayer() and !entity:GetCharacter())) then
-			return
-		end
-
-		entity = entity:IsPlayer() and entity:GetCharacter() or entity
-		amount = math.Clamp(math.Round(tonumber(amount) or 0), 0, character:GetMoney())
-
-		if (amount == 0) then
-			return
-		end
-
-		character:SetMoney(character:GetMoney() - amount)
-
-		local total = entity:GetMoney() + amount
-		entity:SetMoney(total)
-
-		net.Start("ixStorageMoneyUpdate")
-			net.WriteUInt(storageID, 32)
-			net.WriteUInt(total, 32)
-		net.Send(inventory:GetReceivers())
-
-		ix.log.Add(client, "storageMoneyGive", entity, amount, total)
-
-		client.ixStorageMoneyTimer = CurTime() + 0.5
-	end)
+	-- REMOVED: Physical currency system - money transfer UI disabled
+	-- Cash and coins are now inventory items that can be dragged like any other item
+	-- net.Receive("ixStorageMoneyTake", ...) removed
+	-- net.Receive("ixStorageMoneyGive", ...) removed
 else
 	net.Receive("ixStorageOpen", function()
 		if (IsValid(ix.gui.menu)) then
@@ -406,13 +307,8 @@ else
 			panel:SetStorageTitle(name)
 			panel:SetStorageInventory(inventory)
 
-			if (data.money) then
-				if (localInventory) then
-					panel:SetLocalMoney(LocalPlayer():GetCharacter():GetMoney())
-				end
-
-				panel:SetStorageMoney(data.money)
-			end
+			-- REMOVED: Physical currency system - money UI disabled
+			-- Cash and coins are now visible as inventory items
 		end
 	end)
 
@@ -428,17 +324,6 @@ else
 		end
 	end)
 
-	net.Receive("ixStorageMoneyUpdate", function()
-		local storageID = net.ReadUInt(32)
-		local amount = net.ReadUInt(32)
-
-		local panel = ix.gui.openedStorage
-
-		if (!IsValid(panel) or panel:GetStorageID() != storageID) then
-			return
-		end
-
-		panel:SetStorageMoney(amount)
-		panel:SetLocalMoney(LocalPlayer():GetCharacter():GetMoney())
-	end)
+	-- REMOVED: Physical currency system - money update net message disabled
+	-- net.Receive("ixStorageMoneyUpdate", ...) removed
 end

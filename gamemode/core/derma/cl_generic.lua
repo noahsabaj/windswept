@@ -910,7 +910,7 @@ function PANEL:Paint(width, height)
 
 	-- there's no inset for text entries so we'll have to get creative
 	DisableClipping(true)
-		surface.SetDrawColor(self:GetBackgroundColor())
+		surface.SetDrawColor(self:GetBackgroundColor() or derma.GetColor("DarkerBackground", self))
 		surface.DrawRect(-self.iconWidth - 4, 0, self.iconWidth + 4, height)
 
 		surface.SetFont("ixSmallTitleIcons")

@@ -72,8 +72,8 @@ if (SERVER) then
 						inventory:GetID(),
 						v:GetModel(),
 						v.password,
-						v:GetDisplayName(),
-						v:GetMoney()
+						v:GetDisplayName()
+						-- REMOVED: v:GetMoney() - physical currency system
 					}
 				end
 			else
@@ -139,9 +139,7 @@ if (SERVER) then
 						entity:SetDisplayName(v[6])
 					end
 
-					if (v[7]) then
-						entity:SetMoney(v[7])
-					end
+					-- REMOVED: v[7] money restore - physical currency system
 
 					ix.inventory.Restore(inventoryID, data2.width, data2.height, function(inventory)
 						inventory.vars.isBag = true

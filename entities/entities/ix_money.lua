@@ -43,9 +43,13 @@ if (SERVER) then
 		end
 
 		activator:PerformInteraction(ix.config.Get("itemPickupTime", 0.5), self, function(client)
-			if (hook.Run("OnPickupMoney", client, self) != false) then
+			if not IsValid(self) then return end
+
+			-- Use physical currency pickup handler
+			if ix.currency.HandlePickup(client, self) then
 				self:Remove()
 			end
+			-- If pickup failed (inventory full), entity stays on ground
 		end)
 	end
 
@@ -58,7 +62,8 @@ else
 	function ENT:OnPopulateEntityInfo(container)
 		local text = container:AddRow("name")
 		text:SetImportant()
-		text:SetText(ix.currency.Get(self:GetAmount()))
+		-- GetAmount() returns dollars, ix.currency.Get() expects cents
+		text:SetText(ix.currency.Get(self:GetAmount() * ix.currency.CENTS_PER_DOLLAR))
 		text:SizeToContents()
 	end
 end

@@ -1,3 +1,8 @@
+-- DISABLED: Physical currency system
+-- Business menu spawns items from thin air - not compatible with physical economy
+-- Items should come from vendors, crafting, or other players
+ix.business = ix.business or {}
+ix.business.disabled = true
 
 if (SERVER) then
 	util.AddNetworkString("ixBusinessBuy")
@@ -7,6 +12,12 @@ if (SERVER) then
 	util.AddNetworkString("ixShipmentClose")
 
 	net.Receive("ixBusinessBuy", function(length, client)
+		-- Physical currency system: business menu disabled
+		if (ix.business.disabled) then
+			client:NotifyLocalized("businessDisabled")
+			return
+		end
+
 		if (client.ixNextBusiness and client.ixNextBusiness > CurTime()) then
 			client:NotifyLocalized("businessTooFast")
 			return

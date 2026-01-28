@@ -1,5 +1,6 @@
 
 --- A library representing the server's currency system.
+-- MODIFIED: Physical currency system - money is inventory items, not numeric values
 -- @module ix.currency
 
 ix.currency = ix.currency or {}
@@ -8,6 +9,12 @@ ix.currency.singular = ix.currency.singular or "dollar"
 ix.currency.plural = ix.currency.plural or "dollars"
 ix.currency.model = ix.currency.model or "models/props_lab/box01a.mdl"
 
+-- Constants for physical currency
+ix.currency.CASH_ITEM = "cash"
+ix.currency.COINS_ITEM = "coins"
+ix.currency.MAX_STACK = 100
+ix.currency.CENTS_PER_DOLLAR = 100
+
 --- Sets the currency type.
 -- @realm shared
 -- @string symbol The symbol of the currency.
@@ -15,97 +22,417 @@ ix.currency.model = ix.currency.model or "models/props_lab/box01a.mdl"
 -- @string plural The name of the currency in it's plural form.
 -- @string model The model of the currency entity.
 function ix.currency.Set(symbol, singular, plural, model)
-	ix.currency.symbol = symbol
-	ix.currency.singular = singular
-	ix.currency.plural = plural
-	ix.currency.model = model
+    ix.currency.symbol = symbol
+    ix.currency.singular = singular
+    ix.currency.plural = plural
+    ix.currency.model = model
 end
 
 --- Returns a formatted string according to the current currency.
+-- MODIFIED: Now handles cents (internal precision)
 -- @realm shared
--- @number amount The amount of cash being formatted.
+-- @number amount The amount of cash in CENTS being formatted.
 -- @treturn string The formatted string.
 function ix.currency.Get(amount)
-	if (amount == 1) then
-		return ix.currency.symbol.."1 "..ix.currency.singular
-	else
-		return ix.currency.symbol..amount.." "..ix.currency.plural
-	end
+    -- amount is in cents, format as dollars
+    local dollars = math.floor(amount / 100)
+    local cents = amount % 100
+
+    if cents == 0 then
+        return ix.currency.symbol .. dollars
+    else
+        return string.format("%s%d.%02d", ix.currency.symbol, dollars, cents)
+    end
 end
 
 --- Spawns an amount of cash at a specific location on the map.
+-- NOTE: amount is in DOLLARS for backwards compatibility with existing code
 -- @realm shared
 -- @vector pos The position of the money to be spawned.
--- @number amount The amount of cash being spawned.
+-- @number amount The amount of cash being spawned (in dollars).
 -- @angle[opt=angle_zero] angle The angle of the entity being spawned.
 -- @treturn entity The spawned money entity.
 function ix.currency.Spawn(pos, amount, angle)
-	if (!amount or amount < 0) then
-		print("[Helix] Can't create currency entity: Invalid Amount of money")
-		return
-	end
+    if (!amount or amount < 0) then
+        print("[Helix] Can't create currency entity: Invalid Amount of money")
+        return
+    end
 
-	local money = ents.Create("ix_money")
-	money:Spawn()
+    local money = ents.Create("ix_money")
+    money:Spawn()
 
-	if (IsValid(pos) and pos:IsPlayer()) then
-		pos = pos:GetItemDropPos(money)
-	elseif (!isvector(pos)) then
-		print("[Helix] Can't create currency entity: Invalid Position")
+    if (IsValid(pos) and pos:IsPlayer()) then
+        pos = pos:GetItemDropPos(money)
+    elseif (!isvector(pos)) then
+        print("[Helix] Can't create currency entity: Invalid Position")
 
-		money:Remove()
-		return
-	end
+        money:Remove()
+        return
+    end
 
-	money:SetPos(pos)
-	-- double check for negative.
-	money:SetAmount(math.Round(math.abs(amount)))
-	money:SetAngles(angle or angle_zero)
-	money:Activate()
+    money:SetPos(pos)
+    -- double check for negative.
+    money:SetAmount(math.Round(math.abs(amount)))
+    money:SetAngles(angle or angle_zero)
+    money:Activate()
 
-	return money
+    return money
 end
 
+-- ============================================================================
+-- PHYSICAL CURRENCY HELPERS
+-- ============================================================================
+
+--- Count total cents in an inventory
+-- @realm shared
+-- @param inventory The inventory to count currency in
+-- @treturn number Total value in cents
+function ix.currency.CountInInventory(inventory)
+    if not inventory then return 0 end
+
+    local total = 0
+    for _, item in pairs(inventory:GetItems()) do
+        if item.isCurrency then
+            local quantity = item:GetData("quantity", 1)
+            local value = item.currencyValue or 0
+            total = total + (quantity * value)
+        end
+    end
+    return total
+end
+
+--- Find currency items in inventory (sorted by value ascending - coins first)
+-- @realm shared
+-- @param inventory The inventory to search
+-- @treturn table Array of currency items
+function ix.currency.FindCurrencyItems(inventory)
+    if not inventory then return {} end
+
+    local items = {}
+    for _, item in pairs(inventory:GetItems()) do
+        if item.isCurrency then
+            table.insert(items, item)
+        end
+    end
+
+    -- Sort by currency value (coins first, then cash)
+    table.sort(items, function(a, b)
+        return (a.currencyValue or 0) < (b.currencyValue or 0)
+    end)
+
+    return items
+end
+
+--- Find slots available for new currency items
+-- @realm server
+-- @param inventory The inventory to search
+-- @param count Number of slots needed
+-- @treturn table Array of {x, y} slot positions
+function ix.currency.FindEmptySlots(inventory, count)
+    if not inventory then return {} end
+
+    local slots = {}
+    local w, h = inventory:GetSize()
+
+    for x = 1, w do
+        for y = 1, h do
+            if not inventory.slots[x] or not inventory.slots[x][y] then
+                table.insert(slots, {x = x, y = y})
+                if #slots >= count then
+                    return slots
+                end
+            end
+        end
+    end
+
+    return slots
+end
+
+--- Add currency to inventory
+-- @realm server
+-- @param inventory The inventory to add to
+-- @param cents Amount in cents to add
+-- @treturn boolean True on success, false if no space
+function ix.currency.AddToInventory(inventory, cents)
+    if not inventory or cents <= 0 then return cents == 0 end
+
+    local remaining = cents
+
+    -- First, try to fill existing partial stacks
+    local existingItems = ix.currency.FindCurrencyItems(inventory)
+
+    -- Fill coin stacks first (for small amounts)
+    for _, item in ipairs(existingItems) do
+        if remaining <= 0 then break end
+
+        local quantity = item:GetData("quantity", 1)
+        local canAdd = ix.currency.MAX_STACK - quantity
+
+        if canAdd > 0 and item.uniqueID == ix.currency.COINS_ITEM then
+            local toAdd = math.min(canAdd, remaining)
+            item:SetData("quantity", quantity + toAdd)
+            remaining = remaining - toAdd
+        end
+    end
+
+    -- Fill cash stacks (for larger amounts, convert cents to dollars)
+    for _, item in ipairs(existingItems) do
+        if remaining < ix.currency.CENTS_PER_DOLLAR then break end
+
+        local quantity = item:GetData("quantity", 1)
+        local canAdd = ix.currency.MAX_STACK - quantity
+
+        if canAdd > 0 and item.uniqueID == ix.currency.CASH_ITEM then
+            local dollarsToAdd = math.min(canAdd, math.floor(remaining / ix.currency.CENTS_PER_DOLLAR))
+            if dollarsToAdd > 0 then
+                item:SetData("quantity", quantity + dollarsToAdd)
+                remaining = remaining - (dollarsToAdd * ix.currency.CENTS_PER_DOLLAR)
+            end
+        end
+    end
+
+    -- Calculate new stacks needed
+    local dollarsNeeded = math.floor(remaining / ix.currency.CENTS_PER_DOLLAR)
+    local centsNeeded = remaining % ix.currency.CENTS_PER_DOLLAR
+
+    local cashStacksNeeded = math.ceil(dollarsNeeded / ix.currency.MAX_STACK)
+    local coinStacksNeeded = centsNeeded > 0 and 1 or 0
+
+    local totalSlotsNeeded = cashStacksNeeded + coinStacksNeeded
+    local emptySlots = ix.currency.FindEmptySlots(inventory, totalSlotsNeeded)
+
+    -- Check if we have enough space
+    if #emptySlots < totalSlotsNeeded then
+        return false  -- Not enough inventory space
+    end
+
+    local slotIndex = 1
+
+    -- Create new cash stacks
+    while dollarsNeeded > 0 and slotIndex <= #emptySlots do
+        local stackSize = math.min(ix.currency.MAX_STACK, dollarsNeeded)
+        local slot = emptySlots[slotIndex]
+
+        inventory:Add(ix.currency.CASH_ITEM, 1, {
+            quantity = stackSize
+        }, slot.x, slot.y)
+
+        dollarsNeeded = dollarsNeeded - stackSize
+        slotIndex = slotIndex + 1
+    end
+
+    -- Create new coins stack if needed
+    if centsNeeded > 0 and slotIndex <= #emptySlots then
+        local slot = emptySlots[slotIndex]
+
+        inventory:Add(ix.currency.COINS_ITEM, 1, {
+            quantity = centsNeeded
+        }, slot.x, slot.y)
+    end
+
+    return true
+end
+
+--- Remove currency from inventory
+-- @realm server
+-- @param inventory The inventory to remove from
+-- @param cents Amount in cents to remove
+-- @treturn boolean True on success, false if not enough money
+function ix.currency.RemoveFromInventory(inventory, cents)
+    if not inventory or cents <= 0 then return cents == 0 end
+
+    local available = ix.currency.CountInInventory(inventory)
+    if available < cents then
+        return false  -- Not enough money
+    end
+
+    local remaining = cents
+    local items = ix.currency.FindCurrencyItems(inventory)
+
+    -- Remove from coins first (smaller denomination)
+    for _, item in ipairs(items) do
+        if remaining <= 0 then break end
+        if item.uniqueID == ix.currency.COINS_ITEM then
+            local quantity = item:GetData("quantity", 1)
+            local value = quantity  -- 1 cent per coin
+
+            if value <= remaining then
+                -- Remove entire stack
+                item:Remove()
+                remaining = remaining - value
+            else
+                -- Partial removal
+                item:SetData("quantity", quantity - remaining)
+                remaining = 0
+            end
+        end
+    end
+
+    -- Remove from cash
+    for _, item in ipairs(items) do
+        if remaining <= 0 then break end
+        if item.uniqueID == ix.currency.CASH_ITEM then
+            local quantity = item:GetData("quantity", 1)
+            local value = quantity * ix.currency.CENTS_PER_DOLLAR
+
+            if value <= remaining then
+                -- Remove entire stack
+                item:Remove()
+                remaining = remaining - value
+            else
+                -- Partial removal - need to calculate how many bills
+                local centsToRemove = remaining
+                local billsToRemove = math.ceil(centsToRemove / ix.currency.CENTS_PER_DOLLAR)
+                local actualCentsRemoved = billsToRemove * ix.currency.CENTS_PER_DOLLAR
+                local change = actualCentsRemoved - centsToRemove
+
+                item:SetData("quantity", quantity - billsToRemove)
+
+                -- If we removed more than needed, we need to give change as coins
+                if change > 0 then
+                    ix.currency.AddToInventory(inventory, change)
+                end
+
+                remaining = 0
+            end
+        end
+    end
+
+    return remaining == 0
+end
+
+-- ============================================================================
+-- PICKUP HANDLER
+-- ============================================================================
+
+if SERVER then
+    --- Called when player picks up ix_money entity
+    -- @realm server
+    -- @param client The player picking up money
+    -- @param moneyEntity The money entity being picked up
+    -- @treturn boolean True if pickup succeeded
+    function ix.currency.HandlePickup(client, moneyEntity)
+        local amount = moneyEntity:GetAmount()
+        local character = client:GetCharacter()
+
+        if not character then return false end
+
+        local inventory = character:GetInventory()
+        if not inventory then return false end
+
+        -- Convert dollars to cents
+        local cents = amount * ix.currency.CENTS_PER_DOLLAR
+
+        if ix.currency.AddToInventory(inventory, cents) then
+            return true
+        else
+            client:NotifyLocalized("inventoryFull")
+            return false
+        end
+    end
+end
+
+-- Hook for backwards compatibility
 function GM:OnPickupMoney(client, moneyEntity)
-	if (IsValid(moneyEntity)) then
-		local amount = moneyEntity:GetAmount()
-
-		client:GetCharacter():GiveMoney(amount)
-	end
+    if (IsValid(moneyEntity)) then
+        -- This is now handled by ix.currency.HandlePickup in the entity Use function
+        -- Kept for backwards compatibility if called directly
+        local amount = moneyEntity:GetAmount()
+        local cents = amount * ix.currency.CENTS_PER_DOLLAR
+        client:GetCharacter():GiveMoney(cents)
+    end
 end
+
+-- ============================================================================
+-- CHARACTER MONEY METHODS (REWRITTEN FOR PHYSICAL CURRENCY)
+-- ============================================================================
 
 do
-	local character = ix.meta.character
+    local character = ix.meta.character
 
-	function character:HasMoney(amount)
-		if (amount < 0) then
-			print("Negative Money Check Received.")
-		end
+    --- Checks if character has at least the specified amount
+    -- @realm shared
+    -- @number amount Amount in CENTS to check for
+    -- @treturn boolean True if character has enough
+    function character:HasMoney(amount)
+        if (amount < 0) then
+            print("Negative Money Check Received.")
+        end
 
-		return self:GetMoney() >= amount
-	end
+        local inventory = self:GetInventory()
+        return ix.currency.CountInInventory(inventory) >= amount
+    end
 
-	function character:GiveMoney(amount, bNoLog)
-		amount = math.abs(amount)
+    --- Returns the character's total money
+    -- @realm shared
+    -- @treturn number Total money in CENTS
+    function character:GetMoney()
+        local inventory = self:GetInventory()
+        return ix.currency.CountInInventory(inventory)
+    end
 
-		if (!bNoLog) then
-			ix.log.Add(self:GetPlayer(), "money", amount)
-		end
+    if SERVER then
+        --- Gives money to the character by adding currency items
+        -- @realm server
+        -- @number amount Amount in CENTS to give
+        -- @bool[opt=false] bNoLog Skip logging
+        -- @treturn boolean True on success, false if inventory full
+        function character:GiveMoney(amount, bNoLog)
+            if amount <= 0 then return true end
 
-		self:SetMoney(self:GetMoney() + amount)
+            local inventory = self:GetInventory()
+            if not inventory then return false end
 
-		return true
-	end
+            local success = ix.currency.AddToInventory(inventory, amount)
 
-	function character:TakeMoney(amount, bNoLog)
-		amount = math.abs(amount)
+            if success and not bNoLog then
+                ix.log.Add(self:GetPlayer(), "money", amount)
+            end
 
-		if (!bNoLog) then
-			ix.log.Add(self:GetPlayer(), "money", -amount)
-		end
+            return success
+        end
 
-		self:SetMoney(self:GetMoney() - amount)
+        --- Takes money from the character by removing currency items
+        -- @realm server
+        -- @number amount Amount in CENTS to take
+        -- @bool[opt=false] bNoLog Skip logging
+        -- @treturn boolean True on success, false if not enough money
+        function character:TakeMoney(amount, bNoLog)
+            if amount <= 0 then return true end
 
-		return true
-	end
+            local inventory = self:GetInventory()
+            if not inventory then return false end
+
+            local success = ix.currency.RemoveFromInventory(inventory, amount)
+
+            if success and not bNoLog then
+                ix.log.Add(self:GetPlayer(), "money", -amount)
+            end
+
+            return success
+        end
+
+        --- Sets character's money to exact amount (clears existing, adds new)
+        -- @realm server
+        -- @number amount Amount in CENTS to set
+        -- @treturn boolean True on success
+        function character:SetMoney(amount)
+            local inventory = self:GetInventory()
+            if not inventory then return false end
+
+            -- Remove all existing currency
+            for _, item in pairs(inventory:GetItems()) do
+                if item.isCurrency then
+                    item:Remove()
+                end
+            end
+
+            -- Add new amount
+            if amount > 0 then
+                return ix.currency.AddToInventory(inventory, amount)
+            end
+
+            return true
+        end
+    end
 end

@@ -94,14 +94,8 @@ function PANEL:Init()
 		self:Remove()
 	end
 
-	self.storageMoney = self.storageInventory:Add("ixStorageMoney")
-	self.storageMoney:SetVisible(false)
-	self.storageMoney.OnTransfer = function(_, amount)
-		net.Start("ixStorageMoneyTake")
-			net.WriteUInt(self.storageID, 32)
-			net.WriteUInt(amount, 32)
-		net.SendToServer()
-	end
+	-- REMOVED: Physical currency system - money is now inventory items (cash/coins)
+	-- self.storageMoney removed - cash can be dragged like any other item
 
 	ix.gui.inv1 = self:Add("ixInventory")
 	ix.gui.inv1.bNoBackgroundBlur = true
@@ -112,15 +106,8 @@ function PANEL:Init()
 		self:Remove()
 	end
 
-	self.localMoney = ix.gui.inv1:Add("ixStorageMoney")
-	self.localMoney:SetVisible(false)
-	self.localMoney:SetLeft(true)
-	self.localMoney.OnTransfer = function(_, amount)
-		net.Start("ixStorageMoneyGive")
-			net.WriteUInt(self.storageID, 32)
-			net.WriteUInt(amount, 32)
-		net.SendToServer()
-	end
+	-- REMOVED: Physical currency system - money is now inventory items (cash/coins)
+	-- self.localMoney removed - cash can be dragged like any other item
 
 	self:SetAlpha(0)
 	self:AlphaTo(255, self:GetFadeTime())
@@ -141,12 +128,7 @@ function PANEL:SetLocalInventory(inventory)
 end
 
 function PANEL:SetLocalMoney(money)
-	if (!self.localMoney:IsVisible()) then
-		self.localMoney:SetVisible(true)
-		ix.gui.inv1:SetTall(ix.gui.inv1:GetTall() + self.localMoney:GetTall() + 2)
-	end
-
-	self.localMoney:SetMoney(money)
+	-- Physical currency: money is items, no separate display needed
 end
 
 function PANEL:SetStorageTitle(title)
@@ -164,12 +146,7 @@ function PANEL:SetStorageInventory(inventory)
 end
 
 function PANEL:SetStorageMoney(money)
-	if (!self.storageMoney:IsVisible()) then
-		self.storageMoney:SetVisible(true)
-		self.storageInventory:SetTall(self.storageInventory:GetTall() + self.storageMoney:GetTall() + 2)
-	end
-
-	self.storageMoney:SetMoney(money)
+	-- Physical currency: money is items, no separate display needed
 end
 
 function PANEL:Paint(width, height)

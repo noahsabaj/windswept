@@ -429,6 +429,7 @@ do
 			description = "@cmdGiveMoney",
 			arguments = ix.type.number,
 			OnRun = function(self, client, amount)
+				-- User enters dollars, internal system uses cents
 				amount = math.floor(amount)
 
 				if (amount <= 0) then
@@ -442,15 +443,22 @@ do
 				local target = util.TraceLine(data).Entity
 
 				if (IsValid(target) and target:IsPlayer() and target:GetCharacter()) then
-					if (!client:GetCharacter():HasMoney(amount)) then
+					local cents = amount * ix.currency.CENTS_PER_DOLLAR
+
+					if (!client:GetCharacter():HasMoney(cents)) then
 						return
 					end
 
-					target:GetCharacter():GiveMoney(amount)
-					client:GetCharacter():TakeMoney(amount)
+					-- Check if target has inventory space for the money
+					if (!target:GetCharacter():GiveMoney(cents)) then
+						client:NotifyLocalized("inventoryFull")
+						return
+					end
 
-					target:NotifyLocalized("moneyTaken", ix.currency.Get(amount))
-					client:NotifyLocalized("moneyGiven", ix.currency.Get(amount))
+					client:GetCharacter():TakeMoney(cents)
+
+					target:NotifyLocalized("moneyTaken", ix.currency.Get(cents))
+					client:NotifyLocalized("moneyGiven", ix.currency.Get(cents))
 				end
 			end
 		})
@@ -464,14 +472,16 @@ do
 				ix.type.number
 			},
 			OnRun = function(self, client, target, amount)
+				-- User enters dollars, internal system uses cents
 				amount = math.Round(amount)
 
 				if (amount <= 0) then
 					return "@invalidArg", 2
 				end
 
-				target:SetMoney(amount)
-				client:NotifyLocalized("setMoney", target:GetName(), ix.currency.Get(amount))
+				local cents = amount * ix.currency.CENTS_PER_DOLLAR
+				target:SetMoney(cents)
+				client:NotifyLocalized("setMoney", target:GetName(), ix.currency.Get(cents))
 			end
 		})
 
@@ -480,6 +490,7 @@ do
 			description = "@cmdDropMoney",
 			arguments = ix.type.number,
 			OnRun = function(self, client, amount)
+				-- User enters dollars, internal system uses cents
 				amount = math.Round(amount)
 
 				local minDropAmount = ix.config.Get("minMoneyDropAmount", 1)
@@ -488,12 +499,16 @@ do
 					return "@belowMinMoneyDrop", minDropAmount
 				end
 
-				if (!client:GetCharacter():HasMoney(amount)) then
+				-- Convert to cents for internal checks
+				local cents = amount * ix.currency.CENTS_PER_DOLLAR
+
+				if (!client:GetCharacter():HasMoney(cents)) then
 					return "@insufficientMoney"
 				end
 
-				client:GetCharacter():TakeMoney(amount)
+				client:GetCharacter():TakeMoney(cents)
 
+				-- Spawn money entity (amount in dollars for ix.currency.Spawn)
 				local money = ix.currency.Spawn(client, amount)
 				money.ixCharID = client:GetCharacter():GetID()
 				money.ixSteamID = client:SteamID()

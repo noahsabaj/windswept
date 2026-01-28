@@ -38,13 +38,10 @@ if (SERVER) then
 		end
 	end
 
-	function ENT:SetMoney(amount)
-		self.money = math.max(0, math.Round(tonumber(amount) or 0))
-	end
-
-	function ENT:GetMoney()
-		return self.money or 0
-	end
+	-- REMOVED: Physical currency system
+	-- Containers hold cash/coins as inventory items, not numeric money
+	-- function ENT:SetMoney(amount) removed
+	-- function ENT:GetMoney() removed
 
 	function ENT:OnRemove()
 		local index = self:GetID()
@@ -79,7 +76,7 @@ if (SERVER) then
 				name = name,
 				entity = self,
 				searchTime = ix.config.Get("containerOpenTime", 0.7),
-				data = {money = self:GetMoney()},
+				data = {},  -- Physical currency: no money data, cash is inventory items
 				OnPlayerOpen = function()
 					if (definition.OnOpen) then
 					    definition.OnOpen(self, activator)
