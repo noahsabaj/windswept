@@ -241,22 +241,42 @@ end
 function ITEM:OnLoadout()
 	if (self:GetData("equip")) then
 		local client = self.player
+		local item = self
 		client.carryWeapons = client.carryWeapons or {}
 
-		local weapon = client:Give(self.class, true)
+		-- Helper to actually equip the weapon
+		local function DoEquip()
+			if not IsValid(client) then return false end
+			if not item:GetData("equip") then return false end
 
-		if (IsValid(weapon)) then
-			client:RemoveAmmo(weapon:Clip1(), weapon:GetPrimaryAmmoType())
-			client.carryWeapons[self.weaponCategory] = weapon
+			local weapon = client:Give(item.class, true)
 
-			weapon.ixItem = self
-			weapon:SetClip1(self:GetData("ammo", 0))
+			if (IsValid(weapon)) then
+				client:RemoveAmmo(weapon:Clip1(), weapon:GetPrimaryAmmoType())
+				client.carryWeapons[item.weaponCategory] = weapon
 
-			if (self.OnEquipWeapon) then
-				self:OnEquipWeapon(client, weapon)
+				weapon.ixItem = item
+				weapon:SetClip1(item:GetData("ammo", 0))
+
+				if (item.OnEquipWeapon) then
+					item:OnEquipWeapon(client, weapon)
+				end
+
+				return true
 			end
-		else
-			print(Format("[Helix] Cannot give weapon - %s does not exist!", self.class))
+
+			return false
+		end
+
+		-- Try immediately
+		if not DoEquip() then
+			-- Addon weapons (TFA, M9K, etc.) may not be registered yet due to load order.
+			-- Retry after a delay to give addons time to register their weapon classes.
+			timer.Simple(1, function()
+				if not DoEquip() then
+					print(Format("[Helix] Cannot give weapon - %s does not exist!", item.class))
+				end
+			end)
 		end
 	end
 end

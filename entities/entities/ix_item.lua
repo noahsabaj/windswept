@@ -15,9 +15,6 @@ function ENT:SetupDataTables()
 end
 
 if (SERVER) then
-	local invalidBoundsMin = Vector(-8, -8, -8)
-	local invalidBoundsMax = Vector(8, 8, 8)
-
 	util.AddNetworkString("ixItemEntityAction")
 
 	function ENT:Initialize()
@@ -78,10 +75,48 @@ if (SERVER) then
 			end
 
 			local physObj = self:GetPhysicsObject()
+			local needsFallbackPhysics = false
 
 			if (!IsValid(physObj)) then
-				self:PhysicsInitBox(invalidBoundsMin, invalidBoundsMax)
-				self:SetCollisionBounds(invalidBoundsMin, invalidBoundsMax)
+				needsFallbackPhysics = true
+			else
+				-- Check if the physics bounds are valid (some addon models have broken/thin collision)
+				-- TFA/M9K weapon models often have razor-thin collision that eye traces can't hit
+				local mins, maxs = physObj:GetAABB()
+				if (mins and maxs) then
+					local size = maxs - mins
+					-- If any dimension is under 4 units, traces will struggle to hit it
+					if (size.x < 4 or size.y < 4 or size.z < 4) then
+						needsFallbackPhysics = true
+					end
+				else
+					needsFallbackPhysics = true
+				end
+			end
+
+			if (needsFallbackPhysics) then
+				-- Use model's OBB (oriented bounding box) as base, ensure minimum 4 units per dimension
+				local obbMins, obbMaxs = self:OBBMins(), self:OBBMaxs()
+				local fallbackMins = Vector(obbMins.x, obbMins.y, obbMins.z)
+				local fallbackMaxs = Vector(obbMaxs.x, obbMaxs.y, obbMaxs.z)
+
+				-- Expand any dimension that's too thin for reliable trace hits
+				for _, axis in ipairs({"x", "y", "z"}) do
+					local size = fallbackMaxs[axis] - fallbackMins[axis]
+					if (size < 4) then
+						local expand = (4 - size) / 2
+						fallbackMins[axis] = fallbackMins[axis] - expand
+						fallbackMaxs[axis] = fallbackMaxs[axis] + expand
+					end
+				end
+
+				self:PhysicsInitBox(fallbackMins, fallbackMaxs)
+				self:SetCollisionBounds(fallbackMins, fallbackMaxs)
+
+				-- Prevent fallback physics from trapping players who drop items
+				self:SetCollisionGroup(COLLISION_GROUP_WEAPON)
+
+				physObj = self:GetPhysicsObject()
 			end
 
 			if (IsValid(physObj)) then
