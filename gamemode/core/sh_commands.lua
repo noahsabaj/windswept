@@ -754,6 +754,23 @@ ix.command.Add("PlyTransfer", {
 		ix.type.text
 	},
 	OnRun = function(self, client, target, name)
+		-- Handle transfer to factionless
+		if (name:lower() == "none" or name:lower() == "factionless") then
+			target.vars.faction = nil
+			target:SetFaction(nil)
+
+			-- Kick from class since factionless has no class
+			target:KickClass()
+
+			for _, v in player.Iterator() do
+				if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+					v:NotifyLocalized("cChangeFactionNone", client:GetName(), target:GetName())
+				end
+			end
+
+			return
+		end
+
 		local faction = ix.faction.teams[name]
 
 		if (!faction) then
