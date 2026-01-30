@@ -108,6 +108,11 @@ if (CLIENT) then
 	-- @number faction Index of the faction
 	-- @treturn bool Whether or not the faction requires a whitelist
 	function ix.faction.HasWhitelist(faction)
+		-- Factionless is always allowed
+		if (faction == nil) then
+			return true
+		end
+
 		local data = ix.faction.indices[faction]
 
 		if (data) then

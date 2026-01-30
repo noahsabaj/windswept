@@ -42,6 +42,11 @@ end
 -- Whitelist networking information here.
 do
 	function playerMeta:HasWhitelist(faction)
+		-- Factionless is always allowed
+		if (faction == nil) then
+			return true
+		end
+
 		local data = ix.faction.indices[faction]
 
 		if (data) then
