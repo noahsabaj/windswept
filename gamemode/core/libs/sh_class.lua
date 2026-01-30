@@ -111,8 +111,14 @@ function ix.class.CanSwitchTo(client, class)
 		return false, "no info"
 	end
 
+	-- Factionless players cannot join any class
+	local playerFaction = client:Team()
+	if (playerFaction == nil or playerFaction == TEAM_UNASSIGNED) then
+		return false, "noFaction"
+	end
+
 	-- If the player's faction matches the class's faction.
-	if (client:Team() != info.faction) then
+	if (playerFaction != info.faction) then
 		return false, "not correct team"
 	end
 
@@ -201,26 +207,35 @@ if (SERVER) then
 	-- @realm server
 	function charMeta:KickClass()
 		local client = self:GetPlayer()
-		if (!client) then return end
+
+		if (!IsValid(client)) then
+			return
+		end
+
+		local playerFaction = client:Team()
+
+		-- Factionless players just have no class
+		if (playerFaction == nil or playerFaction == TEAM_UNASSIGNED) then
+			self:SetClass(nil)
+			return
+		end
 
 		local goClass
 
 		for k, v in pairs(ix.class.list) do
-			if (v.faction == client:Team() and v.isDefault) then
+			if (v.faction == playerFaction and v.isDefault) then
 				goClass = k
-
 				break
 			end
 		end
 
 		if (!goClass) then
-			ErrorNoHaltWithStack("[Helix] No default class set for faction '" .. team.GetName(client:Team()) .. "'")
-
+			-- No default class found - just clear class
+			self:SetClass(nil)
 			return
 		end
 
 		self:JoinClass(goClass)
-
 		hook.Run("PlayerJoinedClass", client, goClass)
 	end
 
