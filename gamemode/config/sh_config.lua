@@ -91,6 +91,32 @@ ix.config.Add("minDescriptionLength", 16, "The minimum number of characters in a
 	data = {min = 0, max = 300},
 	category = "characters"
 })
+ix.config.Add("factionlessModels", {
+	"models/humans/group01/male_01.mdl",
+	"models/humans/group01/male_02.mdl",
+	"models/humans/group01/male_04.mdl",
+	"models/humans/group01/male_05.mdl",
+	"models/humans/group01/male_06.mdl",
+	"models/humans/group01/male_07.mdl",
+	"models/humans/group01/male_08.mdl",
+	"models/humans/group01/male_09.mdl",
+	"models/humans/group02/male_01.mdl",
+	"models/humans/group02/male_03.mdl",
+	"models/humans/group02/male_05.mdl",
+	"models/humans/group02/male_07.mdl",
+	"models/humans/group02/male_09.mdl",
+	"models/humans/group01/female_01.mdl",
+	"models/humans/group01/female_02.mdl",
+	"models/humans/group01/female_03.mdl",
+	"models/humans/group01/female_06.mdl",
+	"models/humans/group01/female_07.mdl",
+	"models/humans/group02/female_01.mdl",
+	"models/humans/group02/female_03.mdl",
+	"models/humans/group02/female_06.mdl",
+	"models/humans/group01/female_04.mdl"
+}, "The models available to factionless characters during character creation.", nil, {
+	category = "characters"
+})
 ix.config.Add("saveInterval", 300, "How often characters save in seconds.", nil, {
 	data = {min = 60, max = 3600},
 	category = "characters"
