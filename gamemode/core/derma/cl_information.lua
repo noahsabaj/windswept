@@ -195,14 +195,17 @@ function PANEL:Update(character)
 		return
 	end
 
-	local faction = ix.faction.indices[character:GetFaction()]
+	local factionIndex = character:GetFaction()
+	local faction = factionIndex and ix.faction.indices[factionIndex]
 	local class = ix.class.list[character:GetClass()]
 
 	if (self.name) then
 		self.name:SetText(character:GetName())
 
 		if (faction) then
-			self.name.backgroundColor = ColorAlpha(faction.color, 150) or Color(0, 0, 0, 150)
+			self.name.backgroundColor = ColorAlpha(faction.color, 150)
+		else
+			self.name.backgroundColor = Color(100, 100, 100, 150)
 		end
 
 		self.name:SizeToContents()
@@ -215,13 +218,21 @@ function PANEL:Update(character)
 
 	if (self.faction) then
 		self.faction:SetLabelText(L("faction"))
-		self.faction:SetText(L(faction.name))
+		if (faction) then
+			self.faction:SetText(L(faction.name))
+		else
+			self.faction:SetText(L("unaffiliated"))
+		end
 		self.faction:SizeToContents()
 	end
 
 	if (self.class) then
-		-- don't show class label if the class is the same name as the faction
-		if (class and class.name != faction.name) then
+		if (class and faction and class.name != faction.name) then
+			self.class:SetLabelText(L("class"))
+			self.class:SetText(L(class.name))
+			self.class:SizeToContents()
+		elseif (class and !faction) then
+			-- Factionless with class (edge case)
 			self.class:SetLabelText(L("class"))
 			self.class:SetText(L(class.name))
 			self.class:SizeToContents()
