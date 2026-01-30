@@ -404,11 +404,16 @@ function GM:CanPlayerThrowPunch(client)
 end
 
 function GM:OnCharacterCreated(client, character)
-	local faction = ix.faction.Get(character:GetFaction())
+	local factionIndex = character:GetFaction()
 
-	if (faction and faction.OnCharacterCreated) then
-		faction:OnCharacterCreated(client, character)
+	if (factionIndex) then
+		local faction = ix.faction.Get(factionIndex)
+
+		if (faction and faction.OnCharacterCreated) then
+			faction:OnCharacterCreated(client, character)
+		end
 	end
+	-- Factionless characters don't trigger faction OnCharacterCreated
 end
 
 function GM:GetDefaultCharacterName(client, faction)
@@ -432,7 +437,14 @@ function GM:CanPlayerUseCharacter(client, character)
         end
 	end
 
-	local bHasWhitelist = client:HasWhitelist(character:GetFaction())
+	local factionIndex = character:GetFaction()
+
+	-- Factionless characters don't need whitelist
+	if (factionIndex == nil) then
+		return
+	end
+
+	local bHasWhitelist = client:HasWhitelist(factionIndex)
 
 	if (!bHasWhitelist) then
 		return false, "@noWhitelist"
