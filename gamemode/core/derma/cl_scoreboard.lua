@@ -276,8 +276,45 @@ function PANEL:SetFaction(faction)
 	self.faction = faction
 end
 
+function PANEL:SetFactionless()
+	self:SetColor(Color(128, 128, 128))
+	self:SetText(L("unaffiliated"))
+	self.faction = nil
+	self.bFactionless = true
+end
+
 function PANEL:Update()
 	local faction = self.faction
+
+	-- Handle factionless section
+	if (self.bFactionless) then
+		local bHasPlayers = false
+
+		for k, v in ipairs(player.GetAll()) do
+			if (IsValid(v) and v:GetCharacter()) then
+				local playerFaction = v:Team()
+				if (playerFaction == nil or playerFaction == TEAM_UNASSIGNED) then
+					if (!IsValid(v.ixScoreboardSlot)) then
+						if (self:AddPlayer(v, k)) then
+							bHasPlayers = true
+						end
+					else
+						v.ixScoreboardSlot:Update()
+						bHasPlayers = true
+					end
+				end
+			end
+		end
+
+		self:SetVisible(bHasPlayers)
+		self:GetParent():InvalidateLayout()
+		return
+	end
+
+	-- Original faction code
+	if (!faction) then
+		return
+	end
 
 	if (team.NumPlayers(faction.index) == 0) then
 		self:SetVisible(false)
@@ -297,6 +334,7 @@ function PANEL:Update()
 		end
 
 		self:SetVisible(bHasPlayers)
+		self:GetParent():InvalidateLayout()
 	end
 end
 
@@ -325,6 +363,11 @@ function PANEL:Init()
 		self.factions[i] = panel
 	end
 
+	-- Add factionless section at the end
+	self.factionless = self:Add("ixScoreboardFaction")
+	self.factionless:SetFactionless()
+	self.factionless:Dock(TOP)
+
 	ix.gui.scoreboard = self
 end
 
@@ -334,6 +377,11 @@ function PANEL:Think()
 			local factionPanel = self.factions[i]
 
 			factionPanel:Update()
+		end
+
+		-- Update factionless section
+		if (self.factionless) then
+			self.factionless:Update()
 		end
 
 		self.nextThink = CurTime() + 0.5
