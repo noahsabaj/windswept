@@ -389,8 +389,12 @@ function PANEL:Populate()
 		noneButton.faction = nil
 		noneButton.OnSelected = function(panel)
 			self.payload:Set("faction", nil)
-			local defaultModels = ix.config.Get("factionlessModels", CITIZEN_MODELS)
-			self.payload:Set("model", math.random(1, #defaultModels))
+			local defaultModels = ix.config.Get("factionlessModels")
+			if (defaultModels and #defaultModels > 0) then
+				self.payload:Set("model", math.random(1, #defaultModels))
+			else
+				self.payload:Set("model", 1)
+			end
 		end
 
 		-- Auto-select factionless if no default faction selected
