@@ -379,6 +379,25 @@ function PANEL:Populate()
 				end
 			end
 		end
+
+		-- Add factionless/none option
+		local noneButton = self.factionButtonsPanel:Add("ixMenuSelectionButton")
+		noneButton:SetBackgroundColor(Color(128, 128, 128))
+		noneButton:SetText(L("noFaction"):utf8upper())
+		noneButton:SizeToContents()
+		noneButton:SetButtonList(self.factionButtons)
+		noneButton.faction = nil
+		noneButton.OnSelected = function(panel)
+			self.payload:Set("faction", nil)
+			local defaultModels = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+			self.payload:Set("model", math.random(1, #defaultModels))
+		end
+
+		-- Auto-select factionless if no default faction selected
+		if (!lastSelected) then
+			noneButton:SetSelected(true)
+			lastSelected = true
+		end
 	end
 
 	-- remove panels created for character vars

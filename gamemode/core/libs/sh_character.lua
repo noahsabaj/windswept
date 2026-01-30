@@ -443,81 +443,98 @@ do
 			layout:SetSpaceX(1)
 			layout:SetSpaceY(1)
 
-			local faction = ix.faction.indices[payload.faction]
+			local faction = payload.faction and ix.faction.indices[payload.faction]
+			local models
 
 			if (faction) then
-				local models = faction:GetModels(LocalPlayer())
+				models = faction:GetModels(LocalPlayer())
+			else
+				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+			end
 
-				for k, v in SortedPairs(models) do
-					local icon = layout:Add("SpawnIcon")
-					icon:SetSize(64, 128)
-					icon:InvalidateLayout(true)
-					icon.DoClick = function(this)
-						payload:Set("model", k)
-					end
-					icon.PaintOver = function(this, w, h)
-						if (payload.model == k) then
-							local color = ix.config.Get("color", color_white)
+			for k, v in SortedPairs(models) do
+				local icon = layout:Add("SpawnIcon")
+				icon:SetSize(64, 128)
+				icon:InvalidateLayout(true)
+				icon.DoClick = function(this)
+					payload:Set("model", k)
+				end
+				icon.PaintOver = function(this, w, h)
+					if (payload.model == k) then
+						local color = ix.config.Get("color", color_white)
 
-							surface.SetDrawColor(color.r, color.g, color.b, 200)
+						surface.SetDrawColor(color.r, color.g, color.b, 200)
 
-							for i = 1, 3 do
-								local i2 = i * 2
-								surface.DrawOutlinedRect(i, i, w - i2, h - i2)
-							end
+						for i = 1, 3 do
+							local i2 = i * 2
+							surface.DrawOutlinedRect(i, i, w - i2, h - i2)
 						end
 					end
+				end
 
-					if (isstring(v)) then
-						icon:SetModel(v)
-					else
-						icon:SetModel(v[1], v[2] or 0, v[3])
-					end
+				if (isstring(v)) then
+					icon:SetModel(v)
+				else
+					icon:SetModel(v[1], v[2] or 0, v[3])
 				end
 			end
 
 			return scroll
 		end,
 		OnValidate = function(self, value, payload, client)
-			local faction = ix.faction.indices[payload.faction]
+			local faction = payload.faction and ix.faction.indices[payload.faction]
+			local models
 
 			if (faction) then
-				local models = faction:GetModels(client)
-
-				if (!payload.model or !models[payload.model]) then
-					return false, "needModel"
-				end
+				models = faction:GetModels(client)
 			else
+				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+			end
+
+			if (!payload.model or !models[payload.model]) then
 				return false, "needModel"
 			end
 		end,
 		OnAdjust = function(self, client, data, value, newData)
-			local faction = ix.faction.indices[data.faction]
+			local faction = data.faction and ix.faction.indices[data.faction]
+			local models
 
 			if (faction) then
-				local model = faction:GetModels(client)[value]
+				models = faction:GetModels(client)
+			else
+				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+			end
 
-				if (isstring(model)) then
-					newData.model = model
-				elseif (istable(model)) then
-					newData.model = model[1]
+			local model = models[value]
 
-					-- save skin/bodygroups to character data
-					local bodygroups = {}
+			if (isstring(model)) then
+				newData.model = model
+			elseif (istable(model)) then
+				newData.model = model[1]
 
-					for i = 1, #model[3] do
-						bodygroups[i - 1] = tonumber(model[3][i]) or 0
-					end
+				-- save skin/bodygroups to character data
+				local bodygroups = {}
 
-					newData.data = newData.data or {}
-					newData.data.skin = model[2] or 0
-					newData.data.groups = bodygroups
+				for i = 1, #model[3] do
+					bodygroups[i - 1] = tonumber(model[3][i]) or 0
 				end
+
+				newData.data = newData.data or {}
+				newData.data.skin = model[2] or 0
+				newData.data.groups = bodygroups
 			end
 		end,
 		ShouldDisplay = function(self, container, payload)
-			local faction = ix.faction.indices[payload.faction]
-			return #faction:GetModels(LocalPlayer()) > 1
+			local faction = payload.faction and ix.faction.indices[payload.faction]
+			local models
+
+			if (faction) then
+				models = faction:GetModels(LocalPlayer())
+			else
+				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+			end
+
+			return #models > 1
 		end
 	})
 
