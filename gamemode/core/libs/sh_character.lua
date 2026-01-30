@@ -544,7 +544,7 @@ do
 	ix.char.RegisterVar("faction", {
 		field = "faction",
 		fieldType = ix.type.string,
-		default = "Citizen",
+		default = nil,
 		bNoDisplay = true,
 		FilterValues = function(self)
 			-- make sequential table of faction unique IDs
@@ -560,9 +560,13 @@ do
 			local client = self:GetPlayer()
 
 			if (IsValid(client)) then
-				self.vars.faction = ix.faction.indices[value] and ix.faction.indices[value].uniqueID
-
-				client:SetTeam(value)
+				if (value == nil or value == 0) then
+					self.vars.faction = nil
+					client:SetTeam(TEAM_UNASSIGNED)
+				else
+					self.vars.faction = ix.faction.indices[value] and ix.faction.indices[value].uniqueID
+					client:SetTeam(value)
+				end
 
 				-- @todo refactor networking of character vars so this doesn't need to be repeated on every OnSet override
 				net.Start("ixCharacterVarChanged")
@@ -573,19 +577,28 @@ do
 			end
 		end,
 		OnGet = function(self, default)
+			if (self.vars.faction == nil) then
+				return nil
+			end
 			local faction = ix.faction.teams[self.vars.faction]
-
-			return faction and faction.index or 0
+			return faction and faction.index or nil
 		end,
 		OnValidate = function(self, index, data, client)
-			if (index and client:HasWhitelist(index)) then
+			-- nil faction is always valid (factionless)
+			if (index == nil) then
 				return true
 			end
-
+			if (client:HasWhitelist(index)) then
+				return true
+			end
 			return false
 		end,
 		OnAdjust = function(self, client, data, value, newData)
-			newData.faction = ix.faction.indices[value].uniqueID
+			if (value == nil) then
+				newData.faction = nil
+			else
+				newData.faction = ix.faction.indices[value].uniqueID
+			end
 		end
 	})
 
