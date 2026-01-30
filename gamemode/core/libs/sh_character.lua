@@ -449,7 +449,7 @@ do
 			if (faction) then
 				models = faction:GetModels(LocalPlayer())
 			else
-				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+				models = ix.config.Get("factionlessModels") or {}
 			end
 
 			for k, v in SortedPairs(models) do
@@ -488,7 +488,7 @@ do
 			if (faction) then
 				models = faction:GetModels(client)
 			else
-				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+				models = ix.config.Get("factionlessModels") or {}
 			end
 
 			if (!payload.model or !models[payload.model]) then
@@ -502,7 +502,7 @@ do
 			if (faction) then
 				models = faction:GetModels(client)
 			else
-				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+				models = ix.config.Get("factionlessModels") or {}
 			end
 
 			local model = models[value]
@@ -531,10 +531,10 @@ do
 			if (faction) then
 				models = faction:GetModels(LocalPlayer())
 			else
-				models = ix.config.Get("factionlessModels", CITIZEN_MODELS)
+				models = ix.config.Get("factionlessModels")
 			end
 
-			return #models > 1
+			return models and #models > 1 or false
 		end
 	})
 
