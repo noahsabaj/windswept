@@ -169,10 +169,17 @@ function PANEL:Init()
 	-- setup payload hooks
 	self:AddPayloadHook("model", function(value)
 		local faction = ix.faction.indices[self.payload.faction]
+		local models
 
 		if (faction) then
-			local model = faction:GetModels(LocalPlayer())[value]
+			models = faction:GetModels(LocalPlayer())
+		else
+			models = ix.config.Get("factionlessModels") or {}
+		end
 
+		local model = models[value]
+
+		if (model) then
 			-- assuming bodygroups
 			if (istable(model)) then
 				self.factionModel:SetModel(model[1], model[2] or 0, model[3])
