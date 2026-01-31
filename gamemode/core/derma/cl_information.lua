@@ -201,13 +201,8 @@ function PANEL:Update(character)
 
 	if (self.name) then
 		self.name:SetText(character:GetName())
-
-		if (faction) then
-			self.name.backgroundColor = ColorAlpha(faction.color, 150)
-		else
-			self.name.backgroundColor = Color(100, 100, 100, 150)
-		end
-
+		-- All players use same gray color (no faction color metagaming)
+		self.name.backgroundColor = Color(200, 200, 200, 150)
 		self.name:SizeToContents()
 	end
 
@@ -217,13 +212,15 @@ function PANEL:Update(character)
 	end
 
 	if (self.faction) then
-		self.faction:SetLabelText(L("faction"))
 		if (faction) then
+			self.faction:SetLabelText(L("faction"))
 			self.faction:SetText(L(faction.name))
+			self.faction:SizeToContents()
+			self.faction:SetVisible(true)
 		else
-			self.faction:SetText(L("unaffiliated"))
+			-- Factionless characters don't show faction row at all
+			self.faction:SetVisible(false)
 		end
-		self.faction:SizeToContents()
 	end
 
 	if (self.class) then
@@ -231,11 +228,13 @@ function PANEL:Update(character)
 			self.class:SetLabelText(L("class"))
 			self.class:SetText(L(class.name))
 			self.class:SizeToContents()
+			self.class:SetVisible(true)
 		elseif (class and !faction) then
 			-- Factionless with class (edge case)
 			self.class:SetLabelText(L("class"))
 			self.class:SetText(L(class.name))
 			self.class:SizeToContents()
+			self.class:SetVisible(true)
 		else
 			self.class:SetVisible(false)
 		end
@@ -261,10 +260,10 @@ end
 vgui.Register("ixCharacterInfo", PANEL, "DScrollPanel")
 
 hook.Add("CreateMenuButtons", "ixCharInfo", function(tabs)
-	local faction = ix.faction.indices[LocalPlayer():Team()]
 	tabs["you"] = {
 		bHideBackground = true,
-		buttonColor = faction and faction.color or color_white,
+		-- All players use same gray color (no faction color metagaming)
+		buttonColor = Color(200, 200, 200),
 		Create = function(info, container)
 			container.infoPanel = container:Add("ixCharacterInfo")
 

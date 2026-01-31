@@ -175,7 +175,6 @@ function PANEL:Update()
 	local client = self.player
 	local model = client:GetModel()
 	local skin = client:GetSkin()
-	local name = client:GetName()
 	local description = hook.Run("GetCharacterDescription", client) or
 		(client:GetCharacter() and client:GetCharacter():GetDescription()) or ""
 
@@ -187,6 +186,9 @@ function PANEL:Update()
 		bRecognize = hook.Run("IsCharacterRecognized", localCharacter, character:GetID())
 			or hook.Run("IsPlayerRecognized", self.player)
 	end
+
+	-- Show "Unknown" for unrecognized characters (anti-metagaming)
+	local name = bRecognize and client:GetName() or L("unknown")
 
 	self.icon:SetHidden(!bRecognize)
 	self:SetZPos(bRecognize and 1 or 2)
@@ -270,17 +272,40 @@ function PANEL:AddPlayer(client, index)
 end
 
 function PANEL:SetFaction(faction)
-	self:SetColor(faction.color)
+	-- All factions use same gray color (no faction color metagaming)
+	self:SetColor(Color(200, 200, 200))
 	self:SetText(L(faction.name))
 
 	self.faction = faction
 end
 
 function PANEL:SetFactionless()
-	self:SetColor(Color(128, 128, 128))
-	self:SetText(L("unaffiliated"))
 	self.faction = nil
 	self.bFactionless = true
+	-- No header for factionless - just raw player list
+	self:SetTall(0)  -- Will be sized by children
+	self:DockMargin(0, 8, 0, 8)  -- Small margin to separate from factions above
+	-- Remove the header padding that ixCategoryPanel adds
+	self.paddingTop = 0
+	self:DockPadding(0, 0, 0, 0)
+end
+
+function PANEL:SizeToContents()
+	local height = 0
+
+	-- For factionless, no header height - just children
+	if (!self.bFactionless) then
+		height = 32  -- Header height for normal factions
+	end
+
+	for _, child in ipairs(self:GetChildren()) do
+		if (IsValid(child) and child:IsVisible()) then
+			local _, top, _, bottom = child:GetDockMargin()
+			height = height + child:GetTall() + top + bottom
+		end
+	end
+
+	self:SetTall(height)
 end
 
 function PANEL:Update()
@@ -336,6 +361,16 @@ function PANEL:Update()
 		self:SetVisible(bHasPlayers)
 		self:GetParent():InvalidateLayout()
 	end
+end
+
+function PANEL:Paint(width, height)
+	-- Factionless section has no header/background - just raw list
+	if (self.bFactionless) then
+		return
+	end
+
+	-- Normal faction header
+	derma.SkinFunc("PaintCategoryPanel", self, self.text, self.color)
 end
 
 vgui.Register("ixScoreboardFaction", PANEL, "ixCategoryPanel")

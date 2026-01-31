@@ -25,10 +25,15 @@ their faction by default, but you can restrict this as you need with `CLASS.CanS
 
 if (SERVER) then
 	util.AddNetworkString("ixClassUpdate")
+	util.AddNetworkString("ixClassListSync")
+	util.AddNetworkString("ixClassCreated")
+	util.AddNetworkString("ixClassUpdated")
+	util.AddNetworkString("ixClassDeleted")
 end
 
 ix.class = ix.class or {}
 ix.class.list = {}
+ix.class.byDatabaseID = {}
 
 local charMeta = ix.meta.character
 
@@ -61,6 +66,11 @@ function ix.class.LoadFromDir(directory)
 			CLASS.name = "Unknown"
 			CLASS.description = "No description available."
 			CLASS.limit = 0
+			CLASS.rank = 255  -- File-loaded classes default to anchor rank
+			CLASS.pay = 0
+			CLASS.permissions = {}
+			CLASS.isAnchor = true  -- File-loaded classes are anchors
+			CLASS.isDefault = false
 
 			-- For future use with plugins.
 			if (PLUGIN) then
@@ -83,6 +93,10 @@ function ix.class.LoadFromDir(directory)
 					return true
 				end
 			end
+
+			-- Set timestamps for file-loaded classes
+			CLASS.createdAt = os.time()
+			CLASS.updatedAt = os.time()
 
 			ix.class.list[index] = CLASS
 		CLASS = nil
@@ -176,6 +190,101 @@ function ix.class.GetPlayers(class)
 	return players
 end
 
+--- Retrieves all classes for a specific faction.
+-- @realm shared
+-- @number factionID Faction team ID
+-- @treturn table Array of class data tables for this faction
+function ix.class.GetByFaction(factionID)
+	local classes = {}
+
+	for _, classData in pairs(ix.class.list) do
+		if classData.faction == factionID then
+			table.insert(classes, classData)
+		end
+	end
+
+	return classes
+end
+
+--- Retrieves all classes at a specific rank within a faction.
+-- @realm shared
+-- @number factionID Faction team ID
+-- @number rank Target rank (0-255)
+-- @treturn table Array of class data tables at this rank
+function ix.class.GetByRank(factionID, rank)
+	local classes = {}
+
+	for _, classData in pairs(ix.class.list) do
+		if classData.faction == factionID and classData.rank == rank then
+			table.insert(classes, classData)
+		end
+	end
+
+	return classes
+end
+
+--- Retrieves all players at a specific rank within a faction.
+-- @realm shared
+-- @number factionID Faction team ID
+-- @number rank Target rank (0-255)
+-- @treturn table Array of {player, character} tables
+function ix.class.GetPlayersAtRank(factionID, rank)
+	local results = {}
+
+	for _, ply in player.Iterator() do
+		if ply:Team() == factionID then
+			local char = ply:GetCharacter()
+			if char then
+				local classID = char:GetClass()
+				local classData = ix.class.Get(classID)
+				if classData and classData.rank == rank then
+					table.insert(results, {player = ply, character = char})
+				end
+			end
+		end
+	end
+
+	return results
+end
+
+--- Finds the next highest occupied rank below the given rank in a faction.
+-- Used for succession to find candidates.
+-- @realm shared
+-- @number factionID Faction team ID
+-- @number fromRank Starting rank to search down from
+-- @treturn number|nil The next rank with players, or nil if none found
+function ix.class.FindNextRankDown(factionID, fromRank)
+	-- Build sorted list of ranks with players
+	local ranksWithPlayers = {}
+
+	for _, classData in pairs(ix.class.list) do
+		if classData.faction == factionID and classData.rank < fromRank and classData.rank > 0 then
+			local players = ix.class.GetPlayers(classData.index)
+			if #players > 0 then
+				ranksWithPlayers[classData.rank] = true
+			end
+		end
+	end
+
+	-- Find highest rank below fromRank
+	local highestRank = nil
+	for rank, _ in pairs(ranksWithPlayers) do
+		if not highestRank or rank > highestRank then
+			highestRank = rank
+		end
+	end
+
+	return highestRank
+end
+
+--- Gets a class by its database ID.
+-- @realm shared
+-- @number databaseID Database row ID
+-- @treturn table|nil Class data table
+function ix.class.GetByDatabaseID(databaseID)
+	return ix.class.byDatabaseID[databaseID]
+end
+
 if (SERVER) then
 	--- Character class methods
 	-- @classmod Character
@@ -255,4 +364,320 @@ if (SERVER) then
 			net.WriteEntity(client)
 		net.Broadcast()
 	end
+
+	--- Creates a new class in the database and memory.
+	-- @realm server
+	-- @tparam table data Class data table with: faction, name, description, rank, pay, permissions, createdBy
+	-- @treturn table|nil Created class data, or nil on failure
+	function ix.class.Create(data)
+		if not data.faction or not data.name then
+			return nil
+		end
+
+		local now = os.time()
+		local index = #ix.class.list + 1
+
+		-- Generate uniqueID from name
+		local uniqueID = string.lower(string.gsub(data.name, "%s+", "_"))
+
+		-- Get faction data for team ID
+		local factionData = ix.faction.teams[data.faction]
+		if not factionData then
+			return nil
+		end
+
+		local classData = {
+			index = index,
+			uniqueID = uniqueID,
+			name = data.name,
+			description = data.description or "",
+			faction = factionData.index,
+			rank = data.rank or 1,
+			pay = data.pay or 0,
+			limit = data.classLimit or 0,
+			permissions = data.permissions or {},
+			isAnchor = false,
+			isDefault = false,
+			createdBy = data.createdBy,
+			createdAt = now,
+			updatedAt = now,
+		}
+
+		-- Add CanSwitchTo function
+		classData.CanSwitchTo = function(self, client)
+			return true
+		end
+
+		-- Insert into database
+		local query = mysql:Insert("ix_faction_classes")
+		query:Insert("faction", data.faction)
+		query:Insert("unique_id", uniqueID)
+		query:Insert("name", data.name)
+		query:Insert("description", data.description or "")
+		query:Insert("rank", data.rank or 1)
+		query:Insert("pay", data.pay or 0)
+		query:Insert("class_limit", data.classLimit or 0)
+		query:Insert("permissions", util.TableToJSON(data.permissions or {}))
+		query:Insert("is_anchor", 0)
+		query:Insert("is_default", 0)
+		query:Insert("created_by", data.createdBy)
+		query:Insert("created_at", now)
+		query:Insert("updated_at", now)
+		query:Callback(function(result, status, lastID)
+			if lastID then
+				classData.id = lastID
+				ix.class.byDatabaseID[lastID] = classData
+
+				-- Network to clients
+				net.Start("ixClassCreated")
+					net.WriteTable(classData)
+				net.Broadcast()
+			end
+		end)
+		query:Execute()
+
+		-- Add to memory immediately
+		ix.class.list[index] = classData
+
+		return classData
+	end
+
+	--- Updates a class in the database and memory.
+	-- @realm server
+	-- @number databaseID Database row ID of the class
+	-- @tparam table updates Table of fields to update
+	-- @treturn bool Success
+	function ix.class.Update(databaseID, updates)
+		local classData = ix.class.byDatabaseID[databaseID]
+		if not classData then
+			return false
+		end
+
+		local now = os.time()
+
+		-- Update memory
+		for key, value in pairs(updates) do
+			if key == "classLimit" then
+				classData.limit = value
+			else
+				classData[key] = value
+			end
+		end
+		classData.updatedAt = now
+
+		-- Update database
+		local query = mysql:Update("ix_faction_classes")
+
+		if updates.name then
+			query:Update("name", updates.name)
+			-- Also update uniqueID
+			local uniqueID = string.lower(string.gsub(updates.name, "%s+", "_"))
+			query:Update("unique_id", uniqueID)
+			classData.uniqueID = uniqueID
+		end
+		if updates.description then
+			query:Update("description", updates.description)
+		end
+		if updates.rank then
+			query:Update("rank", updates.rank)
+		end
+		if updates.pay then
+			query:Update("pay", updates.pay)
+		end
+		if updates.classLimit then
+			query:Update("class_limit", updates.classLimit)
+		end
+		if updates.permissions then
+			query:Update("permissions", util.TableToJSON(updates.permissions))
+		end
+
+		query:Update("updated_at", now)
+		query:Where("id", databaseID)
+		query:Execute()
+
+		-- Network to clients
+		net.Start("ixClassUpdated")
+			net.WriteUInt(databaseID, 32)
+			net.WriteTable(updates)
+		net.Broadcast()
+
+		return true
+	end
+
+	--- Deletes a class from the database and memory.
+	-- @realm server
+	-- @number databaseID Database row ID of the class
+	-- @treturn bool Success
+	function ix.class.Delete(databaseID)
+		local classData = ix.class.byDatabaseID[databaseID]
+		if not classData then
+			return false
+		end
+
+		-- Cannot delete anchor or default classes
+		if classData.isAnchor or classData.isDefault then
+			return false
+		end
+
+		-- Check for members
+		local members = ix.class.GetPlayers(classData.index)
+		if #members > 0 then
+			return false
+		end
+
+		-- Remove from memory
+		ix.class.list[classData.index] = nil
+		ix.class.byDatabaseID[databaseID] = nil
+
+		-- Remove from database
+		local query = mysql:Delete("ix_faction_classes")
+		query:Where("id", databaseID)
+		query:Execute()
+
+		-- Network to clients
+		net.Start("ixClassDeleted")
+			net.WriteUInt(databaseID, 32)
+		net.Broadcast()
+
+		return true
+	end
+
+	--- Loads all classes from the database.
+	-- @realm server
+	function ix.class.LoadFromDatabase()
+		local query = mysql:Select("ix_faction_classes")
+		query:Callback(function(result)
+			if not result then return end
+
+			for _, row in ipairs(result) do
+				local factionData = ix.faction.teams[row.faction]
+				if factionData then
+					local index = #ix.class.list + 1
+
+					local classData = {
+						id = row.id,
+						index = index,
+						uniqueID = row.unique_id,
+						name = row.name,
+						description = row.description or "",
+						faction = factionData.index,
+						rank = row.rank,
+						pay = row.pay,
+						limit = row.class_limit or 0,
+						permissions = util.JSONToTable(row.permissions or "{}") or {},
+						isAnchor = row.is_anchor == 1,
+						isDefault = row.is_default == 1,
+						createdBy = row.created_by,
+						createdAt = row.created_at,
+						updatedAt = row.updated_at,
+					}
+
+					-- Add CanSwitchTo function
+					classData.CanSwitchTo = function(self, client)
+						return true
+					end
+
+					ix.class.list[index] = classData
+					ix.class.byDatabaseID[row.id] = classData
+				end
+			end
+
+			print("[Helix] Loaded " .. #result .. " classes from database")
+
+			-- Sync to all connected clients
+			ix.class.SyncToClients()
+		end)
+		query:Execute()
+	end
+
+	--- Syncs the class list to all clients.
+	-- @realm server
+	-- @player[opt] client Specific client to sync to, or nil for all
+	function ix.class.SyncToClients(client)
+		-- Prepare class data for networking (strip functions)
+		local syncData = {}
+		for index, classData in pairs(ix.class.list) do
+			syncData[index] = {
+				id = classData.id,
+				index = classData.index,
+				uniqueID = classData.uniqueID,
+				name = classData.name,
+				description = classData.description,
+				faction = classData.faction,
+				rank = classData.rank,
+				pay = classData.pay,
+				limit = classData.limit,
+				permissions = classData.permissions,
+				isAnchor = classData.isAnchor,
+				isDefault = classData.isDefault,
+			}
+		end
+
+		net.Start("ixClassListSync")
+			net.WriteTable(syncData)
+		if client then
+			net.Send(client)
+		else
+			net.Broadcast()
+		end
+	end
+end
+
+-- Client-side network receivers
+if CLIENT then
+	net.Receive("ixClassListSync", function()
+		local syncData = net.ReadTable()
+
+		for index, classData in pairs(syncData) do
+			-- Add CanSwitchTo function
+			classData.CanSwitchTo = function(self, client)
+				return true
+			end
+
+			ix.class.list[index] = classData
+			if classData.id then
+				ix.class.byDatabaseID[classData.id] = classData
+			end
+		end
+	end)
+
+	net.Receive("ixClassCreated", function()
+		local classData = net.ReadTable()
+
+		-- Add CanSwitchTo function
+		classData.CanSwitchTo = function(self, client)
+			return true
+		end
+
+		ix.class.list[classData.index] = classData
+		if classData.id then
+			ix.class.byDatabaseID[classData.id] = classData
+		end
+	end)
+
+	net.Receive("ixClassUpdated", function()
+		local databaseID = net.ReadUInt(32)
+		local updates = net.ReadTable()
+
+		local classData = ix.class.byDatabaseID[databaseID]
+		if classData then
+			for key, value in pairs(updates) do
+				if key == "classLimit" then
+					classData.limit = value
+				else
+					classData[key] = value
+				end
+			end
+		end
+	end)
+
+	net.Receive("ixClassDeleted", function()
+		local databaseID = net.ReadUInt(32)
+
+		local classData = ix.class.byDatabaseID[databaseID]
+		if classData then
+			ix.class.list[classData.index] = nil
+			ix.class.byDatabaseID[databaseID] = nil
+		end
+	end)
 end

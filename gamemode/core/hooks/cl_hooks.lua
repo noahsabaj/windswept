@@ -692,7 +692,8 @@ function GM:GetInjuredText(client)
 end
 
 function GM:PopulateImportantCharacterInfo(client, character, container)
-	local color = team.GetColor(client:Team())
+	-- All players use same gray color (no faction color metagaming)
+	local color = Color(200, 200, 200)
 	container:SetArrowColor(color)
 
 	-- name

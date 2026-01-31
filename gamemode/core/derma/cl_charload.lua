@@ -413,9 +413,8 @@ function PANEL:Populate(ignoreID)
 			continue
 		end
 
-		local index = character:GetFaction()
-		local faction = ix.faction.indices[index]
-		local color = faction and faction.color or color_white
+		-- All players use same gray color (no faction color metagaming)
+		local color = Color(200, 200, 200)
 
 		local button = self.characterList:Add("ixMenuSelectionButton")
 		button:SetBackgroundColor(color)

@@ -102,6 +102,96 @@ function ix.faction.GetIndex(uniqueID)
 	end
 end
 
+--- Retrieves all factions that are subordinate to the given faction.
+-- @realm shared
+-- @param identifier Faction index or uniqueID
+-- @treturn table Array of subordinate faction data tables
+function ix.faction.GetSubordinates(identifier)
+	local parentFaction = ix.faction.Get(identifier)
+	if not parentFaction then return {} end
+
+	local subordinates = {}
+	local parentUniqueID = parentFaction.uniqueID
+
+	for _, factionData in pairs(ix.faction.teams) do
+		if factionData.subordinateOf == parentUniqueID then
+			table.insert(subordinates, factionData)
+		end
+	end
+
+	return subordinates
+end
+
+--- Retrieves the parent faction of the given faction.
+-- @realm shared
+-- @param identifier Faction index or uniqueID
+-- @treturn table|nil Parent faction data table, or nil if none
+function ix.faction.GetParent(identifier)
+	local faction = ix.faction.Get(identifier)
+	if not faction or not faction.subordinateOf then
+		return nil
+	end
+
+	return ix.faction.teams[faction.subordinateOf]
+end
+
+--- Checks if a faction can appoint the leader of another faction.
+-- This follows the subordinate hierarchy: a faction's leader can appoint
+-- the anchor (rank 255) of their subordinate factions.
+-- @realm shared
+-- @param appointerFaction Faction index or uniqueID of the appointer
+-- @param targetFaction Faction index or uniqueID of the faction to appoint to
+-- @treturn bool Whether the appointer can appoint the target faction's leader
+function ix.faction.CanAppoint(appointerFaction, targetFaction)
+	local appointer = ix.faction.Get(appointerFaction)
+	local target = ix.faction.Get(targetFaction)
+
+	if not appointer or not target then
+		return false
+	end
+
+	-- Check if target is subordinate of appointer
+	if target.subordinateOf == appointer.uniqueID then
+		return true
+	end
+
+	return false
+end
+
+--- Gets the anchor class (rank 255) for a faction.
+-- @realm shared
+-- @param identifier Faction index or uniqueID
+-- @treturn table|nil Anchor class data table, or nil if none found
+function ix.faction.GetAnchorClass(identifier)
+	local faction = ix.faction.Get(identifier)
+	if not faction then return nil end
+
+	for _, classData in pairs(ix.class.list) do
+		if classData.faction == faction.index and classData.rank == 255 then
+			return classData
+		end
+	end
+
+	return nil
+end
+
+--- Gets the default class (rank 0) for a faction.
+-- @realm shared
+-- @param identifier Faction index or uniqueID
+-- @treturn table|nil Default class data table, or nil if none found
+function ix.faction.GetDefaultClass(identifier)
+	local faction = ix.faction.Get(identifier)
+	if not faction then return nil end
+
+	for _, classData in pairs(ix.class.list) do
+		if classData.faction == faction.index and classData.isDefault then
+			return classData
+		end
+	end
+
+	return nil
+end
+
 if (CLIENT) then
 	--- Returns true if a faction requires a whitelist.
 	-- @realm client

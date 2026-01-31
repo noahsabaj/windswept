@@ -545,7 +545,23 @@ do
 	-- @treturn number Index of the class this character is in
 	-- @function GetClass
 	ix.char.RegisterVar("class", {
+		field = "class_id",
+		fieldType = ix.type.number,
 		bNoDisplay = true,
+		OnSet = function(character, value)
+			-- Update in-memory
+			character.vars.class = value
+
+			-- Network to clients
+			local client = character:GetPlayer()
+			if IsValid(client) and SERVER then
+				net.Start("ixCharacterVarChanged")
+					net.WriteUInt(character:GetID(), 32)
+					net.WriteString("class")
+					net.WriteType(value)
+				net.Broadcast()
+			end
+		end,
 	})
 
 	--- Sets this character's faction. Note that this doesn't do the initial setup for the player after the faction has been

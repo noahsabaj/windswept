@@ -160,8 +160,8 @@ function PANEL:SetCharacterOverview(bValue, length)
 			self.projectedTexture = ProjectedTexture()
 		end
 
-		local faction = ix.faction.indices[LocalPlayer():Team()]
-		local color = faction and faction.color or color_white
+		-- All players use same gray color (no faction color metagaming)
+		local color = Color(200, 200, 200)
 
 		self.projectedTexture:SetEnableShadows(false)
 		self.projectedTexture:SetNearZ(12)
