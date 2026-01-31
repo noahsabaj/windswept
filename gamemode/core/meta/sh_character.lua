@@ -148,7 +148,7 @@ if (SERVER) then
 			local model = self:GetModel()
 
 			client:SetNetVar("char", self:GetID())
-			client:SetTeam(self:GetFaction())
+			client:SetTeam(self:GetFaction() or TEAM_UNASSIGNED)
 			client:SetModel(istable(model) and model[1] or model)
 
 			-- Apply saved body groups.
