@@ -66,10 +66,12 @@ end
 
 function ENT:CanAccess(client)
 	local bAccess = false
-	local uniqueID = ix.faction.indices[client:Team()].uniqueID
+	local faction = ix.faction.indices[client:Team()]
+	local uniqueID = faction and faction.uniqueID
 
 	if (self.factions and !table.IsEmpty(self.factions)) then
-		if (self.factions[uniqueID]) then
+		-- Factionless players can't access faction-restricted vendors
+		if (uniqueID and self.factions[uniqueID]) then
 			bAccess = true
 		else
 			return false

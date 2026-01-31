@@ -108,6 +108,8 @@ ix.config.Add("factionlessModels", {
 	"models/humans/group01/female_06.mdl",
 	"models/humans/group01/female_07.mdl"
 }, "The models available to factionless characters during character creation.", nil, {
+	category = "characters",
+	type = ix.type.array,
 	hidden = function() return true end
 })
 ix.config.Add("saveInterval", 300, "How often characters save in seconds.", nil, {

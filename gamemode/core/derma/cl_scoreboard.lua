@@ -391,6 +391,11 @@ end
 vgui.Register("ixScoreboard", PANEL, "DScrollPanel")
 
 hook.Add("CreateMenuButtons", "ixScoreboard", function(tabs)
+	-- Only admins can see the scoreboard - prevents metagaming about who's online
+	if (!LocalPlayer():IsAdmin()) then
+		return
+	end
+
 	tabs["scoreboard"] = function(container)
 		container:Add("ixScoreboard")
 	end

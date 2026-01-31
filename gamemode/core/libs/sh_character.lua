@@ -563,16 +563,8 @@ do
 		fieldType = ix.type.string,
 		default = nil,
 		bNoDisplay = true,
-		FilterValues = function(self)
-			-- make sequential table of faction unique IDs
-			local values = {}
-
-			for k, v in ipairs(ix.faction.indices) do
-				values[k] = v.uniqueID
-			end
-
-			return values
-		end,
+		-- NOTE: FilterValues removed to allow factionless (NULL) characters to load
+		-- Characters with invalid faction IDs will be treated as factionless via OnGet
 		OnSet = function(self, value)
 			local client = self:GetPlayer()
 
