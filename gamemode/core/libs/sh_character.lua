@@ -531,7 +531,7 @@ do
 			if (faction) then
 				models = faction:GetModels(LocalPlayer())
 			else
-				models = ix.config.Get("factionlessModels")
+				models = ix.config.Get("factionlessModels") or {}
 			end
 
 			return models and #models > 1 or false
