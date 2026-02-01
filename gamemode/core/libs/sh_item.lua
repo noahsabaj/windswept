@@ -406,6 +406,43 @@ do
 			end
 		end)
 
+		-- Batched item data updates (multiple key-value pairs in one message)
+		-- This is the optimized path - multiple SetData calls get batched into one net message
+		net.Receive("ixInventoryDataBatch", function()
+			local id = net.ReadUInt(32)
+			local changes = net.ReadTable()
+			local item = ix.item.instances[id]
+
+			if (item and changes) then
+				item.data = item.data or {}
+
+				-- Apply all changes from the batch
+				for key, value in pairs(changes) do
+					item.data[key] = value
+				end
+
+				-- Update tooltip once for all changes
+				local character = LocalPlayer():GetCharacter()
+				if (character) then
+					local charInv = character:GetInventory()
+					if (charInv) then
+						local invID = item.invID == charInv:GetID() and 1 or item.invID
+						local panel = ix.gui["inv" .. invID]
+
+						if (panel and panel.panels) then
+							local icon = panel.panels[id]
+
+							if (icon) then
+								icon:SetHelixTooltip(function(tooltip)
+									ix.hud.PopulateItemTooltip(tooltip, item)
+								end)
+							end
+						end
+					end
+				end
+			end
+		end)
+
 		net.Receive("ixInventorySet", function()
 			local invID = net.ReadUInt(32)
 			local x, y = net.ReadUInt(6), net.ReadUInt(6)
@@ -544,6 +581,7 @@ do
 		util.AddNetworkString("ixInventoryMove")
 		util.AddNetworkString("ixInventoryRemove")
 		util.AddNetworkString("ixInventoryData")
+		util.AddNetworkString("ixInventoryDataBatch") -- Batched SetData updates for performance
 		util.AddNetworkString("ixInventoryAction")
 
 		function ix.item.LoadItemByID(itemIndex, recipientFilter)

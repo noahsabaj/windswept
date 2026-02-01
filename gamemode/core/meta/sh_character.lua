@@ -70,24 +70,42 @@ if (SERVER) then
 		if (shouldSave != false) then
 			-- Run a query to save the character to the database.
 			local query = mysql:Update("ix_characters")
-				-- update all character vars
+				-- Update all character vars
+				-- Optimization: Cache previous values and only update changed fields
+				local prevValues = self._savedVars or {}
+				local hasChanges = false
+
 				for k, v in pairs(ix.char.vars) do
 					if (v.field and self.vars[k] != nil and !v.bSaveLoadInitialOnly) then
 						local value = self.vars[k]
+						local serialized = istable(value) and util.TableToJSON(value) or tostring(value)
 
-						query:Update(v.field, istable(value) and util.TableToJSON(value) or tostring(value))
+						-- Only update if value changed since last save
+						if (prevValues[k] != serialized) then
+							query:Update(v.field, serialized)
+							prevValues[k] = serialized
+							hasChanges = true
+						end
 					end
 				end
 
-				query:Where("id", self:GetID())
-				query:Callback(function()
-					if (callback) then
-						callback()
-					end
+				-- Store for next comparison
+				self._savedVars = prevValues
 
-					hook.Run("CharacterPostSave", self)
-				end)
-			query:Execute()
+				-- Only execute if there are actual changes
+				if (hasChanges) then
+					query:Where("id", self:GetID())
+					query:Callback(function()
+						if (callback) then
+							callback()
+						end
+
+						hook.Run("CharacterPostSave", self)
+					end)
+					query:Execute()
+				elseif (callback) then
+					callback()
+				end
 		end
 	end
 
@@ -230,6 +248,19 @@ if (SERVER) then
 	end
 end
 
+-- Global SteamID64 -> Player lookup cache for O(1) GetPlayer() lookups
+-- Populated by player connect/disconnect hooks
+ix.char.playerBySteamID = ix.char.playerBySteamID or {}
+
+-- Hook to update lookup table (runs in Helix core after this file loads)
+hook.Add("PlayerAuthed", "ixCharPlayerLookup", function(client, steamID, uniqueID)
+	ix.char.playerBySteamID[client:SteamID64()] = client
+end)
+
+hook.Add("PlayerDisconnected", "ixCharPlayerLookup", function(client)
+	ix.char.playerBySteamID[client:SteamID64()] = nil
+end)
+
 --- Returns the player that owns this character.
 -- @realm shared
 -- @treturn player Player that owns this character
@@ -246,16 +277,12 @@ function CHAR:GetPlayer()
 	-- Return the player from cache.
 	elseif (IsValid(self.player)) then
 		return self.player
-	-- Search for which player owns this character.
+	-- Search for which player owns this character using O(1) lookup.
 	elseif (self.steamID) then
-		local steamID = self.steamID
-
-		for _, v in player.Iterator() do
-			if (v:SteamID64() == steamID) then
-				self.player = v
-
-				return v
-			end
+		local client = ix.char.playerBySteamID[self.steamID]
+		if (IsValid(client)) then
+			self.player = client
+			return client
 		end
 	end
 end

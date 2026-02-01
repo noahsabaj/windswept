@@ -288,6 +288,12 @@ function META:FindEmptySlot(w, h, onlyMain)
 		return
 	end
 
+	-- Collect bags during main inventory scan (avoid separate GetBags() call)
+	local bags
+	if (onlyMain != true) then
+		bags = {}
+	end
+
 	for y = 1, self.h - (h - 1) do
 		for x = 1, self.w - (w - 1) do
 			if (self:CanItemFit(x, y, w, h)) then
@@ -296,19 +302,32 @@ function META:FindEmptySlot(w, h, onlyMain)
 		end
 	end
 
-	if (onlyMain != true) then
-		local bags = self:GetBags()
+	-- Collect bags if we need to search them (only do slot scan if main inventory was full)
+	if (bags) then
+		local seen = {}
+		local selfID = self:GetID()
 
-		if (#bags > 0) then
-			for _, invID in ipairs(bags) do
-				local bagInv = ix.item.inventories[invID]
+		for _, v in pairs(self.slots) do
+			for _, v2 in pairs(v) do
+				if (istable(v2) and v2.data) then
+					local isBag = (((v2.base == "base_bags") or v2.isBag) and v2.data.id)
 
-				if (bagInv) then
-					local x, y = bagInv:FindEmptySlot(w, h)
-
-					if (x and y) then
-						return x, y, bagInv
+					if (isBag and isBag != selfID and !seen[isBag]) then
+						seen[isBag] = true
+						bags[#bags + 1] = isBag
 					end
+				end
+			end
+		end
+
+		for _, invID in ipairs(bags) do
+			local bagInv = ix.item.inventories[invID]
+
+			if (bagInv) then
+				local bx, by = bagInv:FindEmptySlot(w, h)
+
+				if (bx and by) then
+					return bx, by, bagInv
 				end
 			end
 		end
@@ -415,13 +434,20 @@ end
 -- @realm shared
 -- @treturn table result The players who are on the server and allowed to see this table.
 function META:GetReceivers()
-	local result = {}
-
+	-- Prune invalid receivers in-place to reduce allocations over time
 	if (self.receivers) then
 		for k, _ in pairs(self.receivers) do
-			if (IsValid(k) and k:IsPlayer()) then
-				result[#result + 1] = k
+			if (!IsValid(k) or !k:IsPlayer()) then
+				self.receivers[k] = nil
 			end
+		end
+	end
+
+	-- Build result array (still needed for net.Send compatibility)
+	local result = {}
+	if (self.receivers) then
+		for k, _ in pairs(self.receivers) do
+			result[#result + 1] = k
 		end
 	end
 
@@ -587,15 +613,16 @@ end
 -- @treturn table The items this `Inventory` has.
 function META:GetBags()
 	local invs = {}
+	local seen = {}  -- Use hash lookup instead of table.HasValue
+
 	for _, v in pairs(self.slots) do
 		for _, v2 in pairs(v) do
 			if (istable(v2) and v2.data) then
 				local isBag = (((v2.base == "base_bags") or v2.isBag) and v2.data.id)
 
-				if (!table.HasValue(invs, isBag)) then
-					if (isBag and isBag != self:GetID()) then
-						invs[#invs + 1] = isBag
-					end
+				if (isBag and isBag != self:GetID() and !seen[isBag]) then
+					seen[isBag] = true
+					invs[#invs + 1] = isBag
 				end
 			end
 		end

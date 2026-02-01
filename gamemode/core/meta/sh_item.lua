@@ -314,6 +314,170 @@ function ITEM:GetOwner()
 	end
 end
 
+-- ============================================================================
+-- BATCHED SETDATA SYSTEM
+-- Optimizes network and database operations by batching multiple SetData calls
+-- ============================================================================
+
+if (SERVER) then
+	-- Pending network syncs: itemID -> {changes = {key = value}, receivers = player/table, item = ITEM}
+	ix.item.pendingNetSync = ix.item.pendingNetSync or {}
+	-- Pending database saves: itemID -> ITEM
+	ix.item.pendingDBSave = ix.item.pendingDBSave or {}
+	-- Whether flush timers are scheduled
+	ix.item.netSyncScheduled = false
+	ix.item.dbSaveScheduled = false
+
+	-- Flush all pending network syncs (called after current frame)
+	function ix.item.FlushNetSync()
+		local pending = ix.item.pendingNetSync
+		ix.item.pendingNetSync = {}
+		ix.item.netSyncScheduled = false
+
+		for itemID, data in pairs(pending) do
+			local item = data.item
+			local changes = data.changes
+			local receivers = data.receivers
+
+			-- Validate receivers still exist
+			if (istable(receivers)) then
+				local validReceivers = {}
+				for _, v in ipairs(receivers) do
+					if (IsValid(v) and v:IsPlayer()) then
+						validReceivers[#validReceivers + 1] = v
+					end
+				end
+				receivers = #validReceivers > 0 and validReceivers or nil
+			elseif (receivers and (!IsValid(receivers) or !receivers:IsPlayer())) then
+				receivers = nil
+			end
+
+			if (receivers and table.Count(changes) > 0) then
+				net.Start("ixInventoryDataBatch")
+					net.WriteUInt(itemID, 32)
+					net.WriteTable(changes)
+				net.Send(receivers)
+			end
+		end
+	end
+
+	-- Flush all pending database saves (called after short delay)
+	function ix.item.FlushDBSave()
+		local pending = ix.item.pendingDBSave
+		ix.item.pendingDBSave = {}
+		ix.item.dbSaveScheduled = false
+
+		for itemID, item in pairs(pending) do
+			if (item and item.data and ix.db) then
+				local query = mysql:Update("ix_items")
+					query:Update("data", util.TableToJSON(item.data))
+					query:Where("item_id", itemID)
+				query:Execute()
+			end
+		end
+	end
+
+	-- Queue a network sync for an item (batches within same frame)
+	function ix.item.QueueNetSync(item, key, value, receivers)
+		local itemID = item:GetID()
+		local pending = ix.item.pendingNetSync[itemID]
+
+		if (!pending) then
+			pending = {changes = {}, item = item, receivers = receivers}
+			ix.item.pendingNetSync[itemID] = pending
+		end
+
+		pending.changes[key] = value
+
+		-- Update receivers if provided (use most recent)
+		if (receivers) then
+			pending.receivers = receivers
+		end
+
+		-- Schedule flush for end of frame (only once)
+		if (!ix.item.netSyncScheduled) then
+			ix.item.netSyncScheduled = true
+			timer.Simple(0, ix.item.FlushNetSync)
+		end
+	end
+
+	-- Queue a database save for an item (batches within 0.1s window)
+	function ix.item.QueueDBSave(item)
+		local itemID = item:GetID()
+		ix.item.pendingDBSave[itemID] = item
+
+		-- Schedule flush with short delay (only once)
+		if (!ix.item.dbSaveScheduled) then
+			ix.item.dbSaveScheduled = true
+			timer.Create("ixItemDBFlush", 0.1, 1, ix.item.FlushDBSave)
+		end
+	end
+
+	-- Force flush all pending syncs immediately (for critical moments)
+	-- Call this before item transfers, character saves, or disconnects
+	function ix.item.ForceFlushAll()
+		-- Cancel scheduled timers
+		timer.Remove("ixItemDBFlush")
+
+		-- Flush immediately
+		ix.item.FlushNetSync()
+		ix.item.FlushDBSave()
+	end
+
+	-- Force flush a specific item immediately
+	function ix.item.ForceFlushItem(itemID)
+		-- Flush pending network sync for this item
+		local netPending = ix.item.pendingNetSync[itemID]
+		if (netPending) then
+			local changes = netPending.changes
+			local receivers = netPending.receivers
+
+			-- Validate receivers
+			if (istable(receivers)) then
+				local validReceivers = {}
+				for _, v in ipairs(receivers) do
+					if (IsValid(v) and v:IsPlayer()) then
+						validReceivers[#validReceivers + 1] = v
+					end
+				end
+				receivers = #validReceivers > 0 and validReceivers or nil
+			elseif (receivers and (!IsValid(receivers) or !receivers:IsPlayer())) then
+				receivers = nil
+			end
+
+			if (receivers and table.Count(changes) > 0) then
+				net.Start("ixInventoryDataBatch")
+					net.WriteUInt(itemID, 32)
+					net.WriteTable(changes)
+				net.Send(receivers)
+			end
+
+			ix.item.pendingNetSync[itemID] = nil
+		end
+
+		-- Flush pending database save for this item
+		local dbPending = ix.item.pendingDBSave[itemID]
+		if (dbPending and dbPending.data and ix.db) then
+			local query = mysql:Update("ix_items")
+				query:Update("data", util.TableToJSON(dbPending.data))
+				query:Where("item_id", itemID)
+			query:Execute()
+
+			ix.item.pendingDBSave[itemID] = nil
+		end
+	end
+
+	-- Ensure all pending data is saved when character saves
+	hook.Add("CharacterPreSave", "ixItemFlushOnSave", function(character)
+		ix.item.ForceFlushAll()
+	end)
+
+	-- Ensure all pending data is saved when player disconnects
+	hook.Add("PlayerDisconnected", "ixItemFlushOnDisconnect", function(client)
+		ix.item.ForceFlushAll()
+	end)
+end
+
 --- Sets a key within the item's data.
 -- @realm shared
 -- @string key The key to store the value within
@@ -326,7 +490,9 @@ function ITEM:SetData(key, value, receivers, noSave, noCheckEntity)
 	self.data[key] = value
 
 	if (SERVER) then
-		if (!noCheckEntity) then
+		-- Only sync to entity netvar if item is currently spawned in world
+		-- Skip if item is in an inventory (net message handles that case)
+		if (!noCheckEntity and self.invID == 0) then
 			local ent = self:GetEntity()
 
 			if (IsValid(ent)) then
@@ -336,23 +502,27 @@ function ITEM:SetData(key, value, receivers, noSave, noCheckEntity)
 				ent:SetNetVar("data", data)
 			end
 		end
-	end
 
-	local inventory = ix.item.inventories[self.invID]
+		-- Queue network sync for items in inventories (invID > 0)
+		-- World items use entity netvar above, so skip net message to avoid duplicate sync
+		if (self.invID > 0) then
+			local inventory = ix.item.inventories[self.invID]
+			local targetReceivers = receivers
 
-	if (receivers != false and (receivers or inventory and inventory.GetReceivers and inventory:GetReceivers() or self:GetOwner())) then
-		net.Start("ixInventoryData")
-			net.WriteUInt(self:GetID(), 32)
-			net.WriteString(key)
-			net.WriteType(value)
-		net.Send(receivers or inventory and inventory.GetReceivers and inventory:GetReceivers() or self:GetOwner())
-	end
+			if (receivers != false) then
+				targetReceivers = receivers or (inventory and inventory.GetReceivers and inventory:GetReceivers()) or self:GetOwner()
 
-	if (!noSave and ix.db) then
-		local query = mysql:Update("ix_items")
-			query:Update("data", util.TableToJSON(self.data))
-			query:Where("item_id", self:GetID())
-		query:Execute()
+				if (targetReceivers) then
+					-- Queue instead of immediate send - batches multiple SetData calls
+					ix.item.QueueNetSync(self, key, value, targetReceivers)
+				end
+			end
+		end
+
+		-- Queue database save instead of immediate query
+		if (!noSave and ix.db) then
+			ix.item.QueueDBSave(self)
+		end
 	end
 end
 
@@ -573,6 +743,10 @@ if (SERVER) then
 		if (self.invID == invID) then
 			return false, "same inv"
 		end
+
+		-- Force flush any pending data changes before transferring
+		-- This ensures the item's current state is saved before it changes hands
+		ix.item.ForceFlushItem(self:GetID())
 
 		local inventory = ix.item.inventories[invID]
 		local curInv = ix.item.inventories[self.invID or 0]

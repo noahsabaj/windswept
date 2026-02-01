@@ -426,7 +426,8 @@ if (SERVER) then
 		if (!sequence) then
 			net.Start("ixSequenceReset")
 				net.WriteEntity(self)
-			net.Broadcast()
+			-- Send to PVS instead of all clients (animation only matters to nearby players)
+			net.SendPVS(self:GetPos())
 
 			return
 		end
@@ -457,7 +458,8 @@ if (SERVER) then
 
 			net.Start("ixSequenceSet")
 				net.WriteEntity(self)
-			net.Broadcast()
+			-- Send to PVS instead of all clients (animation only matters to nearby players)
+			net.SendPVS(self:GetPos())
 
 			return time
 		elseif (callback) then
@@ -474,7 +476,8 @@ if (SERVER) then
 
 		net.Start("ixSequenceReset")
 			net.WriteEntity(self)
-		net.Broadcast()
+		-- Send to PVS instead of all clients (animation only matters to nearby players)
+		net.SendPVS(self:GetPos())
 
 		self:SetNetVar("canShoot", self.ixCouldShoot)
 		self:SetNetVar("forcedSequence", nil)
