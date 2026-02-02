@@ -17,33 +17,36 @@ ix.date.lib = ix.date.lib or include("thirdparty/sh_date.lua")
 ix.date.timeScale = ix.date.timeScale or ix.config.Get("secondsPerMinute", 60) -- seconds per minute
 ix.date.current = ix.date.current or ix.date.lib() -- current in-game date/time
 ix.date.start = ix.date.start or CurTime() -- arbitrary start time for calculating date/time offset
+ix.date.yearOffset = 174 -- offset from real year (2026 + 174 = 2200)
 
 if (SERVER) then
 	util.AddNetworkString("ixDateSync")
 
-	--- Loads the date from disk.
+	--- Initializes the date from real-world time with year offset.
 	-- @realm server
 	-- @internal
 	function ix.date.Initialize()
-		local currentDate = ix.data.Get("date", nil, false, true)
-
-		-- construct new starting date if we don't have it saved already
-		if (!currentDate) then
-			currentDate = {
-				year = ix.config.Get("year"),
-				month = ix.config.Get("month"),
-				day = ix.config.Get("day"),
-				hour = tonumber(os.date("%H")) or 0,
-				min = tonumber(os.date("%M")) or 0,
-				sec = tonumber(os.date("%S")) or 0
-			}
-
-			currentDate = ix.date.lib.serialize(ix.date.lib(currentDate))
-			ix.data.Set("date", currentDate, false, true)
-		end
+		-- Always sync with real-world date, applying year offset
+		-- Real year 2026 + offset 174 = in-game year 2200
+		local realYear = tonumber(os.date("%Y")) or 2026
+		local currentDate = {
+			year = realYear + ix.date.yearOffset,
+			month = tonumber(os.date("%m")) or 1,
+			day = tonumber(os.date("%d")) or 1,
+			hour = tonumber(os.date("%H")) or 0,
+			min = tonumber(os.date("%M")) or 0,
+			sec = tonumber(os.date("%S")) or 0
+		}
 
 		ix.date.timeScale = ix.config.Get("secondsPerMinute", 60)
-		ix.date.current = ix.date.lib.construct(currentDate)
+		ix.date.current = ix.date.lib(currentDate)
+
+		-- Update config to reflect actual date (for display purposes)
+		ix.date.bSaving = true
+		ix.config.Set("year", currentDate.year)
+		ix.config.Set("month", currentDate.month)
+		ix.config.Set("day", currentDate.day)
+		ix.date.bSaving = nil
 	end
 
 	--- Updates the internal in-game date/time representation and resets the offset.
@@ -83,16 +86,14 @@ if (SERVER) then
 		end
 	end
 
-	--- Saves the current in-game date to disk.
+	--- Updates config to reflect current date (no disk persistence needed since we sync from real time).
 	-- @realm server
 	-- @internal
 	function ix.date.Save()
 		ix.date.bSaving = true
+		ix.date.ResolveOffset()
 
-		ix.date.ResolveOffset() -- resolve offset so we save the actual time to disk
-		ix.data.Set("date", ix.date.lib.serialize(ix.date.current), false, true)
-
-		-- update config to reflect current saved date
+		-- Update config to reflect current date for display purposes
 		ix.config.Set("year", ix.date.current:getyear())
 		ix.config.Set("month", ix.date.current:getmonth())
 		ix.config.Set("day", ix.date.current:getday())

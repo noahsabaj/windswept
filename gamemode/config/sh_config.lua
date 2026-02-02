@@ -203,7 +203,7 @@ ix.config.Add("itemPickupTime", 1, "How long it takes to pick up and put an item
 	data = {min = 0, max = 5, decimals = 1},
 	category = "interaction"
 })
-ix.config.Add("year", 2015, "The current in-game year.", function(oldValue, newValue)
+ix.config.Add("year", 2200, "The current in-game year. Auto-syncs from real year + offset on server start.", function(oldValue, newValue)
 	if (SERVER and !ix.date.bSaving) then
 		ix.date.ResolveOffset()
 		ix.date.current:setyear(newValue)
@@ -213,7 +213,7 @@ end, {
 	data = {min = 1, max = 9999},
 	category = "date"
 })
-ix.config.Add("month", 1, "The current in-game month.", function(oldValue, newValue)
+ix.config.Add("month", 1, "The current in-game month. Auto-syncs from real month on server start.", function(oldValue, newValue)
 	if (SERVER and !ix.date.bSaving) then
 		ix.date.ResolveOffset()
 		ix.date.current:setmonth(newValue)
@@ -223,7 +223,7 @@ end, {
 	data = {min = 1, max = 12},
 	category = "date"
 })
-ix.config.Add("day", 1, "The current in-game day.", function(oldValue, newValue)
+ix.config.Add("day", 1, "The current in-game day. Auto-syncs from real day on server start.", function(oldValue, newValue)
 	if (SERVER and !ix.date.bSaving) then
 		ix.date.ResolveOffset()
 		ix.date.current:setday(newValue)
