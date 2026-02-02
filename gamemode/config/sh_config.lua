@@ -11,7 +11,7 @@ ix.config.language = "english"
 	Use the menu to change the variables, not this file.
 --]]
 
-ix.config.Add("maxCharacters", 5, "The maximum number of characters a player can have.", nil, {
+ix.config.Add("maxCharacters", 1, "The maximum number of characters a player can have.", nil, {
 	data = {min = 1, max = 50},
 	category = "characters"
 })
@@ -75,19 +75,19 @@ ix.config.Add("inventoryWidth", 6, "How many slots in a row there is in a defaul
 	data = {min = 0, max = 20},
 	category = "characters"
 })
-ix.config.Add("inventoryHeight", 4, "How many slots in a column there is in a default inventory.", nil, {
+ix.config.Add("inventoryHeight", 6, "How many slots in a column there is in a default inventory.", nil, {
 	data = {min = 0, max = 20},
 	category = "characters"
 })
-ix.config.Add("minNameLength", 4, "The minimum number of characters in a name.", nil, {
-	data = {min = 4, max = 64},
+ix.config.Add("minNameLength", 1, "The minimum number of characters in a name.", nil, {
+	data = {min = 1, max = 64},
 	category = "characters"
 })
 ix.config.Add("maxNameLength", 32, "The maximum number of characters in a name.", nil, {
 	data = {min = 16, max = 128},
 	category = "characters"
 })
-ix.config.Add("minDescriptionLength", 16, "The minimum number of characters in a description.", nil, {
+ix.config.Add("minDescriptionLength", 0, "The minimum number of characters in a description.", nil, {
 	data = {min = 0, max = 300},
 	category = "characters"
 })
@@ -136,7 +136,7 @@ ix.config.Add("walkRatio", 0.5, "How fast one goes when holding ALT.", nil, {
 	data = {min = 0, max = 1, decimals = 1},
 	category = "characters"
 })
-ix.config.Add("intro", true, "Whether or not the Helix intro is enabled for new players.", nil, {
+ix.config.Add("intro", false, "Whether or not the Helix intro is enabled for new players.", nil, {
 	category = "appearance"
 })
 ix.config.Add("music", "music/hl2_song2.mp3", "The default music played in the character menu.", nil, {
@@ -199,7 +199,7 @@ ix.config.Add("throwForce", 732, "How hard a player can throw the item that they
 ix.config.Add("allowPush", true, "Whether or not pushing with hands is allowed.", nil, {
 	category = "interaction"
 })
-ix.config.Add("itemPickupTime", 0.5, "How long it takes to pick up and put an item in your inventory.", nil, {
+ix.config.Add("itemPickupTime", 1, "How long it takes to pick up and put an item in your inventory.", nil, {
 	data = {min = 0, max = 5, decimals = 1},
 	category = "interaction"
 })
