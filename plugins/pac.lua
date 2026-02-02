@@ -122,7 +122,7 @@ if (SERVER) then
 			local inv = curChar:GetInventory()
 
 			for k, _ in inv:Iter() do
-				if (k:GetData("equip") == true and k.pacData) then
+				if (k:GetData("equipped") == true and k.pacData) then
 					client:AddPart(k.uniqueID, k)
 				end
 			end
@@ -133,7 +133,7 @@ if (SERVER) then
 		local oldItem = IsValid(oldWeapon) and oldWeapon.ixItem
 		local newItem = IsValid(newWeapon) and newWeapon.ixItem
 
-		if (oldItem and oldItem.isWeapon and oldItem:GetData("equip") and oldItem.pacData) then
+		if (oldItem and oldItem.isWeapon and oldItem:GetData("equipped") and oldItem.pacData) then
 			oldItem:WearPAC(client)
 		end
 
@@ -157,7 +157,7 @@ if (SERVER) then
 			local inventory = character:GetInventory()
 
 			for k, _ in inventory:Iter() do
-				if (k:GetData("equip") == true and k.pacData) then
+				if (k:GetData("equipped") == true and k.pacData) then
 					client:AddPart(k.uniqueID, k)
 				end
 			end

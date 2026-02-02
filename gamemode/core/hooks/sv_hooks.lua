@@ -575,7 +575,7 @@ function GM:PostPlayerLoadout(client)
 		for k, _ in character:GetInventory():Iter() do
 			k:Call("OnLoadout", client)
 
-			if (k:GetData("equip") and k.attribBoosts) then
+			if (k:GetData("equipped") and k.attribBoosts) then
 				for attribKey, attribValue in pairs(k.attribBoosts) do
 					character:AddBoost(k.uniqueID, attribKey, attribValue)
 				end

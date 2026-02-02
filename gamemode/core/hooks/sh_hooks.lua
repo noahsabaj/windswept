@@ -588,7 +588,7 @@ function GM:CanTransferItem(itemObject, curInv, inventory)
 	-- don't allow transferring items that are in use
 	if (inventory) then
 		for k, _ in inventory:Iter() do
-			if (k:GetData("equip") == true) then
+			if (k:GetData("equipped") == true) then
 				local owner = itemObject:GetOwner()
 
 				if (owner and IsValid(owner)) then

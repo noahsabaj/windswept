@@ -14,14 +14,14 @@ ITEM.useSound = "items/ammo_pickup.wav"
 -- Inventory drawing
 if (CLIENT) then
 	function ITEM:PaintOver(item, w, h)
-		if (item:GetData("equip")) then
+		if (item:GetData("equipped")) then
 			surface.SetDrawColor(110, 255, 110, 100)
 			surface.DrawRect(w - 14, h - 14, 8, 8)
 		end
 	end
 
 	function ITEM:PopulateTooltip(tooltip)
-		if (self:GetData("equip")) then
+		if (self:GetData("equipped")) then
 			local name = tooltip:GetRow("name")
 			name:SetBackgroundColor(derma.GetColor("Success", tooltip))
 		end
@@ -50,8 +50,8 @@ ITEM:Hook("drop", function(item)
 		return
 	end
 
-	if (item:GetData("equip")) then
-		item:SetData("equip", nil)
+	if (item:GetData("equipped")) then
+		item:SetData("equipped", nil)
 
 		owner.carryWeapons = owner.carryWeapons or {}
 
@@ -85,7 +85,7 @@ ITEM.functions.EquipUn = { -- sorry, for name order.
 	OnCanRun = function(item)
 		local client = item.player
 
-		return !IsValid(item.entity) and IsValid(client) and item:GetData("equip") == true and
+		return !IsValid(item.entity) and IsValid(client) and item:GetData("equipped") == true and
 			hook.Run("CanPlayerUnequipItem", client, item) != false
 	end
 }
@@ -102,7 +102,7 @@ ITEM.functions.Equip = {
 	OnCanRun = function(item)
 		local client = item.player
 
-		return !IsValid(item.entity) and IsValid(client) and item:GetData("equip") != true and
+		return !IsValid(item.entity) and IsValid(client) and item:GetData("equipped") != true and
 			hook.Run("CanPlayerEquipItem", client, item) != false
 	end
 }
@@ -131,7 +131,7 @@ function ITEM:Equip(client, bNoSelect, bNoSound)
 
 				return false
 			else
-				if (itemTable.isWeapon and client.carryWeapons[self.weaponCategory] and itemTable:GetData("equip")) then
+				if (itemTable.isWeapon and client.carryWeapons[self.weaponCategory] and itemTable:GetData("equipped")) then
 					client:NotifyLocalized("weaponSlotFilled", self.weaponCategory)
 
 					return false
@@ -170,7 +170,7 @@ function ITEM:Equip(client, bNoSelect, bNoSound)
 			client:SetAmmo(1, ammoType)
 		end
 
-		self:SetData("equip", true)
+		self:SetData("equipped", true)
 
 		if (self.isGrenade) then
 			weapon:SetClip1(1)
@@ -212,7 +212,7 @@ function ITEM:Unequip(client, bPlaySound, bRemoveItem)
 	end
 
 	client.carryWeapons[self.weaponCategory] = nil
-	self:SetData("equip", nil)
+	self:SetData("equipped", nil)
 	self:RemovePAC(client)
 
 	if (self.OnUnequipWeapon) then
@@ -225,7 +225,7 @@ function ITEM:Unequip(client, bPlaySound, bRemoveItem)
 end
 
 function ITEM:CanTransfer(oldInventory, newInventory)
-	if (newInventory and self:GetData("equip")) then
+	if (newInventory and self:GetData("equipped")) then
 		local owner = self:GetOwner()
 
 		if (IsValid(owner)) then
@@ -239,7 +239,7 @@ function ITEM:CanTransfer(oldInventory, newInventory)
 end
 
 function ITEM:OnLoadout()
-	if (self:GetData("equip")) then
+	if (self:GetData("equipped")) then
 		local client = self.player
 		local item = self
 		client.carryWeapons = client.carryWeapons or {}
@@ -247,7 +247,7 @@ function ITEM:OnLoadout()
 		-- Helper to actually equip the weapon
 		local function DoEquip()
 			if not IsValid(client) then return false end
-			if not item:GetData("equip") then return false end
+			if not item:GetData("equipped") then return false end
 
 			local weapon = client:Give(item.class, true)
 
@@ -284,7 +284,7 @@ end
 function ITEM:OnSave()
 	local weapon = self.player:GetWeapon(self.class)
 
-	if (IsValid(weapon) and weapon.ixItem == self and self:GetData("equip")) then
+	if (IsValid(weapon) and weapon.ixItem == self and self:GetData("equipped")) then
 		self:SetData("ammo", weapon:Clip1())
 	end
 end
@@ -308,9 +308,9 @@ hook.Add("PlayerDeath", "ixStripClip", function(client)
 	client.carryWeapons = {}
 
 	for k, _ in client:GetCharacter():GetInventory():Iter() do
-		if (k.isWeapon and k:GetData("equip")) then
+		if (k.isWeapon and k:GetData("equipped")) then
 			k:SetData("ammo", nil)
-			k:SetData("equip", nil)
+			k:SetData("equipped", nil)
 
 			if (k.pacData) then
 				k:RemovePAC(client)

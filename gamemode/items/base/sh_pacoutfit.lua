@@ -58,7 +58,7 @@ ITEM.bodyGroups = {
 if (CLIENT) then
 	-- Draw camo if it is available.
 	function ITEM:PaintOver(item, w, h)
-		if (item:GetData("equip")) then
+		if (item:GetData("equipped")) then
 			surface.SetDrawColor(110, 255, 110, 100)
 			surface.DrawRect(w - 14, h - 14, 8, 8)
 		end
@@ -68,7 +68,7 @@ end
 function ITEM:RemovePart(client)
 	local char = client:GetCharacter()
 
-	self:SetData("equip", false)
+	self:SetData("equipped", false)
 	client:RemovePart(self.uniqueID)
 
 	if (self.attribBoosts) then
@@ -82,7 +82,7 @@ end
 
 -- On item is dropped, Remove a weapon from the player and keep the ammo in the item.
 ITEM:Hook("drop", function(item)
-	if (item:GetData("equip")) then
+	if (item:GetData("equipped")) then
 		item:RemovePart(item:GetOwner())
 	end
 end)
@@ -100,7 +100,7 @@ ITEM.functions.EquipUn = { -- sorry, for name order.
 	OnCanRun = function(item)
 		local client = item.player
 
-		return !IsValid(item.entity) and IsValid(client) and item:GetData("equip") == true and
+		return !IsValid(item.entity) and IsValid(client) and item:GetData("equipped") == true and
 			hook.Run("CanPlayerUnequipItem", client, item) != false
 	end
 }
@@ -117,7 +117,7 @@ ITEM.functions.Equip = {
 			if (k.id != item.id) then
 				local itemTable = ix.item.instances[k.id]
 
-				if (itemTable.pacData and k.outfitCategory == item.outfitCategory and itemTable:GetData("equip")) then
+				if (itemTable.pacData and k.outfitCategory == item.outfitCategory and itemTable:GetData("equipped")) then
 					item.player:NotifyLocalized(item.equippedNotify or "outfitAlreadyEquipped")
 
 					return false
@@ -125,7 +125,7 @@ ITEM.functions.Equip = {
 			end
 		end
 
-		item:SetData("equip", true)
+		item:SetData("equipped", true)
 		item.player:AddPart(item.uniqueID, item)
 
 		if (item.attribBoosts) then
@@ -140,13 +140,13 @@ ITEM.functions.Equip = {
 	OnCanRun = function(item)
 		local client = item.player
 
-		return !IsValid(item.entity) and IsValid(client) and item:GetData("equip") != true and
+		return !IsValid(item.entity) and IsValid(client) and item:GetData("equipped") != true and
 			hook.Run("CanPlayerEquipItem", client, item) != false
 	end
 }
 
 function ITEM:CanTransfer(oldInventory, newInventory)
-	if (newInventory and self:GetData("equip")) then
+	if (newInventory and self:GetData("equipped")) then
 		return false
 	end
 
@@ -158,7 +158,7 @@ function ITEM:OnRemoved()
 	local owner = inventory.GetOwner and inventory:GetOwner()
 
 	if (IsValid(owner) and owner:IsPlayer()) then
-		if (self:GetData("equip")) then
+		if (self:GetData("equipped")) then
 			self:RemovePart(owner)
 		end
 	end
