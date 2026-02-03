@@ -24,55 +24,6 @@ ix.command.Add("Event", {
 	end
 })
 
-ix.command.Add("PM", {
-	description = "@cmdPM",
-	arguments = {
-		ix.type.player,
-		ix.type.text
-	},
-	OnRun = function(self, client, target, message)
-		local voiceMail = target:GetData("vm")
-
-		if (voiceMail and voiceMail:find("%S")) then
-			return target:GetName()..": "..voiceMail
-		end
-
-		if ((client.ixNextPM or 0) < CurTime()) then
-			ix.chat.Send(client, "pm", message, false, {client, target}, {target = target})
-
-			client.ixNextPM = CurTime() + 0.5
-			target.ixLastPM = client
-		end
-	end
-})
-
-ix.command.Add("Reply", {
-	description = "@cmdReply",
-	arguments = ix.type.text,
-	OnRun = function(self, client, message)
-		local target = client.ixLastPM
-
-		if (IsValid(target) and (client.ixNextPM or 0) < CurTime()) then
-			ix.chat.Send(client, "pm", message, false, {client, target}, {target = target})
-			client.ixNextPM = CurTime() + 0.5
-		end
-	end
-})
-
-ix.command.Add("SetVoicemail", {
-	description = "@cmdSetVoicemail",
-	arguments = bit.bor(ix.type.text, ix.type.optional),
-	OnRun = function(self, client, message)
-		if (isstring(message) and message:find("%S")) then
-			client:SetData("vm", message:utf8sub(1, 240))
-			return "@vmSet"
-		else
-			client:SetData("vm")
-			return "@vmRem"
-		end
-	end
-})
-
 ix.command.Add("CharGiveFlag", {
 	description = "@cmdCharGiveFlag",
 	privilege = "Manage Character Flags",
