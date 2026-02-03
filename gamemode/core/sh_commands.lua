@@ -540,45 +540,6 @@ do
 	end)
 end
 
-ix.command.Add("PlyWhitelist", {
-	description = "@cmdPlyWhitelist",
-	privilege = "Manage Character Whitelist",
-	superAdminOnly = true,
-	arguments = {
-		ix.type.player,
-		ix.type.text
-	},
-	OnRun = function(self, client, target, name)
-		if (name == "") then
-			return "@invalidArg", 2
-		end
-
-		local faction = ix.faction.teams[name]
-
-		if (!faction) then
-			for _, v in ipairs(ix.faction.indices) do
-				if (ix.util.StringMatches(L(v.name, client), name) or ix.util.StringMatches(v.uniqueID, name)) then
-					faction = v
-
-					break
-				end
-			end
-		end
-
-		if (faction) then
-			if (target:SetWhitelisted(faction.index, true)) then
-				for _, v in player.Iterator() do
-					if (self:OnCheckAccess(v) or v == target) then
-						v:NotifyLocalized("whitelist", client:GetName(), target:GetName(), L(faction.name, v))
-					end
-				end
-			end
-		else
-			return "@invalidFaction"
-		end
-	end
-})
-
 ix.command.Add("CharGetUp", {
 	description = "@cmdCharGetUp",
 	OnRun = function(self, client, arguments)
@@ -603,73 +564,6 @@ ix.command.Add("CharGetUp", {
 	end
 })
 
-ix.command.Add("PlyUnwhitelist", {
-	description = "@cmdPlyUnwhitelist",
-	privilege = "Manage Character Whitelist",
-	superAdminOnly = true,
-	arguments = {
-		ix.type.string,
-		ix.type.text
-	},
-	OnRun = function(self, client, target, name)
-		local faction = ix.faction.teams[name]
-
-		if (!faction) then
-			for _, v in ipairs(ix.faction.indices) do
-				if (ix.util.StringMatches(L(v.name, client), name) or ix.util.StringMatches(v.uniqueID, name)) then
-					faction = v
-
-					break
-				end
-			end
-		end
-
-		if (faction) then
-			local targetPlayer = ix.util.FindPlayer(target)
-
-			if (IsValid(targetPlayer) and targetPlayer:SetWhitelisted(faction.index, false)) then
-				for _, v in player.Iterator() do
-					if (self:OnCheckAccess(v) or v == targetPlayer) then
-						v:NotifyLocalized("unwhitelist", client:GetName(), targetPlayer:GetName(), L(faction.name, v))
-					end
-				end
-			else
-				local steamID64 = util.SteamIDTo64(target)
-				local query = mysql:Select("ix_players")
-					query:Select("data")
-					query:Where("steamid", steamID64)
-					query:Limit(1)
-					query:Callback(function(result)
-						if (istable(result) and #result > 0) then
-							local data = util.JSONToTable(result[1].data or "[]")
-							local whitelists = data.whitelists and data.whitelists[Schema.folder]
-
-							if (!whitelists or !whitelists[faction.uniqueID]) then
-								return
-							end
-
-							whitelists[faction.uniqueID] = nil
-
-							local updateQuery = mysql:Update("ix_players")
-								updateQuery:Update("data", util.TableToJSON(data))
-								updateQuery:Where("steamid", steamID64)
-							updateQuery:Execute()
-
-							for _, v in player.Iterator() do
-								if (self:OnCheckAccess(v)) then
-									v:NotifyLocalized("unwhitelist", client:GetName(), target, L(faction.name, v))
-								end
-							end
-						end
-					end)
-				query:Execute()
-			end
-		else
-			return "@invalidFaction"
-		end
-	end
-})
-
 ix.command.Add("CharFallOver", {
 	description = "@cmdCharFallOver",
 	arguments = bit.bor(ix.type.number, ix.type.optional),
@@ -684,42 +578,6 @@ ix.command.Add("CharFallOver", {
 
 		if (!IsValid(client.ixRagdoll)) then
 			client:SetRagdolled(true, time)
-		end
-	end
-})
-
-ix.command.Add("BecomeClass", {
-	description = "@cmdBecomeClass",
-	arguments = ix.type.text,
-	OnRun = function(self, client, class)
-		local character = client:GetCharacter()
-
-		if (character) then
-			local num = isnumber(tonumber(class)) and tonumber(class) or -1
-
-			if (ix.class.list[num]) then
-				local v = ix.class.list[num]
-
-				if (character:JoinClass(num)) then
-					return "@becomeClass", L(v.name, client)
-				else
-					return "@becomeClassFail", L(v.name, client)
-				end
-			else
-				for k, v in ipairs(ix.class.list) do
-					if (ix.util.StringMatches(v.uniqueID, class) or ix.util.StringMatches(L(v.name, client), class)) then
-						if (character:JoinClass(k)) then
-							return "@becomeClass", L(v.name, client)
-						else
-							return "@becomeClassFail", L(v.name, client)
-						end
-					end
-				end
-			end
-
-			return "@invalid", L("class", client)
-		else
-			return "@illegalAccess"
 		end
 	end
 })
@@ -743,107 +601,6 @@ ix.command.Add("CharDesc", {
 
 		client:GetCharacter():SetDescription(description)
 		return "@descChanged"
-	end
-})
-
-ix.command.Add("PlyTransfer", {
-	description = "@cmdPlyTransfer",
-	adminOnly = true,
-	arguments = {
-		ix.type.character,
-		ix.type.text
-	},
-	OnRun = function(self, client, target, name)
-		-- Handle transfer to factionless
-		if (name:lower() == "none" or name:lower() == "factionless") then
-			target.vars.faction = nil
-			target:SetFaction(nil)
-
-			-- Kick from class since factionless has no class
-			target:KickClass()
-
-			for _, v in player.Iterator() do
-				if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
-					v:NotifyLocalized("cChangeFactionNone", client:GetName(), target:GetName())
-				end
-			end
-
-			return
-		end
-
-		local faction = ix.faction.teams[name]
-
-		if (!faction) then
-			for _, v in pairs(ix.faction.indices) do
-				if (ix.util.StringMatches(L(v.name, client), name)) then
-					faction = v
-
-					break
-				end
-			end
-		end
-
-		if (faction) then
-			local bHasWhitelist = target:GetPlayer():HasWhitelist(faction.index)
-
-			if (bHasWhitelist) then
-				target.vars.faction = faction.uniqueID
-				target:SetFaction(faction.index)
-
-				if (faction.OnTransferred) then
-					faction:OnTransferred(target)
-				end
-
-				for _, v in player.Iterator() do
-					if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
-						v:NotifyLocalized("cChangeFaction", client:GetName(), target:GetName(), L(faction.name, v))
-					end
-				end
-			else
-				return "@charNotWhitelisted", target:GetName(), L(faction.name, client)
-			end
-		else
-			return "@invalidFaction"
-		end
-	end
-})
-
-ix.command.Add("CharSetClass", {
-	description = "@cmdCharSetClass",
-	adminOnly = true,
-	arguments = {
-		ix.type.character,
-		ix.type.text
-	},
-	OnRun = function(self, client, target, class)
-		local classTable
-
-		for _, v in ipairs(ix.class.list) do
-			if (ix.util.StringMatches(v.uniqueID, class) or ix.util.StringMatches(v.name, class)) then
-				classTable = v
-			end
-		end
-
-		if (classTable) then
-			local oldClass = target:GetClass()
-			local targetPlayer = target:GetPlayer()
-
-			if (targetPlayer:Team() == classTable.faction) then
-				target:SetClass(classTable.index)
-				hook.Run("PlayerJoinedClass", targetPlayer, classTable.index, oldClass)
-
-				targetPlayer:NotifyLocalized("becomeClass", L(classTable.name, targetPlayer))
-
-				-- only send second notification if the character isn't setting their own class
-				if (client != targetPlayer) then
-					return "@setClass", target:GetName(), L(classTable.name, client)
-				end
-			else
-				return "@invalidClassFaction"
-			end
-		else
-			return "@invalidClass"
-		end
 	end
 })
 
