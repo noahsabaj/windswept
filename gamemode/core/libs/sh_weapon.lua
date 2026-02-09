@@ -40,3 +40,21 @@ function ix.weapon.RegisterCleanupHooks(weaponClass, hookPrefix, cleanupFn)
     hook.Add("PlayerDeath", hookPrefix .. "Death", onCleanup)
     hook.Add("ixPlayerKnockedOut", hookPrefix .. "Knockout", onCleanup)
 end
+
+--- Check if a SWEP's saved target is still valid (same entity, exists, in range).
+-- Used in Think() loops to validate ongoing actions like locking, installing, breaking.
+-- @entity owner The player performing the action
+-- @entity currentTarget The entity currently being aimed at (e.g., from GetTargetDoor())
+-- @entity savedTarget The entity stored when the action started (e.g., self.targetDoor)
+-- @number maxDistance Maximum interaction distance (e.g., self.MaxUseDistance)
+-- @number[opt=32] buffer Extra distance tolerance beyond maxDistance
+-- @treturn bool Whether the target is still valid
+-- @treturn string|nil Reason if invalid: "looked_away", "invalid", or "too_far"
+function ix.weapon.IsTargetValid(owner, currentTarget, savedTarget, maxDistance, buffer)
+    if currentTarget ~= savedTarget then return false, "looked_away" end
+    if not IsValid(savedTarget) then return false, "invalid" end
+    if owner:GetPos():Distance(savedTarget:GetPos()) > maxDistance + (buffer or 32) then
+        return false, "too_far"
+    end
+    return true
+end
