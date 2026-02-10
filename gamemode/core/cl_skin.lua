@@ -380,7 +380,7 @@ function SKIN:PaintComboDownArrow(panel, width, height)
 	local textWidth, textHeight = surface.GetTextSize("r")
 	local alpha = (panel.ComboBox:IsMenuOpen() or panel.ComboBox.Hovered) and 200 or 100
 
-	surface.SetTextColor(ColorAlpha(ix.config.Get("color") or color_white, alpha))
+	surface.SetTextColor(ColorAlpha(ix.config.Get("color"), alpha))
 	surface.SetTextPos(width * 0.5 - textWidth * 0.5, height * 0.5 - textHeight * 0.5)
 	surface.DrawText("r")
 end

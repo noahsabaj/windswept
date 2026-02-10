@@ -16,19 +16,20 @@ ix.config.Add("maxCharacters", 1, "The maximum number of characters a player can
 	category = "characters"
 })
 ix.config.Add("font", "Roboto Th", "The font used to display titles.", function(oldValue, newValue)
-	ix.config.Add("color", Color(75, 119, 190, 255), "The main color theme for the framework.", function(oldValue, newValue)
-		if (newValue.a != 255) then
-			ix.config.Set("color", ColorAlpha(newValue, 255))
-			return
-		end
-	
-		if (CLIENT) then
-			hook.Run("ColorSchemeChanged", newValue)
-		end
-	end, {category = "appearance"})
 	if (CLIENT) then
-	end
 		hook.Run("LoadFonts", newValue, ix.config.Get("genericFont"))
+	end
+end, {category = "appearance"})
+
+ix.config.Add("color", Color(75, 119, 190, 255), "The main color theme for the framework.", function(oldValue, newValue)
+	if (newValue.a != 255) then
+		ix.config.Set("color", ColorAlpha(newValue, 255))
+		return
+	end
+
+	if (CLIENT) then
+		hook.Run("ColorSchemeChanged", newValue)
+	end
 end, {category = "appearance"})
 
 ix.config.Add("genericFont", "Roboto", "The font used to display generic texts.", function(oldValue, newValue)

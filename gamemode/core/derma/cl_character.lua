@@ -175,7 +175,7 @@ function PANEL:Init()
 		surface.DrawRect(0, y, width, newHeight)
 
 		-- border lines
-		surface.SetDrawColor(ix.config.Get("color") or color_white)
+		surface.SetDrawColor(ix.config.Get("color"))
 		surface.DrawRect(0, y, width, 1)
 		surface.DrawRect(0, y + newHeight - 1, width, 1)
 

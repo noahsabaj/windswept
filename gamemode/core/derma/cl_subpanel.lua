@@ -25,7 +25,7 @@ function PANEL:SetTitle(text, bNoTranslation, bNoUpper)
 		self.title = self:Add("DLabel")
 		self.title:SetFont("ixTitleFont")
 		self.title:SizeToContents()
-		self.title:SetTextColor(ix.config.Get("color") or color_white)
+		self.title:SetTextColor(ix.config.Get("color"))
 		self.title:Dock(TOP)
 	end
 
