@@ -106,8 +106,8 @@ function PANEL:Init()
 	descriptionProceed:Dock(BOTTOM)
 	descriptionProceed.DoClick = function()
 		if (self:VerifyProgression("description")) then
-			-- there are no panels on the attributes section other than the create button, so we can just create the character
-			if (#self.attributesPanel:GetChildren() < 2) then
+			-- there are no panels on the attributes section, so we can just create the character
+			if (#self.attributesPanel:GetCanvas():GetChildren() < 1) then
 				self:SendPayload()
 				return
 			end
@@ -146,11 +146,11 @@ function PANEL:Init()
 	self.attributesModel:SetFOV(modelFOV - 13)
 	self.attributesModel.PaintModel = self.attributesModel.Paint
 
-	self.attributesPanel = self.attributes:Add("Panel")
-	self.attributesPanel:SetWide(halfWidth + padding * 2)
-	self.attributesPanel:Dock(RIGHT)
+	local attributesContainer = self.attributes:Add("Panel")
+	attributesContainer:SetWide(halfWidth + padding * 2)
+	attributesContainer:Dock(RIGHT)
 
-	local create = self.attributesPanel:Add("ixMenuButton")
+	local create = attributesContainer:Add("ixMenuButton")
 	create:SetText("finish")
 	create:SetContentAlignment(6)
 	create:SizeToContents()
@@ -158,6 +158,10 @@ function PANEL:Init()
 	create.DoClick = function()
 		self:SendPayload()
 	end
+
+	self.attributesPanel = attributesContainer:Add("DScrollPanel")
+	self.attributesPanel:Dock(FILL)
+	self.attributesPanel:GetVBar():SetWide(0)
 
 	-- creation progress panel
 	self.progress = self:Add("ixSegmentedProgress")
@@ -489,7 +493,7 @@ function PANEL:Populate()
 
 		self.progress:AddSegment("@description")
 
-		if (#self.attributesPanel:GetChildren() > 1) then
+		if (#self.attributesPanel:GetCanvas():GetChildren() > 0) then
 			self.progress:AddSegment("@skills")
 		end
 
