@@ -337,9 +337,12 @@ function GM:OnPickupMoney(client, moneyEntity)
     if (IsValid(moneyEntity)) then
         -- This is now handled by ix.currency.HandlePickup in the entity Use function
         -- Kept for backwards compatibility if called directly
+        local character = client:GetCharacter()
+        if not character then return end
+
         local amount = moneyEntity:GetAmount()
         local cents = amount * ix.currency.CENTS_PER_DOLLAR
-        client:GetCharacter():GiveMoney(cents)
+        character:GiveMoney(cents)
     end
 end
 
@@ -762,5 +765,114 @@ if SERVER then
         end
 
         client:Notify("Merged " .. toMerge .. " into stack.")
+    end)
+end
+
+-- ============================================================================
+-- CURRENCY GIVE/DESTROY NETWORKING
+-- ============================================================================
+
+if SERVER then
+    util.AddNetworkString("ixMoneyGive")
+    util.AddNetworkString("ixMoneyDestroy")
+
+    -- Check if a currency item belongs to the player (main inventory or owned bag)
+    local function IsOwnedCurrencyItem(item, character, inventory)
+        local itemInvID = item.invID
+        if itemInvID == inventory:GetID() then return true end
+
+        local itemInv = ix.item.inventories[itemInvID]
+        return itemInv and itemInv:GetOwner() == character:GetID()
+    end
+
+    net.Receive("ixMoneyGive", function(len, client)
+        local itemID = net.ReadUInt(32)
+        local amount = net.ReadUInt(32)
+        local target = net.ReadEntity()
+
+        -- Validate item
+        local item = ix.item.instances[itemID]
+        if not item or not item.isCurrency then return end
+
+        -- Validate giver
+        local character = client:GetCharacter()
+        if not character then return end
+
+        local inventory = character:GetInventory()
+        if not inventory then return end
+
+        -- Check item ownership
+        if not IsOwnedCurrencyItem(item, character, inventory) then return end
+
+        -- Validate target
+        if not IsValid(target) or not target:IsPlayer() then return end
+        if not target:Alive() then return end
+        if client:GetPos():DistToSqr(target:GetPos()) > 10000 then return end
+
+        local targetChar = target:GetCharacter()
+        if not targetChar then return end
+
+        -- Validate amount
+        local currentQty = item:GetData("quantity", 1)
+        amount = math.min(amount, currentQty)
+        if amount <= 0 then return end
+
+        -- Calculate cents to give
+        local centsToGive = amount * item.currencyValue
+
+        -- Try to add to target's inventory
+        local targetInv = targetChar:GetInventory()
+        if not targetInv then
+            client:Notify("Target has no inventory.")
+            return
+        end
+
+        local success = ix.currency.AddToInventory(targetInv, centsToGive)
+        if not success then
+            client:Notify("Target's inventory is full.")
+            return
+        end
+
+        -- Remove from giver
+        if amount >= currentQty then
+            item:Remove()
+        else
+            item:SetData("quantity", currentQty - amount)
+        end
+
+        -- Notify both parties
+        local moneyStr = item:FormatAmount(amount)
+        client:Notify("Gave " .. moneyStr .. " to " .. target:Nick() .. ".")
+        target:Notify("Received " .. moneyStr .. " from " .. client:Nick() .. ".")
+    end)
+
+    net.Receive("ixMoneyDestroy", function(len, client)
+        local itemID = net.ReadUInt(32)
+        local amount = net.ReadUInt(32)
+
+        local item = ix.item.instances[itemID]
+        if not item or not item.isCurrency then return end
+        if not item.canDestroy then return end
+
+        -- Validate ownership
+        local character = client:GetCharacter()
+        if not character then return end
+
+        local inventory = character:GetInventory()
+        if not inventory then return end
+
+        if not IsOwnedCurrencyItem(item, character, inventory) then return end
+
+        local currentQty = item:GetData("quantity", 1)
+        amount = math.min(amount, currentQty)
+        if amount <= 0 then return end
+
+        if amount >= currentQty then
+            item:Remove()
+        else
+            item:SetData("quantity", currentQty - amount)
+        end
+
+        client:Notify("Destroyed " .. item:FormatAmount(amount) .. ".")
     end)
 end

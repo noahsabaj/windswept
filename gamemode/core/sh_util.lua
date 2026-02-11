@@ -1150,5 +1150,27 @@ function ix.util.MetatableSafeTableMerge(destination, source)
 	return destination;
 end
 
+--- Returns the player the given client is aiming at within range.
+-- @realm shared
+-- @player client The player whose aim to trace
+-- @number[opt=96] maxRange Maximum trace distance in units
+-- @treturn player|nil The player being aimed at, or nil
+function ix.util.GetLookAtPlayer(client, maxRange)
+	maxRange = maxRange or 96
+
+	local data = {}
+	data.start = client:GetShootPos()
+	data.endpos = data.start + client:GetAimVector() * maxRange
+	data.filter = client
+
+	local target = util.TraceLine(data).Entity
+
+	if IsValid(target) and target:IsPlayer() then
+		return target
+	end
+
+	return nil
+end
+
 ix.util.Include("helix/gamemode/core/meta/sh_entity.lua")
 ix.util.Include("helix/gamemode/core/meta/sh_player.lua")

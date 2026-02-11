@@ -1,6 +1,66 @@
 
 local padding = ScreenScale(32)
 
+-- character creation field visibility API
+ix.charCreate = ix.charCreate or {}
+
+--- Collapse or expand a character creation field panel and its label.
+-- Properly removes from dock layout flow when hidden (GMod's dock system does NOT skip invisible panels).
+-- @realm client
+-- @param panel The panel to show/hide
+-- @param bVisible Whether the panel should be visible
+function ix.charCreate.SetFieldVisible(panel, bVisible)
+	if not IsValid(panel) then return end
+
+	if bVisible then
+		panel:SetVisible(true)
+		panel:Dock(TOP)
+
+		if panel.ixOrigMargin then
+			panel:DockMargin(unpack(panel.ixOrigMargin))
+			panel.ixOrigMargin = nil
+		end
+
+		panel:InvalidateLayout(true)
+	else
+		if not panel.ixOrigMargin then
+			local l, t, r, b = panel:GetDockMargin()
+			panel.ixOrigMargin = {l, t, r, b}
+		end
+
+		panel:SetVisible(false)
+		panel:Dock(NODOCK)
+	end
+
+	-- Also toggle the label sibling
+	if IsValid(panel.ixLabel) then
+		if bVisible then
+			panel.ixLabel:SetVisible(true)
+			panel.ixLabel:Dock(TOP)
+
+			if panel.ixLabel.ixOrigMargin then
+				panel.ixLabel:DockMargin(unpack(panel.ixLabel.ixOrigMargin))
+				panel.ixLabel.ixOrigMargin = nil
+			end
+
+			panel.ixLabel:InvalidateLayout(true)
+		else
+			if not panel.ixLabel.ixOrigMargin then
+				local l, t, r, b = panel.ixLabel:GetDockMargin()
+				panel.ixLabel.ixOrigMargin = {l, t, r, b}
+			end
+
+			panel.ixLabel:SetVisible(false)
+			panel.ixLabel:Dock(NODOCK)
+		end
+	end
+
+	-- Force parent to recalculate dock layout
+	if IsValid(panel:GetParent()) then
+		panel:GetParent():InvalidateLayout(true)
+	end
+end
+
 -- create character panel
 DEFINE_BASECLASS("ixCharMenuPanel")
 local PANEL = {}
@@ -472,6 +532,9 @@ function PANEL:Populate()
 				-- we need to set the docking order so the label is above the panel
 				label:SetZPos(zPos - 1)
 				panel:SetZPos(zPos)
+
+				-- store label reference for ix.charCreate.SetFieldVisible
+				panel.ixLabel = label
 
 				self:AttachCleanup(label)
 				self:AttachCleanup(panel)
