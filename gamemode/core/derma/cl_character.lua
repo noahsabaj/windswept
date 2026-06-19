@@ -5,7 +5,7 @@ local animationTime = 0.5
 local matrixZScale = Vector(1, 1, 0.0001)
 
 -- character menu panel
-DEFINE_BASECLASS("ixSubpanelParent")
+DEFINE_BASECLASS("wsSubpanelParent")
 local PANEL = {}
 
 function PANEL:Init()
@@ -96,7 +96,7 @@ function PANEL:Paint(width, height)
 	end
 end
 
-vgui.Register("ixCharMenuPanel", PANEL, "ixSubpanelParent")
+vgui.Register("wsCharMenuPanel", PANEL, "wsSubpanelParent")
 
 -- character menu main button list
 PANEL = {}
@@ -127,7 +127,7 @@ function PANEL:SizeToContents()
 	end
 end
 
-vgui.Register("ixCharMenuButtonList", PANEL, "DScrollPanel")
+vgui.Register("wsCharMenuButtonList", PANEL, "DScrollPanel")
 
 -- main character menu panel
 PANEL = {}
@@ -139,14 +139,14 @@ function PANEL:Init()
 	local padding = self:GetPadding()
 	local halfWidth = ScrW() * 0.5
 	local halfPadding = padding * 0.5
-	local bHasCharacter = #ix.characters > 0
+	local bHasCharacter = #ws.characters > 0
 
 	self.bUsingCharacter = LocalPlayer().GetCharacter and LocalPlayer():GetCharacter()
 	self:DockPadding(padding, padding, padding, padding)
 
 	local infoLabel = self:Add("DLabel")
 	infoLabel:SetTextColor(Color(255, 255, 255, 25))
-	infoLabel:SetFont("ixMenuMiniFont")
+	infoLabel:SetFont("wsMenuMiniFont")
 	infoLabel:SetText(L("helix") .. " " .. GAMEMODE.Version)
 	infoLabel:SizeToContents()
 	infoLabel:SetPos(ScrW() - infoLabel:GetWide() - 4, ScrH() - infoLabel:GetTall() - 4)
@@ -168,14 +168,14 @@ function PANEL:Init()
 		screenY = screenY + y
 
 		render.SetScissorRect(0, screenY, width, screenY + newHeight, true)
-		ix.util.DrawBlur(panel, 15, nil, 200)
+		ws.util.DrawBlur(panel, 15, nil, 200)
 
 		-- background dim
 		surface.SetDrawColor(0, 0, 0, 100)
 		surface.DrawRect(0, y, width, newHeight)
 
 		-- border lines
-		surface.SetDrawColor(ix.config.Get("color"))
+		surface.SetDrawColor(ws.config.Get("color"))
 		surface.DrawRect(0, y, width, 1)
 		surface.DrawRect(0, y + newHeight - 1, width, 1)
 
@@ -191,7 +191,7 @@ function PANEL:Init()
 	end
 
 	-- draw schema logo material instead of text if available
-	local logo = Schema.logo and ix.util.GetMaterial(Schema.logo)
+	local logo = Schema.logo and ws.util.GetMaterial(Schema.logo)
 
 	if (logo and !logo:IsError()) then
 		local logoImage = logoPanel:Add("DImage")
@@ -207,7 +207,7 @@ function PANEL:Init()
 
 		local titleLabel = logoPanel:Add("DLabel")
 		titleLabel:SetTextColor(color_white)
-		titleLabel:SetFont("ixTitleFont")
+		titleLabel:SetFont("wsTitleFont")
 		titleLabel:SetText(L2("schemaName") or Schema.name or L"unknown")
 		titleLabel:SizeToContents()
 		titleLabel:SetPos(halfWidth - titleLabel:GetWide() * 0.5, halfPadding)
@@ -217,7 +217,7 @@ function PANEL:Init()
 		if (subtitle) then
 			local subtitleLabel = logoPanel:Add("DLabel")
 			subtitleLabel:SetTextColor(color_white)
-			subtitleLabel:SetFont("ixSubTitleFont")
+			subtitleLabel:SetFont("wsSubTitleFont")
 			subtitleLabel:SetText(subtitle)
 			subtitleLabel:SizeToContents()
 			subtitleLabel:SetPos(halfWidth - subtitleLabel:GetWide() * 0.5, 0)
@@ -230,17 +230,17 @@ function PANEL:Init()
 	end
 
 	-- button list
-	self.mainButtonList = self:Add("ixCharMenuButtonList")
+	self.mainButtonList = self:Add("wsCharMenuButtonList")
 	self.mainButtonList:Dock(LEFT)
 
 	-- create character button
-	local createButton = self.mainButtonList:Add("ixMenuButton")
+	local createButton = self.mainButtonList:Add("wsMenuButton")
 	createButton:SetText("create")
 	createButton:SizeToContents()
 	createButton.DoClick = function()
-		local maximum = hook.Run("GetMaxPlayerCharacter", LocalPlayer()) or ix.config.Get("maxCharacters", 5)
+		local maximum = hook.Run("GetMaxPlayerCharacter", LocalPlayer()) or ws.config.Get("maxCharacters", 5)
 		-- don't allow creation if we've hit the character limit
-		if (#ix.characters >= maximum) then
+		if (#ws.characters >= maximum) then
 			self:GetParent():ShowNotice(3, L("maxCharacters"))
 			return
 		end
@@ -251,7 +251,7 @@ function PANEL:Init()
 	end
 
 	-- load character button
-	self.loadButton = self.mainButtonList:Add("ixMenuButton")
+	self.loadButton = self.mainButtonList:Add("wsMenuButton")
 	self.loadButton:SetText("load")
 	self.loadButton:SizeToContents()
 	self.loadButton.DoClick = function()
@@ -264,15 +264,15 @@ function PANEL:Init()
 	end
 
 	-- community button
-	local extraURL = ix.config.Get("communityURL", "")
-	local extraText = ix.config.Get("communityText", "@community")
+	local extraURL = ws.config.Get("communityURL", "")
+	local extraText = ws.config.Get("communityText", "@community")
 
 	if (extraURL != "" and extraText != "") then
 		if (extraText:sub(1, 1) == "@") then
 			extraText = L(extraText:sub(2))
 		end
 
-		local extraButton = self.mainButtonList:Add("ixMenuButton")
+		local extraButton = self.mainButtonList:Add("wsMenuButton")
 		extraButton:SetText(extraText, true)
 		extraButton:SizeToContents()
 		extraButton.DoClick = function()
@@ -281,7 +281,7 @@ function PANEL:Init()
 	end
 
 	-- leave/return button
-	self.returnButton = self.mainButtonList:Add("ixMenuButton")
+	self.returnButton = self.mainButtonList:Add("wsMenuButton")
 	self:UpdateReturnButton()
 	self.returnButton.DoClick = function()
 		if (self.bUsingCharacter) then
@@ -333,49 +333,49 @@ function PANEL:PerformLayout(width, height)
 	self.mainButtonList:SetPos(padding, height - self.mainButtonList:GetTall() - padding)
 end
 
-vgui.Register("ixCharMenuMain", PANEL, "ixCharMenuPanel")
+vgui.Register("wsCharMenuMain", PANEL, "wsCharMenuPanel")
 
 -- container panel
 PANEL = {}
 
 function PANEL:Init()
-	if (IsValid(ix.gui.loading)) then
-		ix.gui.loading:Remove()
+	if (IsValid(ws.gui.loading)) then
+		ws.gui.loading:Remove()
 	end
 
-	if (IsValid(ix.gui.characterMenu)) then
-		if (IsValid(ix.gui.characterMenu.channel)) then
-			ix.gui.characterMenu.channel:Stop()
+	if (IsValid(ws.gui.characterMenu)) then
+		if (IsValid(ws.gui.characterMenu.channel)) then
+			ws.gui.characterMenu.channel:Stop()
 		end
 
-		ix.gui.characterMenu:Remove()
+		ws.gui.characterMenu:Remove()
 	end
 
 	self:SetSize(ScrW(), ScrH())
 	self:SetPos(0, 0)
 
 	-- main menu panel
-	self.mainPanel = self:Add("ixCharMenuMain")
+	self.mainPanel = self:Add("wsCharMenuMain")
 
 	-- new character panel
-	self.newCharacterPanel = self:Add("ixCharMenuNew")
+	self.newCharacterPanel = self:Add("wsCharMenuNew")
 	self.newCharacterPanel:SlideDown(0)
 
 	-- load character panel
-	self.loadCharacterPanel = self:Add("ixCharMenuLoad")
+	self.loadCharacterPanel = self:Add("wsCharMenuLoad")
 	self.loadCharacterPanel:SlideDown(0)
 
 	-- notice bar
-	self.notice = self:Add("ixNoticeBar")
+	self.notice = self:Add("wsNoticeBar")
 
 	-- finalization
 	self:MakePopup()
 	self.currentAlpha = 255
 	self.volume = 0
 
-	ix.gui.characterMenu = self
+	ws.gui.characterMenu = self
 
-	if (!IsValid(ix.gui.intro)) then
+	if (!IsValid(ws.gui.intro)) then
 		self:PlayMusic()
 	end
 
@@ -383,7 +383,7 @@ function PANEL:Init()
 end
 
 function PANEL:PlayMusic()
-	local path = "sound/" .. ix.config.Get("music")
+	local path = "sound/" .. ws.config.Get("music")
 	local url = path:match("http[s]?://.+")
 	local play = url and sound.PlayURL or sound.PlayFile
 	path = url and url or path
@@ -424,7 +424,7 @@ function PANEL:HideNotice()
 end
 
 function PANEL:OnCharacterDeleted(character)
-	if (#ix.characters == 0) then
+	if (#ws.characters == 0) then
 		self.mainPanel.loadButton:SetDisabled(true)
 		self.mainPanel:Undim() -- undim since the load panel will slide down
 	else
@@ -517,10 +517,10 @@ function PANEL:Paint(width, height)
 	surface.SetDrawColor(0, 0, 0, 255)
 	surface.DrawTexturedRect(0, 0, width, height)
 
-	if (!ix.option.Get("cheapBlur", false)) then
+	if (!ws.option.Get("cheapBlur", false)) then
 		surface.SetDrawColor(0, 0, 0, 150)
 		surface.DrawTexturedRect(0, 0, width, height)
-		ix.util.DrawBlur(self, Lerp((self.currentAlpha - 200) / 255, 0, 10))
+		ws.util.DrawBlur(self, Lerp((self.currentAlpha - 200) / 255, 0, 10))
 	end
 end
 
@@ -538,11 +538,11 @@ function PANEL:OnRemove()
 	end
 end
 
-vgui.Register("ixCharMenu", PANEL, "EditablePanel")
+vgui.Register("wsCharMenu", PANEL, "EditablePanel")
 
-if (IsValid(ix.gui.characterMenu)) then
-	ix.gui.characterMenu:Remove()
+if (IsValid(ws.gui.characterMenu)) then
+	ws.gui.characterMenu:Remove()
 
 	--TODO: REMOVE ME
-	ix.gui.characterMenu = vgui.Create("ixCharMenu")
+	ws.gui.characterMenu = vgui.Create("wsCharMenu")
 end

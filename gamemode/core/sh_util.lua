@@ -1,8 +1,8 @@
 
 --- Various useful helper functions.
--- @module ix.util
+-- @module ws.util
 
-ix.type = ix.type or {
+ws.type = ws.type or {
 	[2] = "string",
 	[4] = "text",
 	[8] = "number",
@@ -27,7 +27,7 @@ ix.type = ix.type or {
 	array = 512
 }
 
-ix.blurRenderQueue = {}
+ws.blurRenderQueue = {}
 
 --- Includes a lua file based on the prefix of the file. This will automatically call `include` and `AddCSLuaFile` based on the
 -- current realm. This function should always be called shared to ensure that the client will receive the file from the server.
@@ -36,7 +36,7 @@ ix.blurRenderQueue = {}
 -- @string[opt] realm Realm that this file should be included in. You should usually ignore this since it
 -- will be automatically be chosen based on the `SERVER` and `CLIENT` globals. This value should either be `"server"` or
 -- `"client"` if it is filled in manually
-function ix.util.Include(fileName, realm)
+function ws.util.Include(fileName, realm)
 	if (!fileName) then
 		error("[Helix] No file name specified for including.")
 	end
@@ -67,8 +67,8 @@ end
 -- @string directory Directory to include files from
 -- @bool[opt] bFromLua Whether or not to search from the base `lua/` folder, instead of contextually basing from `schema/`
 -- or `gamemode/`
--- @see ix.util.Include
-function ix.util.IncludeDir(directory, bFromLua)
+-- @see ws.util.Include
+function ws.util.IncludeDir(directory, bFromLua)
 	-- By default, we include relatively to Helix.
 	local baseDir = "helix"
 
@@ -82,7 +82,7 @@ function ix.util.IncludeDir(directory, bFromLua)
 	-- Find all of the files within the directory.
 	for _, v in ipairs(file.Find((bFromLua and "" or baseDir)..directory.."/*.lua", "LUA")) do
 		-- Include the file from the prefix.
-		ix.util.Include(directory.."/"..v)
+		ws.util.Include(directory.."/"..v)
 	end
 end
 
@@ -90,9 +90,9 @@ end
 -- @realm shared
 -- @string name String to strip prefix from
 -- @treturn string String stripped of prefix
--- @usage print(ix.util.StripRealmPrefix("sv_init.lua"))
+-- @usage print(ws.util.StripRealmPrefix("sv_init.lua"))
 -- > init.lua
-function ix.util.StripRealmPrefix(name)
+function ws.util.StripRealmPrefix(name)
 	local prefix = name:sub(1, 3)
 
 	return (prefix == "sh_" or prefix == "sv_" or prefix == "cl_") and name:sub(4) or name
@@ -103,7 +103,7 @@ end
 -- @realm shared
 -- @param input Input to check
 -- @treturn bool Whether or not the input is a color
-function ix.util.IsColor(input)
+function ws.util.IsColor(input)
 	return istable(input) and
 		isnumber(input.a) and isnumber(input.g) and isnumber(input.b) and (input.a and isnumber(input.a) or input.a == nil)
 end
@@ -114,9 +114,9 @@ end
 -- @number multiplier What to multiply the red, green, and blue values by
 -- @number[opt=255] alpha Alpha to use in dimmed color
 -- @treturn color Dimmed color
--- @usage print(ix.util.DimColor(Color(100, 100, 100, 255), 0.5))
+-- @usage print(ws.util.DimColor(Color(100, 100, 100, 255), 0.5))
 -- > 50 50 50 255
-function ix.util.DimColor(color, multiplier, alpha)
+function ws.util.DimColor(color, multiplier, alpha)
 	return Color(color.r * multiplier, color.g * multiplier, color.b * multiplier, alpha or 255)
 end
 
@@ -127,64 +127,64 @@ end
 -- @ixtype type Type to check for
 -- @param input Value to sanitize
 -- @return Sanitized value
--- @see ix.type
--- @usage print(ix.util.SanitizeType(ix.type.number, "123"))
+-- @see ws.type
+-- @usage print(ws.util.SanitizeType(ws.type.number, "123"))
 -- > 123
--- print(ix.util.SanitizeType(ix.type.bool, 1))
+-- print(ws.util.SanitizeType(ws.type.bool, 1))
 -- > true
-function ix.util.SanitizeType(type, input)
-	if (type == ix.type.string) then
+function ws.util.SanitizeType(type, input)
+	if (type == ws.type.string) then
 		return tostring(input)
-	elseif (type == ix.type.text) then
+	elseif (type == ws.type.text) then
 		return tostring(input)
-	elseif (type == ix.type.number) then
+	elseif (type == ws.type.number) then
 		return tonumber(input or 0) or 0
-	elseif (type == ix.type.bool) then
+	elseif (type == ws.type.bool) then
 		return tobool(input)
-	elseif (type == ix.type.color) then
+	elseif (type == ws.type.color) then
 		return istable(input) and
 			Color(tonumber(input.r) or 255, tonumber(input.g) or 255, tonumber(input.b) or 255, tonumber(input.a) or 255) or
 			color_white
-	elseif (type == ix.type.vector) then
+	elseif (type == ws.type.vector) then
 		return isvector(input) and input or vector_origin
-	elseif (type == ix.type.array) then
+	elseif (type == ws.type.array) then
 		return input
 	else
-		error("attempted to sanitize " .. (ix.type[type] and ("invalid type " .. ix.type[type]) or "unknown type " .. type))
+		error("attempted to sanitize " .. (ws.type[type] and ("invalid type " .. ws.type[type]) or "unknown type " .. type))
 	end
 end
 
 do
 	local typeMap = {
-		string = ix.type.string,
-		number = ix.type.number,
-		Player = ix.type.player,
-		boolean = ix.type.bool,
-		Vector = ix.type.vector
+		string = ws.type.string,
+		number = ws.type.number,
+		Player = ws.type.player,
+		boolean = ws.type.bool,
+		Vector = ws.type.vector
 	}
 
 	local tableMap = {
-		[ix.type.character] = function(value)
-			return getmetatable(value) == ix.meta.character
+		[ws.type.character] = function(value)
+			return getmetatable(value) == ws.meta.character
 		end,
 
-		[ix.type.color] = function(value)
-			return ix.util.IsColor(value)
+		[ws.type.color] = function(value)
+			return ws.util.IsColor(value)
 		end,
 
-		[ix.type.steamid] = function(value)
+		[ws.type.steamid] = function(value)
 			return isstring(value) and (value:match("STEAM_(%d+):(%d+):(%d+)")) != nil
 		end
 	}
 
-	--- Returns the `ix.type` of the given value.
+	--- Returns the `ws.type` of the given value.
 	-- @realm shared
 	-- @param value Value to get the type of
-	-- @treturn ix.type Type of value
-	-- @see ix.type
-	-- @usage print(ix.util.GetTypeFromValue("hello"))
-	-- > 2 -- i.e the value of ix.type.string
-	function ix.util.GetTypeFromValue(value)
+	-- @treturn ws.type Type of value
+	-- @see ws.type
+	-- @usage print(ws.util.GetTypeFromValue("hello"))
+	-- > 2 -- i.e the value of ws.type.string
+	function ws.util.GetTypeFromValue(value)
 		local result = typeMap[type(value)]
 
 		if (result) then
@@ -201,14 +201,14 @@ do
 	end
 end
 
-function ix.util.Bind(self, callback)
+function ws.util.Bind(self, callback)
 	return function(_, ...)
 		return callback(self, ...)
 	end
 end
 
 -- Returns the address:port of the server.
-function ix.util.GetAddress()
+function ws.util.GetAddress()
 	return game.GetIPAddress()
 end
 
@@ -218,12 +218,12 @@ end
 -- @string materialPath Path to the material
 -- @treturn[1] material The cached material
 -- @treturn[2] nil If the material doesn't exist in the filesystem
-function ix.util.GetMaterial(materialPath)
+function ws.util.GetMaterial(materialPath)
 	-- Cache the material.
-	ix.util.cachedMaterials = ix.util.cachedMaterials or {}
-	ix.util.cachedMaterials[materialPath] = ix.util.cachedMaterials[materialPath] or Material(materialPath)
+	ws.util.cachedMaterials = ws.util.cachedMaterials or {}
+	ws.util.cachedMaterials[materialPath] = ws.util.cachedMaterials[materialPath] or Material(materialPath)
 
-	return ix.util.cachedMaterials[materialPath]
+	return ws.util.cachedMaterials[materialPath]
 end
 
 --- Attempts to find a player by matching their name or Steam ID.
@@ -231,7 +231,7 @@ end
 -- @string identifier Search query
 -- @bool[opt=false] bAllowPatterns Whether or not to accept Lua patterns in `identifier`
 -- @treturn player Player that matches the given search query - this will be `nil` if a player could not be found
-function ix.util.FindPlayer(identifier, bAllowPatterns)
+function ws.util.FindPlayer(identifier, bAllowPatterns)
 	if (#identifier == 0) then return end
 
 	if (string.find(identifier, "STEAM_(%d+):(%d+):(%d+)")) then
@@ -243,7 +243,7 @@ function ix.util.FindPlayer(identifier, bAllowPatterns)
 	end
 
 	for _, v in player.Iterator() do
-		if (ix.util.StringMatches(v:Name(), identifier)) then
+		if (ws.util.StringMatches(v:Name(), identifier)) then
 			return v
 		end
 	end
@@ -255,7 +255,7 @@ end
 -- @string a First string to check
 -- @string b Second string to check
 -- @treturn bool Whether or not the strings are equivalent
-function ix.util.StringMatches(a, b)
+function ws.util.StringMatches(a, b)
 	if (a and b) then
 		local a2, b2 = a:utf8lower(), b:utf8lower()
 
@@ -276,11 +276,11 @@ end
 -- @string format Format string
 -- @tparam tab|... Arguments to pass to the formatted string. If passed a table, it will use that table as the lookup table for
 -- the named arguments. If passed multiple arguments, it will replace the arguments in the string in order.
--- @usage print(ix.util.FormatStringNamed("Hi, my name is {name}.", {name = "Bobby"}))
+-- @usage print(ws.util.FormatStringNamed("Hi, my name is {name}.", {name = "Bobby"}))
 -- > Hi, my name is Bobby.
--- @usage print(ix.util.FormatStringNamed("Hi, my name is {name}.", "Bobby"))
+-- @usage print(ws.util.FormatStringNamed("Hi, my name is {name}.", "Bobby"))
 -- > Hi, my name is Bobby.
-function ix.util.FormatStringNamed(format, ...)
+function ws.util.FormatStringNamed(format, ...)
 	local arguments = {...}
 	local bArray = false -- Whether or not the input has numerical indices or named ones
 	local input
@@ -317,9 +317,9 @@ do
 	-- @string input String to expand
 	-- @bool[opt=false] bNoUpperFirst Whether or not to avoid capitalizing the first character. This is useful for lowerCamelCase
 	-- @treturn string Expanded CamelCase string
-	-- @usage print(ix.util.ExpandCamelCase("HelloWorld"))
+	-- @usage print(ws.util.ExpandCamelCase("HelloWorld"))
 	-- > Hello World
-	function ix.util.ExpandCamelCase(input, bNoUpperFirst)
+	function ws.util.ExpandCamelCase(input, bNoUpperFirst)
 		input = bNoUpperFirst and input or input:utf8sub(1, 1):utf8upper() .. input:utf8sub(2)
 
 		-- extra parentheses to select first return value of gsub
@@ -333,7 +333,7 @@ do
 	end
 end
 
-function ix.util.GridVector(vec, gridSize)
+function ws.util.GridVector(vec, gridSize)
 	if (gridSize <= 0) then
 		gridSize = 1
 	end
@@ -366,20 +366,20 @@ do
 	-- iterator skips over any players that do not have a valid character loaded.
 	-- @realm shared
 	-- @treturn Iterator
-	-- @usage for client, character in ix.util.GetCharacters() do
+	-- @usage for client, character in ws.util.GetCharacters() do
 	-- 	print(client, character)
 	-- end
 	-- > Player [1][Bot01]    character[1]
 	-- > Player [2][Bot02]    character[2]
 	-- -- etc.
-	function ix.util.GetCharacters()
+	function ws.util.GetCharacters()
 		i = 0
 		return iterator, player.GetAll()
 	end
 end
 
 if (CLIENT) then
-	local blur = ix.util.GetMaterial("pp/blurscreen")
+	local blur = ws.util.GetMaterial("pp/blurscreen")
 	local surface = surface
 
 	--- Blurs the content underneath the given panel. This will fall back to a simple darkened rectangle if the player has
@@ -390,12 +390,12 @@ if (CLIENT) then
 	-- @number[opt=0.2] passes Quality of the blur. This should be kept as default
 	-- @number[opt=255] alpha Opacity of the blur
 	-- @usage function PANEL:Paint(width, height)
-	-- 	ix.util.DrawBlur(self)
+	-- 	ws.util.DrawBlur(self)
 	-- end
-	function ix.util.DrawBlur(panel, amount, passes, alpha)
+	function ws.util.DrawBlur(panel, amount, passes, alpha)
 		amount = amount or 5
 
-		if (ix.option.Get("cheapBlur", false)) then
+		if (ws.option.Get("cheapBlur", false)) then
 			surface.SetDrawColor(50, 50, 50, alpha or (amount * 20))
 			surface.DrawRect(0, 0, panel:GetWide(), panel:GetTall())
 		else
@@ -416,7 +416,7 @@ if (CLIENT) then
 		end
 	end
 
-	--- Draws a blurred rectangle with the given position and bounds. This shouldn't be used for panels, see `ix.util.DrawBlur`
+	--- Draws a blurred rectangle with the given position and bounds. This shouldn't be used for panels, see `ws.util.DrawBlur`
 	-- instead.
 	-- @realm client
 	-- @number x X-position of the rectangle
@@ -427,12 +427,12 @@ if (CLIENT) then
 	-- @number[opt=0.2] passes Quality of the blur. This should be kept as default
 	-- @number[opt=255] alpha Opacity of the blur
 	-- @usage hook.Add("HUDPaint", "MyHUDPaint", function()
-	-- 	ix.util.DrawBlurAt(0, 0, ScrW(), ScrH())
+	-- 	ws.util.DrawBlurAt(0, 0, ScrW(), ScrH())
 	-- end)
-	function ix.util.DrawBlurAt(x, y, width, height, amount, passes, alpha)
+	function ws.util.DrawBlurAt(x, y, width, height, amount, passes, alpha)
 		amount = amount or 5
 
-		if (ix.option.Get("cheapBlur", false)) then
+		if (ws.option.Get("cheapBlur", false)) then
 			surface.SetDrawColor(30, 30, 30, amount * 20)
 			surface.DrawRect(x, y, width, height)
 		else
@@ -457,8 +457,8 @@ if (CLIENT) then
 	-- `PostDrawOpaqueRenderables` hook.
 	-- @realm client
 	-- @func drawFunc Function to call when it needs to be drawn
-	function ix.util.PushBlur(drawFunc)
-		ix.blurRenderQueue[#ix.blurRenderQueue + 1] = drawFunc
+	function ws.util.PushBlur(drawFunc)
+		ws.blurRenderQueue[#ws.blurRenderQueue + 1] = drawFunc
 	end
 
 	--- Draws some text with a shadow.
@@ -469,14 +469,14 @@ if (CLIENT) then
 	-- @color color Color of the text to draw
 	-- @number[opt=TEXT_ALIGN_LEFT] alignX Horizontal alignment of the text, using one of the `TEXT_ALIGN_*` constants
 	-- @number[opt=TEXT_ALIGN_LEFT] alignY Vertical alignment of the text, using one of the `TEXT_ALIGN_*` constants
-	-- @string[opt="ixGenericFont"] font Font to use for the text
+	-- @string[opt="wsGenericFont"] font Font to use for the text
 	-- @number[opt=color.a * 0.575] alpha Alpha of the shadow
-	function ix.util.DrawText(text, x, y, color, alignX, alignY, font, alpha)
+	function ws.util.DrawText(text, x, y, color, alignX, alignY, font, alpha)
 		color = color or color_white
 
 		return draw.TextShadow({
 			text = text,
-			font = font or "ixGenericFont",
+			font = font or "wsGenericFont",
 			pos = {x, y},
 			color = color,
 			xalign = alignX or TEXT_ALIGN_LEFT,
@@ -489,9 +489,9 @@ if (CLIENT) then
 	-- @realm client
 	-- @string text Text to wrap
 	-- @number maxWidth Maximum allowed width in pixels
-	-- @string[opt="ixChatFont"] font Font to use for the text
-	function ix.util.WrapText(text, maxWidth, font)
-		font = font or "ixChatFont"
+	-- @string[opt="wsChatFont"] font Font to use for the text
+	function ws.util.WrapText(text, maxWidth, font)
+		font = font or "wsChatFont"
 		surface.SetFont(font)
 
 		local words = string.Explode("%s", text, true)
@@ -558,18 +558,18 @@ if (CLIENT) then
 	-- arc drawing functions
 	-- by bobbleheadbob
 	-- https://facepunch.com/showthread.php?t=1558060
-	function ix.util.DrawArc(cx, cy, radius, thickness, startang, endang, roughness, color)
+	function ws.util.DrawArc(cx, cy, radius, thickness, startang, endang, roughness, color)
 		surface.SetDrawColor(color)
-		ix.util.DrawPrecachedArc(ix.util.PrecacheArc(cx, cy, radius, thickness, startang, endang, roughness))
+		ws.util.DrawPrecachedArc(ws.util.PrecacheArc(cx, cy, radius, thickness, startang, endang, roughness))
 	end
 
-	function ix.util.DrawPrecachedArc(arc) -- Draw a premade arc.
+	function ws.util.DrawPrecachedArc(arc) -- Draw a premade arc.
 		for _, v in ipairs(arc) do
 			surface.DrawPoly(v)
 		end
 	end
 
-	function ix.util.PrecacheArc(cx, cy, radius, thickness, startang, endang, roughness)
+	function ws.util.PrecacheArc(cx, cy, radius, thickness, startang, endang, roughness)
 		local quadarc = {}
 
 		-- Correct start/end ang
@@ -633,7 +633,7 @@ if (CLIENT) then
 
 	--- Resets all stencil values to known good (i.e defaults)
 	-- @realm client
-	function ix.util.ResetStencilValues()
+	function ws.util.ResetStencilValues()
 		render.SetStencilWriteMask(0xFF)
 		render.SetStencilTestMask(0xFF)
 		render.SetStencilReferenceValue(0)
@@ -664,7 +664,7 @@ if (CLIENT) then
 
 	-- Alternative to Color that retrieves from the SKIN.Colours table
 	function derma.GetColor(name, panel, default)
-		default = default or ix.config.Get("color")
+		default = default or ws.config.Get("color")
 
 		local skin = panel:GetSkin()
 
@@ -676,7 +676,7 @@ if (CLIENT) then
 	end
 
 
-	hook.Add("OnScreenSizeChanged", "ix.OnScreenSizeChanged", function(oldWidth, oldHeight)
+	hook.Add("OnScreenSizeChanged", "ws.OnScreenSizeChanged", function(oldWidth, oldHeight)
 		hook.Run("ScreenResolutionChanged", oldWidth, oldHeight)
 	end)
 end
@@ -726,7 +726,7 @@ FCAP_DIRECTIONAL_USE = 0x00000080
 FCAP_USE_ONGROUND = 0x00000100
 FCAP_USE_IN_RADIUS = 0x00000200
 
-function ix.util.IsUseableEntity(entity, requiredCaps)
+function ws.util.IsUseableEntity(entity, requiredCaps)
 	if (IsValid(entity)) then
 		local caps = entity:ObjectCaps()
 
@@ -762,7 +762,7 @@ do
 	local traceMin = Vector(-16, -16, -16)
 	local traceMax = Vector(16, 16, 16)
 
-	function ix.util.FindUseEntity(player, origin, forward)
+	function ws.util.FindUseEntity(player, origin, forward)
 		local tr
 		local up = forward:Up()
 		-- Search for objects in a sphere (tests for entities that are not solid, yet still useable)
@@ -807,11 +807,11 @@ do
 
 			pObject = tr.Entity
 
-			local bUsable = ix.util.IsUseableEntity(pObject, 0)
+			local bUsable = ws.util.IsUseableEntity(pObject, 0)
 
 			while (IsValid(pObject) and !bUsable and pObject:GetMoveParent()) do
 				pObject = pObject:GetMoveParent()
-				bUsable = ix.util.IsUseableEntity(pObject, 0)
+				bUsable = ws.util.IsUseableEntity(pObject, 0)
 			end
 
 			if (bUsable) then
@@ -834,7 +834,7 @@ do
 		-- check ground entity first
 		-- if you've got a useable ground entity, then shrink the cone of this search to 45 degrees
 		-- otherwise, search out in a 90 degree cone (hemisphere)
-		if (IsValid(player:GetGroundEntity()) and ix.util.IsUseableEntity(player:GetGroundEntity(), FCAP_USE_ONGROUND)) then
+		if (IsValid(player:GetGroundEntity()) and ws.util.IsUseableEntity(player:GetGroundEntity(), FCAP_USE_ONGROUND)) then
 			pNearest = player:GetGroundEntity()
 		end
 
@@ -845,7 +845,7 @@ do
 		end
 
 		for _, v in ipairs(ents.FindInSphere(searchCenter, 80)) do
-			if (!ix.util.IsUseableEntity(v, FCAP_USE_IN_RADIUS)) then
+			if (!ws.util.IsUseableEntity(v, FCAP_USE_IN_RADIUS)) then
 				continue
 			end
 
@@ -892,7 +892,7 @@ ALWAYS_RAISED["weapon_physgun"] = true
 ALWAYS_RAISED["gmod_tool"] = true
 ALWAYS_RAISED["ix_poshelper"] = true
 
-function ix.util.FindEmptySpace(entity, filter, spacing, size, height, tolerance)
+function ws.util.FindEmptySpace(entity, filter, spacing, size, height, tolerance)
 	spacing = spacing or 32
 	size = size or 3
 	height = height or 36
@@ -937,7 +937,7 @@ do
 	--- Gets the current time in the UTC time-zone.
 	-- @realm shared
 	-- @treturn number Current time in UTC
-	function ix.util.GetUTCTime()
+	function ws.util.GetUTCTime()
 		local date = os.date("!*t")
 		local localDate = os.date("*t")
 		localDate.isdst = false
@@ -969,9 +969,9 @@ do
 	-- @string text Text to interpret a length of time from
 	-- @treturn[1] number Amount of seconds from the length interpreted from the given string
 	-- @treturn[2] 0 If the given string does not have a valid time
-	-- @usage print(ix.util.GetStringTime("5y2d7w"))
+	-- @usage print(ws.util.GetStringTime("5y2d7w"))
 	-- > 162086400 -- 5 years, 2 days, 7 weeks
-	function ix.util.GetStringTime(text)
+	function ws.util.GetStringTime(text)
 		local minutes = tonumber(text)
 
 		if (minutes) then
@@ -1060,7 +1060,7 @@ if (system.IsLinux()) then
 		return (f:Size() - 44) / (f_SampleDepth(f) / 8 * f_SampleRate(f) * f_Channels(f))
 	end
 
-	ixSoundDuration = ixSoundDuration or SoundDuration -- luacheck: globals ixSoundDuration
+	wsSoundDuration = wsSoundDuration or SoundDuration -- luacheck: globals wsSoundDuration
 
 	function SoundDuration(str) -- luacheck: globals SoundDuration
 		local path, gamedir = GetSoundPath(str)
@@ -1075,7 +1075,7 @@ if (system.IsLinux()) then
 		elseif (f_IsWAV(f)) then
 			ret = f_Duration(f)
 		else
-			ret = ixSoundDuration(str)
+			ret = wsSoundDuration(str)
 		end
 
 		f:Close()
@@ -1095,7 +1095,7 @@ local ADJUST_SOUND = SoundDuration("npc/metropolice/pain1.wav") > 0 and "" or ".
 -- @number volume[opt=75] The sound level of each sound
 -- @number pitch[opt=100] Pitch percentage of each sound
 -- @treturn number How long the entire sequence of sounds will take to play
-function ix.util.EmitQueuedSounds(entity, sounds, delay, spacing, volume, pitch)
+function ws.util.EmitQueuedSounds(entity, sounds, delay, spacing, volume, pitch)
 	-- Let there be a delay before any sound is played.
 	delay = delay or 0
 	spacing = spacing or 0.1
@@ -1137,12 +1137,12 @@ end
 -- @tab destination The table you want the source table to merge with
 -- @tab source The table you want to merge with the destination table
 -- @return table
-function ix.util.MetatableSafeTableMerge(destination, source)
+function ws.util.MetatableSafeTableMerge(destination, source)
 	for k, v in pairs(source) do
 		if (istable(v) and istable(destination[k]) and getmetatable(v) == nil) then
 			-- don't overwrite one table with another
 			-- instead merge them recurisvely
-			ix.util.MetatableSafeTableMerge(destination[k], v);
+			ws.util.MetatableSafeTableMerge(destination[k], v);
 		else
 			destination[ k ] = v;
 		end
@@ -1155,7 +1155,7 @@ end
 -- @player client The player whose aim to trace
 -- @number[opt=96] maxRange Maximum trace distance in units
 -- @treturn player|nil The player being aimed at, or nil
-function ix.util.GetLookAtPlayer(client, maxRange)
+function ws.util.GetLookAtPlayer(client, maxRange)
 	maxRange = maxRange or 96
 
 	local data = {}
@@ -1172,5 +1172,5 @@ function ix.util.GetLookAtPlayer(client, maxRange)
 	return nil
 end
 
-ix.util.Include("helix/gamemode/core/meta/sh_entity.lua")
-ix.util.Include("helix/gamemode/core/meta/sh_player.lua")
+ws.util.Include("windswept/gamemode/core/meta/sh_entity.lua")
+ws.util.Include("windswept/gamemode/core/meta/sh_player.lua")

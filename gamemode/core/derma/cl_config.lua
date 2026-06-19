@@ -14,7 +14,7 @@ function PANEL:Populate()
 	local categories = {}
 	local categoryIndices = {}
 
-	for k, v in pairs(ix.config.stored) do
+	for k, v in pairs(ws.config.stored) do
 		local index = v.data and v.data.category or "misc"
 
 		categories[index] = categories[index] or {}
@@ -43,14 +43,14 @@ function PANEL:Populate()
 
 			local data = v.data.data
 			local type = v.type
-			local value = ix.util.SanitizeType(type, ix.config.Get(k))
+			local value = ws.util.SanitizeType(type, ws.config.Get(k))
 
 			local row = self:AddRow(type, categoryPhrase)
-			row:SetText(ix.util.ExpandCamelCase(k))
+			row:SetText(ws.util.ExpandCamelCase(k))
 			row:Populate(k, v.data)
 
 			-- type-specific properties
-			if (type == ix.type.number) then
+			if (type == ws.type.number) then
 				row:SetMin(data and data.min or 0)
 				row:SetMax(data and data.max or 1)
 				row:SetDecimals(data and data.decimals or 0)
@@ -60,11 +60,11 @@ function PANEL:Populate()
 			row:SetShowReset(value != v.default, k, v.default)
 
 			row.OnValueChanged = function(panel)
-				local newValue = ix.util.SanitizeType(type, panel:GetValue())
+				local newValue = ws.util.SanitizeType(type, panel:GetValue())
 
 				panel:SetShowReset(newValue != v.default, k, v.default)
 
-				net.Start("ixConfigSet")
+				net.Start("wsConfigSet")
 					net.WriteString(k)
 					net.WriteType(newValue)
 				net.SendToServer()
@@ -74,7 +74,7 @@ function PANEL:Populate()
 				panel:SetValue(v.default, true)
 				panel:SetShowReset(false)
 
-				net.Start("ixConfigSet")
+				net.Start("wsConfigSet")
 					net.WriteString(k)
 					net.WriteType(v.default)
 				net.SendToServer()
@@ -97,7 +97,7 @@ function PANEL:Populate()
 	self:SizeToContents()
 end
 
-vgui.Register("ixConfigManager", PANEL, "ixSettings")
+vgui.Register("wsConfigManager", PANEL, "wsSettings")
 
 -- plugin manager
 PANEL = {}
@@ -109,8 +109,8 @@ function PANEL:Init()
 	self.loadedCategory = L("loadedPlugins")
 	self.unloadedCategory = L("unloadedPlugins")
 
-	if (!ix.gui.bReceivedUnloadedPlugins) then
-		net.Start("ixConfigRequestUnloadedList")
+	if (!ws.gui.bReceivedUnloadedPlugins) then
+		net.Start("wsConfigRequestUnloadedList")
 		net.SendToServer()
 	end
 
@@ -118,7 +118,7 @@ function PANEL:Init()
 end
 
 function PANEL:OnPluginToggled(uniqueID, bEnabled)
-	net.Start("ixConfigPluginToggle")
+	net.Start("wsConfigPluginToggle")
 		net.WriteString(uniqueID)
 		net.WriteBool(bEnabled)
 	net.SendToServer()
@@ -129,8 +129,8 @@ function PANEL:Populate()
 	self:AddCategory(self.unloadedCategory)
 
 	-- add loaded plugins
-	for k, v in SortedPairsByMemberValue(ix.plugin.list, "name") do
-		local row = self:AddRow(ix.type.bool, self.loadedCategory)
+	for k, v in SortedPairsByMemberValue(ws.plugin.list, "name") do
+		local row = self:AddRow(ws.type.bool, self.loadedCategory)
 		row.id = k
 
 		row.setting:SetEnabledText(L("on"):utf8upper())
@@ -138,7 +138,7 @@ function PANEL:Populate()
 		row.setting:SizeToContents()
 
 		-- if this plugin is not in the unloaded list currently, then it's queued for an unload
-		row:SetValue(!ix.plugin.unloaded[k], true)
+		row:SetValue(!ws.plugin.unloaded[k], true)
 		row:SetText(v.name)
 
 		row.OnValueChanged = function(panel, bEnabled)
@@ -170,21 +170,21 @@ function PANEL:UpdatePlugin(uniqueID, bEnabled)
 	end
 end
 
--- called from Populate and from the ixConfigUnloadedList net message
+-- called from Populate and from the wsConfigUnloadedList net message
 function PANEL:UpdateUnloaded(bNoSizeToContents)
 	for _, v in pairs(self:GetRows()) do
-		if (ix.plugin.unloaded[v.id]) then
+		if (ws.plugin.unloaded[v.id]) then
 			v:SetValue(false, true)
 		end
 	end
 
-	for k, v in SortedPairs(ix.plugin.unloaded) do
-		if (ix.plugin.list[k]) then
+	for k, v in SortedPairs(ws.plugin.unloaded) do
+		if (ws.plugin.list[k]) then
 			-- if this plugin is in the loaded plugins list then it's queued for an unload - don't display it in this category
 			continue
 		end
 
-		local row = self:AddRow(ix.type.bool, self.unloadedCategory)
+		local row = self:AddRow(ws.type.bool, self.unloadedCategory)
 		row.id = k
 
 		row.setting:SetEnabledText(L("on"):utf8upper())
@@ -204,4 +204,4 @@ function PANEL:UpdateUnloaded(bNoSizeToContents)
 	end
 end
 
-vgui.Register("ixPluginManager", PANEL, "ixSettings")
+vgui.Register("wsPluginManager", PANEL, "wsSettings")

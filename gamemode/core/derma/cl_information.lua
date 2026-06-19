@@ -15,30 +15,30 @@ function PANEL:Init()
 	hook.Run("CanCreateCharacterInfo", suppress)
 
 	if (!suppress.time) then
-		local format = ix.option.Get("24hourTime", false) and "%A, %B %d, %Y. %H:%M" or "%A, %B %d, %Y. %I:%M %p"
+		local format = ws.option.Get("24hourTime", false) and "%A, %B %d, %Y. %H:%M" or "%A, %B %d, %Y. %I:%M %p"
 
 		self.time = self:Add("DLabel")
-		self.time:SetFont("ixMediumFont")
+		self.time:SetFont("wsMediumFont")
 		self.time:SetTall(28)
 		self.time:SetContentAlignment(5)
 		self.time:Dock(TOP)
 		self.time:SetTextColor(color_white)
 		self.time:SetExpensiveShadow(1, Color(0, 0, 0, 150))
 		self.time:DockMargin(0, 0, 0, 32)
-		self.time:SetText(ix.date.GetFormatted(format))
+		self.time:SetText(ws.date.GetFormatted(format))
 		self.time.Think = function(this)
 			if ((this.nextTime or 0) < CurTime()) then
-				this:SetText(ix.date.GetFormatted(format))
+				this:SetText(ws.date.GetFormatted(format))
 				this.nextTime = CurTime() + 0.5
 			end
 		end
 	end
 
 	if (!suppress.name) then
-		self.name = self:Add("ixLabel")
+		self.name = self:Add("wsLabel")
 		self.name:Dock(TOP)
 		self.name:DockMargin(0, 0, 0, 8)
-		self.name:SetFont("ixMenuButtonHugeFont")
+		self.name:SetFont("wsMenuButtonHugeFont")
 		self.name:SetContentAlignment(5)
 		self.name:SetTextColor(color_white)
 		self.name:SetPadding(8)
@@ -49,7 +49,7 @@ function PANEL:Init()
 		self.description = self:Add("DLabel")
 		self.description:Dock(TOP)
 		self.description:DockMargin(0, 0, 0, 8)
-		self.description:SetFont("ixMenuButtonFont")
+		self.description:SetFont("wsMenuButtonFont")
 		self.description:SetTextColor(color_white)
 		self.description:SetContentAlignment(5)
 		self.description:SetMouseInputEnabled(true)
@@ -62,10 +62,10 @@ function PANEL:Init()
 
 		self.description.OnMousePressed = function(this, code)
 			if (code == MOUSE_LEFT) then
-				ix.command.Send("CharDesc")
+				ws.command.Send("CharDesc")
 
-				if (IsValid(ix.gui.menu)) then
-					ix.gui.menu:Remove()
+				if (IsValid(ws.gui.menu)) then
+					ws.gui.menu:Remove()
 				end
 			end
 		end
@@ -97,7 +97,7 @@ function PANEL:Init()
 	if (!suppress.characterInfo) then
 		self.characterInfo = self:Add("Panel")
 		self.characterInfo.list = {}
-		self.characterInfo:Dock(TOP) -- no dock margin because this is handled by ixListRow
+		self.characterInfo:Dock(TOP) -- no dock margin because this is handled by wsListRow
 		self.characterInfo.SizeToContents = function(this)
 			local height = 0
 
@@ -112,19 +112,19 @@ function PANEL:Init()
 		end
 
 		if (!suppress.faction) then
-			self.faction = self.characterInfo:Add("ixListRow")
+			self.faction = self.characterInfo:Add("wsListRow")
 			self.faction:SetList(self.characterInfo.list)
 			self.faction:Dock(TOP)
 		end
 
 		if (!suppress.class) then
-			self.class = self.characterInfo:Add("ixListRow")
+			self.class = self.characterInfo:Add("wsListRow")
 			self.class:SetList(self.characterInfo.list)
 			self.class:Dock(TOP)
 		end
 
 		if (!suppress.money) then
-			self.money = self.characterInfo:Add("ixListRow")
+			self.money = self.characterInfo:Add("wsListRow")
 			self.money:SetList(self.characterInfo.list)
 			self.money:Dock(TOP)
 			self.money:SizeToContents()
@@ -139,7 +139,7 @@ function PANEL:Init()
 		local character = LocalPlayer().GetCharacter and LocalPlayer():GetCharacter()
 
 		if (character) then
-			self.attributes = self:Add("ixCategoryPanel")
+			self.attributes = self:Add("wsCategoryPanel")
 			self.attributes:SetText(L("attributes"))
 			self.attributes:Dock(TOP)
 			self.attributes:DockMargin(0, 0, 0, 8)
@@ -147,7 +147,7 @@ function PANEL:Init()
 			local boost = character:GetBoosts()
 			local bFirst = true
 
-			for k, v in SortedPairsByMemberValue(ix.attributes.list, "name") do
+			for k, v in SortedPairsByMemberValue(ws.attributes.list, "name") do
 				local attributeBoost = 0
 
 				if (boost[k]) then
@@ -156,7 +156,7 @@ function PANEL:Init()
 					end
 				end
 
-				local bar = self.attributes:Add("ixAttributeBar")
+				local bar = self.attributes:Add("wsAttributeBar")
 				bar:Dock(TOP)
 
 				if (!bFirst) then
@@ -173,7 +173,7 @@ function PANEL:Init()
 					bar:SetValue(value)
 				end
 
-				local maximum = v.maxValue or ix.config.Get("maxAttributes", 100)
+				local maximum = v.maxValue or ws.config.Get("maxAttributes", 100)
 				bar:SetMax(maximum)
 				bar:SetReadOnly()
 				bar:SetText(Format("%s [%.1f/%.1f] (%.1f%%)", L(v.name), value, maximum, value / maximum * 100))
@@ -196,8 +196,8 @@ function PANEL:Update(character)
 	end
 
 	local factionIndex = character:GetFaction()
-	local faction = factionIndex and ix.faction.indices[factionIndex]
-	local class = ix.class.list[character:GetClass()]
+	local faction = factionIndex and ws.faction.indices[factionIndex]
+	local class = ws.class.list[character:GetClass()]
 
 	if (self.name) then
 		self.name:SetText(character:GetName())
@@ -242,7 +242,7 @@ function PANEL:Update(character)
 
 	if (self.money) then
 		self.money:SetLabelText(L("money"))
-		self.money:SetText(ix.currency.Get(character:GetMoney()))
+		self.money:SetText(ws.currency.Get(character:GetMoney()))
 		self.money:SizeToContents()
 	end
 
@@ -257,15 +257,15 @@ function PANEL:OnSubpanelRightClick()
 	properties.OpenEntityMenu(LocalPlayer())
 end
 
-vgui.Register("ixCharacterInfo", PANEL, "DScrollPanel")
+vgui.Register("wsCharacterInfo", PANEL, "DScrollPanel")
 
-hook.Add("CreateMenuButtons", "ixCharInfo", function(tabs)
+hook.Add("CreateMenuButtons", "wsCharInfo", function(tabs)
 	tabs["you"] = {
 		bHideBackground = true,
 		-- All players use same gray color (no faction color metagaming)
 		buttonColor = Color(200, 200, 200),
 		Create = function(info, container)
-			container.infoPanel = container:Add("ixCharacterInfo")
+			container.infoPanel = container:Add("wsCharacterInfo")
 
 			container.OnMouseReleased = function(this, key)
 				if (key == MOUSE_RIGHT) then
@@ -275,10 +275,10 @@ hook.Add("CreateMenuButtons", "ixCharInfo", function(tabs)
 		end,
 		OnSelected = function(info, container)
 			container.infoPanel:Update(LocalPlayer():GetCharacter())
-			ix.gui.menu:SetCharacterOverview(true)
+			ws.gui.menu:SetCharacterOverview(true)
 		end,
 		OnDeselected = function(info, container)
-			ix.gui.menu:SetCharacterOverview(false)
+			ws.gui.menu:SetCharacterOverview(false)
 		end
 	}
 end)

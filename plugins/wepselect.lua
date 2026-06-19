@@ -14,7 +14,7 @@ if (CLIENT) then
 	local matrixScale = Vector(1, 1, 0)
 
 	function PLUGIN:LoadFonts(font, genericFont)
-		surface.CreateFont("ixWeaponSelectFont", {
+		surface.CreateFont("wsWeaponSelectFont", {
 			font = font,
 			size = ScreenScale(16),
 			extended = true,
@@ -53,7 +53,7 @@ if (CLIENT) then
 			for i = 1, #weapons do
 				local theta = (i - index) * 0.1
 				local color = ColorAlpha(
-					i == self.index and ix.config.Get("color") or color_white,
+					i == self.index and ws.config.Get("color") or color_white,
 					(255 - math.abs(theta * 3) * 255) * fraction
 				)
 
@@ -71,7 +71,7 @@ if (CLIENT) then
 					end
 				end
 
-				surface.SetFont("ixWeaponSelectFont")
+				surface.SetFont("wsWeaponSelectFont")
 				local weaponName = language.GetPhrase(weapons[i]:GetPrintName()):utf8upper()
 				local _, ty = surface.GetTextSize(weaponName)
 				local scale = 1 - math.abs(theta * 2)
@@ -84,7 +84,7 @@ if (CLIENT) then
 				matrix:Scale(matrixScale * scale)
 
 				cam.PushModelMatrix(matrix)
-					ix.util.DrawText(weaponName, 2, ty / 2, color, 0, 1, "ixWeaponSelectFont")
+					ws.util.DrawText(weaponName, 2, ty / 2, color, 0, 1, "wsWeaponSelectFont")
 				cam.PopModelMatrix()
 			end
 
@@ -104,15 +104,15 @@ if (CLIENT) then
 			local text = ""
 
 			if (instructions != nil and instructions:find("%S")) then
-				local color = ix.config.Get("color")
+				local color = ws.config.Get("color")
 				text = text .. string.format(
-					"<font=ixItemBoldFont><color=%d,%d,%d>%s</font></color>\n%s\n",
+					"<font=wsItemBoldFont><color=%d,%d,%d>%s</font></color>\n%s\n",
 					color.r, color.g, color.b, L("Instructions"), instructions
 				)
 			end
 
 			if (text != "") then
-				self.markup = markup.Parse("<font=ixItemDescFont>"..text, ScrW() * 0.3)
+				self.markup = markup.Parse("<font=wsItemDescFont>"..text, ScrW() * 0.3)
 				self.infoAlpha = 0
 			end
 

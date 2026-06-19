@@ -5,30 +5,30 @@ PLUGIN.name = "Containers"
 PLUGIN.author = "Chessnut"
 PLUGIN.description = "Provides the ability to store items."
 
-ix.container = ix.container or {}
-ix.container.stored = ix.container.stored or {}
+ws.container = ws.container or {}
+ws.container.stored = ws.container.stored or {}
 
-ix.config.Add("containerSave", true, "Whether or not containers will save after a server restart.", nil, {
+ws.config.Add("containerSave", true, "Whether or not containers will save after a server restart.", nil, {
 	category = "Containers"
 })
 
-ix.config.Add("containerOpenTime", 0.7, "How long it takes to open a container.", nil, {
+ws.config.Add("containerOpenTime", 0.7, "How long it takes to open a container.", nil, {
 	data = {min = 0, max = 50},
 	category = "Containers"
 })
 
-function ix.container.Register(model, data)
-	ix.container.stored[model:lower()] = data
+function ws.container.Register(model, data)
+	ws.container.stored[model:lower()] = data
 end
 
-ix.util.Include("sh_definitions.lua")
+ws.util.Include("sh_definitions.lua")
 
 if (SERVER) then
-	util.AddNetworkString("ixContainerPassword")
+	util.AddNetworkString("wsContainerPassword")
 
 	function PLUGIN:PlayerSpawnedProp(client, model, entity)
 		model = tostring(model):lower()
-		local data = ix.container.stored[model]
+		local data = ws.container.stored[model]
 
 		if (data) then
 			if (hook.Run("CanPlayerSpawnContainer", client, model, entity) == false) then return end
@@ -39,7 +39,7 @@ if (SERVER) then
 			container:SetModel(model)
 			container:Spawn()
 
-			ix.inventory.New(0, "container:" .. model:lower(), function(inventory)
+			ws.inventory.New(0, "container:" .. model:lower(), function(inventory)
 				-- we'll technically call this a bag since we don't want other bags to go inside
 				inventory.vars.isBag = true
 				inventory.vars.isContainer = true
@@ -55,7 +55,7 @@ if (SERVER) then
 	end
 
 	function PLUGIN:CanSaveContainer(entity, inventory)
-		return ix.config.Get("containerSave", true)
+		return ws.config.Get("containerSave", true)
 	end
 
 	function PLUGIN:SaveContainer()
@@ -93,7 +93,7 @@ if (SERVER) then
 	end
 
 	function PLUGIN:SaveData()
-		if (!ix.shuttingDown) then
+		if (!ws.shuttingDown) then
 			self:SaveContainer()
 		end
 	end
@@ -107,7 +107,7 @@ if (SERVER) then
 
 		if (data) then
 			for _, v in ipairs(data) do
-				local data2 = ix.container.stored[v[4]:lower()]
+				local data2 = ws.container.stored[v[4]:lower()]
 
 				if (data2) then
 					local inventoryID = tonumber(v[3])
@@ -141,7 +141,7 @@ if (SERVER) then
 
 					-- REMOVED: v[7] money restore - physical currency system
 
-					ix.inventory.Restore(inventoryID, data2.width, data2.height, function(inventory)
+					ws.inventory.Restore(inventoryID, data2.width, data2.height, function(inventory)
 						inventory.vars.isBag = true
 						inventory.vars.isContainer = true
 
@@ -160,8 +160,8 @@ if (SERVER) then
 		end
 	end
 
-	net.Receive("ixContainerPassword", function(length, client)
-		if ((client.ixNextContainerPassword or 0) > RealTime()) then
+	net.Receive("wsContainerPassword", function(length, client)
+		if ((client.wsNextContainerPassword or 0) > RealTime()) then
 			return
 		end
 
@@ -188,15 +188,15 @@ if (SERVER) then
 			end
 		end
 
-		client.ixNextContainerPassword = RealTime() + 1
+		client.wsNextContainerPassword = RealTime() + 1
 	end)
 
-	ix.log.AddType("containerPassword", function(client, ...)
+	ws.log.AddType("containerPassword", function(client, ...)
 		local arg = {...}
 		return string.format("%s has %s the password for '%s'.", client:Name(), arg[3] and "set" or "removed", arg[1], arg[2])
 	end)
 
-	ix.log.AddType("containerName", function(client, ...)
+	ws.log.AddType("containerName", function(client, ...)
 		local arg = {...}
 
 		if (arg[3]) then
@@ -206,17 +206,17 @@ if (SERVER) then
 		end
 	end)
 
-	ix.log.AddType("openContainer", function(client, ...)
+	ws.log.AddType("openContainer", function(client, ...)
 		local arg = {...}
 		return string.format("%s opened the '%s' #%d container.", client:Name(), arg[1], arg[2])
 	end, FLAG_NORMAL)
 
-	ix.log.AddType("closeContainer", function(client, ...)
+	ws.log.AddType("closeContainer", function(client, ...)
 		local arg = {...}
 		return string.format("%s closed the '%s' #%d container.", client:Name(), arg[1], arg[2])
 	end, FLAG_NORMAL)
 else
-	net.Receive("ixContainerPassword", function(length)
+	net.Receive("wsContainerPassword", function(length)
 		local entity = net.ReadEntity()
 
 		Derma_StringRequest(
@@ -224,7 +224,7 @@ else
 			L("containerPasswordWrite"),
 			"",
 			function(val)
-				net.Start("ixContainerPassword")
+				net.Start("wsContainerPassword")
 					net.WriteEntity(entity)
 					net.WriteString(val)
 				net.SendToServer()
@@ -234,12 +234,12 @@ else
 end
 
 function PLUGIN:InitializedPlugins()
-	for k, v in pairs(ix.container.stored) do
+	for k, v in pairs(ws.container.stored) do
 		if (v.name and v.width and v.height) then
-			ix.inventory.Register("container:" .. k:lower(), v.width, v.height)
+			ws.inventory.Register("container:" .. k:lower(), v.width, v.height)
 		else
 			ErrorNoHalt("[Helix] Container for '"..k.."' is missing all inventory information!\n")
-			ix.container.stored[k] = nil
+			ws.container.stored[k] = nil
 		end
 	end
 end
@@ -292,7 +292,7 @@ properties.Add("container_setpassword", {
 		local name = entity:GetDisplayName()
 		local inventory = entity:GetInventory()
 
-		ix.log.Add(client, "containerPassword", name, inventory:GetID(), password:len() != 0)
+		ws.log.Add(client, "containerPassword", name, inventory:GetID(), password:len() != 0)
 	end
 })
 
@@ -330,7 +330,7 @@ properties.Add("container_setname", {
 
 			client:NotifyLocalized("containerName", name)
 		else
-			local definition = ix.container.stored[entity:GetModel():lower()]
+			local definition = ws.container.stored[entity:GetModel():lower()]
 
 			entity:SetDisplayName(definition.name)
 
@@ -339,6 +339,6 @@ properties.Add("container_setname", {
 
 		local inventory = entity:GetInventory()
 
-		ix.log.Add(client, "containerName", name, inventory:GetID(), name:len() != 0)
+		ws.log.Add(client, "containerName", name, inventory:GetID(), name:len() != 0)
 	end
 })

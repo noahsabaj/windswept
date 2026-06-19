@@ -15,7 +15,7 @@ function ENT:SetupDataTables()
 end
 
 if (SERVER) then
-	util.AddNetworkString("ixItemEntityAction")
+	util.AddNetworkString("wsItemEntityAction")
 
 	function ENT:Initialize()
 		self:SetModel("models/props_junk/watermelon01.mdl")
@@ -40,8 +40,8 @@ if (SERVER) then
 			itemTable.entity = self
 
 			if (itemTable.functions.take.OnCanRun(itemTable)) then
-				caller:PerformInteraction(ix.config.Get("itemPickupTime", 0.5), self, function(client)
-					if (!ix.item.PerformInventoryAction(client, "take", self)) then
+				caller:PerformInteraction(ws.config.Get("itemPickupTime", 0.5), self, function(client)
+					if (!ws.item.PerformInventoryAction(client, "take", self)) then
 						return false -- do not mark dirty if interaction fails
 					end
 				end)
@@ -53,7 +53,7 @@ if (SERVER) then
 	end
 
 	function ENT:SetItem(itemID)
-		local itemTable = ix.item.instances[itemID]
+		local itemTable = ws.item.instances[itemID]
 
 		if (itemTable) then
 			local material = itemTable:GetMaterial(self)
@@ -68,7 +68,7 @@ if (SERVER) then
 			self:PhysicsInit(SOLID_VPHYSICS)
 			self:SetSolid(SOLID_VPHYSICS)
 			self:SetItemID(itemTable.uniqueID)
-			self.ixItemID = itemID
+			self.wsItemID = itemID
 
 			if (!table.IsEmpty(itemTable.data)) then
 				self:SetNetVar("data", itemTable.data)
@@ -131,16 +131,16 @@ if (SERVER) then
 	end
 
 	function ENT:OnDuplicated(entTable)
-		local itemID = entTable.ixItemID
-		local itemTable = ix.item.instances[itemID]
+		local itemID = entTable.wsItemID
+		local itemTable = ws.item.instances[itemID]
 
-		ix.item.Instance(0, itemTable.uniqueID, itemTable.data, 1, 1, function(item)
+		ws.item.Instance(0, itemTable.uniqueID, itemTable.data, 1, 1, function(item)
 			self:SetItem(item:GetID())
 		end)
 	end
 
 	function ENT:OnTakeDamage(damageInfo)
-		local itemTable = ix.item.instances[self.ixItemID]
+		local itemTable = ws.item.instances[self.wsItemID]
 
 		if (itemTable.OnEntityTakeDamage
 		and itemTable:OnEntityTakeDamage(self, damageInfo) == false) then
@@ -150,19 +150,19 @@ if (SERVER) then
 		local damage = damageInfo:GetDamage()
 		self:SetHealth(self:Health() - damage)
 
-		if (self:Health() <= 0 and !self.ixIsDestroying) then
-			self.ixIsDestroying = true
-			self.ixDamageInfo = {damageInfo:GetAttacker(), damage, damageInfo:GetInflictor()}
+		if (self:Health() <= 0 and !self.wsIsDestroying) then
+			self.wsIsDestroying = true
+			self.wsDamageInfo = {damageInfo:GetAttacker(), damage, damageInfo:GetInflictor()}
 			self:Remove()
 		end
 	end
 
 	function ENT:OnRemove()
-		if (!ix.shuttingDown and !self.ixIsSafe and self.ixItemID) then
-			local itemTable = ix.item.instances[self.ixItemID]
+		if (!ws.shuttingDown and !self.wsIsSafe and self.wsItemID) then
+			local itemTable = ws.item.instances[self.wsItemID]
 
 			if (itemTable) then
-				if (self.ixIsDestroying) then
+				if (self.wsIsDestroying) then
 					self:EmitSound("physics/cardboard/cardboard_box_break"..math.random(1, 3)..".wav")
 					local position = self:LocalToWorld(self:OBBCenter())
 
@@ -176,7 +176,7 @@ if (SERVER) then
 						itemTable:OnDestroyed(self)
 					end
 
-					ix.log.Add(self.ixDamageInfo[1], "itemDestroy", itemTable:GetName(), itemTable:GetID())
+					ws.log.Add(self.wsDamageInfo[1], "itemDestroy", itemTable:GetName(), itemTable:GetID())
 				end
 
 				if (itemTable.OnRemoved) then
@@ -184,7 +184,7 @@ if (SERVER) then
 				end
 
 				local query = mysql:Delete("ix_items")
-					query:Where("item_id", self.ixItemID)
+					query:Where("item_id", self.wsItemID)
 				query:Execute()
 			end
 		end
@@ -208,8 +208,8 @@ if (SERVER) then
 		return TRANSMIT_PVS
 	end
 
-	net.Receive("ixItemEntityAction", function(length, client)
-		ix.item.PerformInventoryAction(client, net.ReadString(), net.ReadEntity())
+	net.Receive("wsItemEntityAction", function(length, client)
+		ws.item.PerformInventoryAction(client, net.ReadString(), net.ReadEntity())
 	end)
 else
 	ENT.PopulateEntityInfo = true
@@ -230,10 +230,10 @@ else
 		item.data = self:GetNetVar("data", {})
 		item.entity = self
 
-		ix.hud.PopulateItemTooltip(tooltip, item)
+		ws.hud.PopulateItemTooltip(tooltip, item)
 
 		local name = tooltip:GetRow("name")
-		local color = name and name:GetBackgroundColor() or ix.config.Get("color")
+		local color = name and name:GetBackgroundColor() or ws.config.Get("color")
 
 		-- set the arrow to be the same colour as the title/name row
 		tooltip:SetArrowColor(color)
@@ -334,7 +334,7 @@ function ENT:GetEntityMenu(client)
 			end
 
 			if (send != false) then
-				net.Start("ixItemEntityAction")
+				net.Start("wsItemEntityAction")
 					net.WriteString(k)
 					net.WriteEntity(self)
 				net.SendToServer()
@@ -352,7 +352,7 @@ function ENT:GetEntityMenu(client)
 end
 
 function ENT:GetItemTable()
-	return ix.item.list[self:GetItemID()]
+	return ws.item.list[self:GetItemID()]
 end
 
 function ENT:GetData(key, default)

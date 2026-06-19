@@ -29,13 +29,13 @@ function PANEL:Clear()
 end
 
 function PANEL:AddNotice(text, bError)
-	if (IsValid(ix.gui.characterMenu) and !ix.gui.characterMenu.bClosing) then
+	if (IsValid(ws.gui.characterMenu) and !ws.gui.characterMenu.bClosing) then
 		return
 	end
 
 	local textLength = text:utf8len()
 
-	local panel = self:Add("ixNotice")
+	local panel = self:Add("wsNotice")
 	panel:SetText(text)
 	panel:SetError(bError or text:utf8sub(textLength, textLength) == "!")
 	panel:SizeToContents()
@@ -43,7 +43,7 @@ function PANEL:AddNotice(text, bError)
 	panel:SetPos(self.padding, panel.currentY)
 
 	-- setup duration timer
-	panel:CreateAnimation(ix.option.Get("noticeDuration", 8), {
+	panel:CreateAnimation(ws.option.Get("noticeDuration", 8), {
 		index = 2,
 		target = {duration = 1},
 		bIgnoreConfig = true,
@@ -57,7 +57,7 @@ function PANEL:AddNotice(text, bError)
 	self:Organize()
 
 	-- remove old notice if we've hit the limit of notices
-	if (#self.notices > ix.option.Get("noticeMax", 4)) then
+	if (#self.notices > ws.option.Get("noticeMax", 4)) then
 		for i = #self.notices, 1, -1 do
 			local notice = self.notices[i]
 
@@ -120,7 +120,7 @@ function PANEL:Organize()
 	end
 end
 
-vgui.Register("ixNoticeManager", PANEL, "Panel")
+vgui.Register("wsNoticeManager", PANEL, "Panel")
 
 -- notice panel
 -- these do not manage their own enter/exit animations or lifetime
@@ -134,7 +134,7 @@ function PANEL:Init()
 	self:SetSize(256, 36)
 	self:SetContentAlignment(5)
 	self:SetExpensiveShadow(1, Color(0, 0, 0, 150))
-	self:SetFont("ixNoticeFont")
+	self:SetFont("wsNoticeFont")
 	self:SetTextColor(color_white)
 	self:SetDrawOnTop(true)
 	self:DockPadding(0, 0, 0, 0)
@@ -171,7 +171,7 @@ function PANEL:SizeToContents()
 	contentWidth = contentWidth + self.padding * 2
 	contentHeight = contentHeight + self.padding * 2
 
-	local manager = ix.gui.notices
+	local manager = ws.gui.notices
 	local maxWidth = math.min(IsValid(manager) and (manager:GetWide() - manager:GetPadding() * 2) or ScrW(), contentWidth)
 
 	if (contentWidth > maxWidth) then
@@ -235,7 +235,7 @@ function PANEL:Paint(width, height)
 		self:OnMouseLeave()
 	end
 
-	ix.util.DrawBlur(self)
+	ws.util.DrawBlur(self)
 
 	if (self.errorAnimation > 0) then
 		local color = derma.GetColor("Error", self)
@@ -252,7 +252,7 @@ function PANEL:Paint(width, height)
 
 	surface.DrawRect(0, 0, width, height)
 
-	surface.SetDrawColor(self.bError and derma.GetColor("Error", self) or ix.config.Get("color"))
+	surface.SetDrawColor(self.bError and derma.GetColor("Error", self) or ws.config.Get("color"))
 	surface.DrawRect(0, height - 1, width * self.duration, 1)
 end
 
@@ -260,11 +260,11 @@ function PANEL:PaintOver(width, height)
 	render.SetScissorRect(0, 0, 0, 0, false)
 end
 
-vgui.Register("ixNotice", PANEL, "DLabel")
+vgui.Register("wsNotice", PANEL, "DLabel")
 
-if (IsValid(ix.gui.notices)) then
-	ix.gui.notices:Remove()
-	ix.gui.notices = vgui.Create("ixNoticeManager")
+if (IsValid(ws.gui.notices)) then
+	ws.gui.notices:Remove()
+	ws.gui.notices = vgui.Create("wsNoticeManager")
 else
-	ix.gui.notices = vgui.Create("ixNoticeManager")
+	ws.gui.notices = vgui.Create("wsNoticeManager")
 end

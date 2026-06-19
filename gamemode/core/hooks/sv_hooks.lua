@@ -1,69 +1,69 @@
 
-util.AddNetworkString("ixPlayerDeath")
+util.AddNetworkString("wsPlayerDeath")
 
 function GM:PlayerInitialSpawn(client)
-	client.ixJoinTime = RealTime()
+	client.wsJoinTime = RealTime()
 
 	if (client:IsBot()) then
 		local botID = os.time() + client:EntIndex()
 
 		-- Bots are factionless like regular new characters
-		local models = ix.config.Get("factionlessModels") or {"models/gman.mdl"}
+		local models = ws.config.Get("factionlessModels") or {"models/gman.mdl"}
 		local model = models[math.random(#models)]
 		if (istable(model)) then model = model[1] end
 		if (!isstring(model)) then model = "models/gman.mdl" end
 
-		local character = ix.char.New({
+		local character = ws.char.New({
 			name = client:Name(),
 			faction = nil,
 			model = model,
 		}, botID, client, client:SteamID64())
 		character.isBot = true
 
-		local inventory = ix.inventory.Create(ix.config.Get("inventoryWidth"), ix.config.Get("inventoryHeight"), botID)
+		local inventory = ws.inventory.Create(ws.config.Get("inventoryWidth"), ws.config.Get("inventoryHeight"), botID)
 		inventory:SetOwner(botID)
 		inventory.noSave = true
 
 		character.vars.inv = {inventory}
 
-		ix.char.loaded[botID] = character
+		ws.char.loaded[botID] = character
 
 		character:Setup()
 		client:Spawn()
 
-		ix.chat.Send(nil, "connect", client:SteamName())
+		ws.chat.Send(nil, "connect", client:SteamName())
 
 		return
 	end
 
-	ix.config.Send(client)
-	ix.date.Send(client)
+	ws.config.Send(client)
+	ws.date.Send(client)
 
 	client:LoadData(function(data)
 		if (!IsValid(client)) then return end
 
 		-- Don't use the character cache if they've connected to another server using the same database
-		local address = ix.util.GetAddress()
+		local address = ws.util.GetAddress()
 		local bNoCache = client:GetData("lastIP", address) != address
 		client:SetData("lastIP", address)
 
-		net.Start("ixDataSync")
+		net.Start("wsDataSync")
 			net.WriteTable(data or {})
-			net.WriteUInt(client.ixPlayTime or 0, 32)
+			net.WriteUInt(client.wsPlayTime or 0, 32)
 		net.Send(client)
 
-		ix.char.Restore(client, function(charList)
+		ws.char.Restore(client, function(charList)
 			if (!IsValid(client)) then return end
 
 			MsgN("Loaded (" .. table.concat(charList, ", ") .. ") for " .. client:Name())
 
 			for _, v in ipairs(charList) do
-				ix.char.loaded[v]:Sync(client)
+				ws.char.loaded[v]:Sync(client)
 			end
 
-			client.ixCharList = charList
+			client.wsCharList = charList
 
-			net.Start("ixCharacterMenu")
+			net.Start("wsCharacterMenu")
 			net.WriteUInt(#charList, 6)
 
 			for _, v in ipairs(charList) do
@@ -72,7 +72,7 @@ function GM:PlayerInitialSpawn(client)
 
 			net.Send(client)
 
-			client.ixLoaded = true
+			client.wsLoaded = true
 			client:SetData("intro", true)
 
 			for _, v in player.Iterator() do
@@ -82,7 +82,7 @@ function GM:PlayerInitialSpawn(client)
 			end
 		end, bNoCache)
 
-		ix.chat.Send(nil, "connect", client:SteamName())
+		ws.chat.Send(nil, "connect", client:SteamName())
 	end)
 
 	client:SetNoDraw(true)
@@ -110,7 +110,7 @@ end
 
 function GM:KeyPress(client, key)
 	if (key == IN_RELOAD) then
-		timer.Create("ixToggleRaise"..client:SteamID(), ix.config.Get("weaponRaiseTime"), 1, function()
+		timer.Create("wsToggleRaise"..client:SteamID(), ws.config.Get("weaponRaiseTime"), 1, function()
 			if (IsValid(client)) then
 				client:ToggleWepRaised()
 			end
@@ -136,9 +136,9 @@ end
 
 function GM:KeyRelease(client, key)
 	if (key == IN_RELOAD) then
-		timer.Remove("ixToggleRaise" .. client:SteamID())
+		timer.Remove("wsToggleRaise" .. client:SteamID())
 	elseif (key == IN_USE) then
-		timer.Remove("ixCharacterInteraction" .. client:SteamID())
+		timer.Remove("wsCharacterInteraction" .. client:SteamID())
 	end
 end
 
@@ -151,7 +151,7 @@ function GM:CanPlayerInteractItem(client, action, item, data)
 		return false
 	end
 
-	if (IsValid(client.ixRagdoll)) then
+	if (IsValid(client.wsRagdoll)) then
 		client:NotifyLocalized("notNow")
 		return false
 	end
@@ -171,10 +171,10 @@ function GM:CanPlayerInteractItem(client, action, item, data)
 			return false
 		end
 
-		local combineItem = ix.item.instances[other]
+		local combineItem = ws.item.instances[other]
 
 		if (combineItem and combineItem.invID != 0) then
-			local combineInv = ix.item.inventories[combineItem.invID]
+			local combineInv = ws.item.inventories[combineItem.invID]
 
 			if (!combineInv:OnCheckAccess(client)) then
 				return false
@@ -184,8 +184,8 @@ function GM:CanPlayerInteractItem(client, action, item, data)
 		end
 	end
 
-	if (isentity(item) and item.ixSteamID and item.ixCharID
-	and item.ixSteamID == client:SteamID() and item.ixCharID != client:GetCharacter():GetID()
+	if (isentity(item) and item.wsSteamID and item.wsCharID
+	and item.wsSteamID == client:SteamID() and item.wsCharID != client:GetCharacter():GetID()
 	and !item:GetItemTable().bAllowMultiCharacterInteraction) then
 		client:NotifyLocalized("itemOwned")
 		return false
@@ -222,25 +222,25 @@ function GM:EntityTakeDamage(entity, dmgInfo)
 		return
 	end
 
-	if (IsValid(entity.ixPlayer)) then
-		if (IsValid(entity.ixHeldOwner)) then
+	if (IsValid(entity.wsPlayer)) then
+		if (IsValid(entity.wsHeldOwner)) then
 			dmgInfo:SetDamage(0)
 			return
 		end
 
 		if (dmgInfo:IsDamageType(DMG_CRUSH)) then
-			if ((entity.ixFallGrace or 0) < CurTime()) then
+			if ((entity.wsFallGrace or 0) < CurTime()) then
 				if (dmgInfo:GetDamage() <= 10) then
 					dmgInfo:SetDamage(0)
 				end
 
-				entity.ixFallGrace = CurTime() + 0.5
+				entity.wsFallGrace = CurTime() + 0.5
 			else
 				return
 			end
 		end
 
-		entity.ixPlayer:TakeDamageInfo(dmgInfo)
+		entity.wsPlayer:TakeDamageInfo(dmgInfo)
 	end
 end
 
@@ -271,7 +271,7 @@ function GM:PlayerLoadedCharacter(client, character, lastChar)
 	end
 
 	if (character) then
-		for _, v in pairs(ix.class.list) do
+		for _, v in pairs(ws.class.list) do
 			if (v.faction == client:Team() and v.isDefault) then
 				character:SetClass(v.index)
 
@@ -280,14 +280,14 @@ function GM:PlayerLoadedCharacter(client, character, lastChar)
 		end
 	end
 
-	if (IsValid(client.ixRagdoll)) then
-		client.ixRagdoll.ixNoReset = true
-		client.ixRagdoll.ixIgnoreDelete = true
-		client.ixRagdoll:Remove()
+	if (IsValid(client.wsRagdoll)) then
+		client.wsRagdoll.wsNoReset = true
+		client.wsRagdoll.wsIgnoreDelete = true
+		client.wsRagdoll:Remove()
 	end
 
-	local faction = ix.faction.indices[character:GetFaction()]
-	local uniqueID = "ixSalary" .. client:SteamID64()
+	local faction = ws.faction.indices[character:GetFaction()]
+	local uniqueID = "wsSalary" .. client:SteamID64()
 
 	if (faction and faction.pay and faction.pay > 0) then
 		timer.Create(uniqueID, faction.payTime or 300, 0, function()
@@ -296,7 +296,7 @@ function GM:PlayerLoadedCharacter(client, character, lastChar)
 					local pay = hook.Run("GetSalaryAmount", client, faction) or faction.pay
 
 					character:GiveMoney(pay)
-					client:NotifyLocalized("salary", ix.currency.Get(pay))
+					client:NotifyLocalized("salary", ws.currency.Get(pay))
 				end
 			else
 				timer.Remove(uniqueID)
@@ -313,9 +313,9 @@ function GM:CharacterLoaded(character)
 	local client = character:GetPlayer()
 
 	if (IsValid(client)) then
-		local uniqueID = "ixSaveChar"..client:SteamID()
+		local uniqueID = "wsSaveChar"..client:SteamID()
 
-		timer.Create(uniqueID, ix.config.Get("saveInterval"), 0, function()
+		timer.Create(uniqueID, ws.config.Get("saveInterval"), 0, function()
 			if (IsValid(client) and client:GetCharacter()) then
 				client:GetCharacter():Save()
 			else
@@ -326,18 +326,18 @@ function GM:CharacterLoaded(character)
 end
 
 function GM:PlayerSay(client, text)
-	local chatType, message, anonymous = ix.chat.Parse(client, text, true)
+	local chatType, message, anonymous = ws.chat.Parse(client, text, true)
 
 	if (chatType == "ic") then
-		if (ix.command.Parse(client, message)) then
+		if (ws.command.Parse(client, message)) then
 			return ""
 		end
 	end
 
-	text = ix.chat.Send(client, chatType, message, anonymous)
+	text = ws.chat.Send(client, chatType, message, anonymous)
 
 	if (isstring(text) and chatType != "ic") then
-		ix.log.Add(client, "chat", chatType and chatType:utf8upper() or "??", text)
+		ws.log.Add(client, "chat", chatType and chatType:utf8upper() or "??", text)
 	end
 
 	hook.Run("PostPlayerSay", client, chatType, message, anonymous)
@@ -434,7 +434,7 @@ function GM:PlayerSpawnedVehicle(client, entity)
 	entity:SetNetVar("owner", client:GetCharacter():GetID())
 end
 
-ix.allowedHoldableClasses = {
+ws.allowedHoldableClasses = {
 	["ix_item"] = true,
 	["ix_money"] = true,
 	["ix_shipment"] = true,
@@ -445,7 +445,7 @@ ix.allowedHoldableClasses = {
 }
 
 function GM:CanPlayerHoldObject(client, entity)
-	if (ix.allowedHoldableClasses[entity:GetClass()]) then
+	if (ws.allowedHoldableClasses[entity:GetClass()]) then
 		return true
 	end
 end
@@ -456,25 +456,25 @@ local function CalcPlayerCanHearPlayersVoice(listener)
 		return
 	end
 
-	listener.ixVoiceHear = listener.ixVoiceHear or {}
+	listener.wsVoiceHear = listener.wsVoiceHear or {}
 
 	local eyePos = listener:EyePos()
 	for _, speaker in player.Iterator() do
 		local speakerEyePos = speaker:EyePos()
-		listener.ixVoiceHear[speaker] = eyePos:DistToSqr(speakerEyePos) < voiceDistance
+		listener.wsVoiceHear[speaker] = eyePos:DistToSqr(speakerEyePos) < voiceDistance
 	end
 end
 
 function GM:InitializedConfig()
-	ix.date.Initialize()
+	ws.date.Initialize()
 
-	voiceDistance = ix.config.Get("voiceDistance")
+	voiceDistance = ws.config.Get("voiceDistance")
 	voiceDistance = voiceDistance * voiceDistance
 end
 
 function GM:VoiceToggled(bAllowVoice)
 	for _, v in player.Iterator() do
-		local uniqueID = v:SteamID64() .. "ixCanHearPlayersVoice"
+		local uniqueID = v:SteamID64() .. "wsCanHearPlayersVoice"
 
 		if (bAllowVoice) then
 			timer.Create(uniqueID, 0.5, 0, function()
@@ -483,7 +483,7 @@ function GM:VoiceToggled(bAllowVoice)
 		else
 			timer.Remove(uniqueID)
 
-			v.ixVoiceHear = nil
+			v.wsVoiceHear = nil
 		end
 	end
 end
@@ -494,8 +494,8 @@ end
 
 -- Called when weapons should be given to a player.
 function GM:PlayerLoadout(client)
-	if (client.ixSkipLoadout) then
-		client.ixSkipLoadout = nil
+	if (client.wsSkipLoadout) then
+		client.wsSkipLoadout = nil
 
 		return
 	end
@@ -513,11 +513,11 @@ function GM:PlayerLoadout(client)
 		-- Set their player model to the character's model.
 		client:SetModel(character:GetModel())
 		client:Give("ix_hands")
-		client:SetWalkSpeed(ix.config.Get("walkSpeed"))
-		client:SetRunSpeed(ix.config.Get("runSpeed"))
+		client:SetWalkSpeed(ws.config.Get("walkSpeed"))
+		client:SetRunSpeed(ws.config.Get("runSpeed"))
 		client:SetHealth(character:GetData("health", client:GetMaxHealth()))
 
-		local faction = ix.faction.indices[client:Team()]
+		local faction = ws.faction.indices[client:Team()]
 
 		if (faction) then
 			-- If their faction wants to do something when the player spawns, let it.
@@ -539,7 +539,7 @@ function GM:PlayerLoadout(client)
 		end
 
 		-- Ditto, but for classes.
-		local class = ix.class.list[client:GetCharacter():GetClass()]
+		local class = ws.class.list[client:GetCharacter():GetClass()]
 
 		if (class) then
 			if (class.OnSpawn) then
@@ -554,8 +554,8 @@ function GM:PlayerLoadout(client)
 		end
 
 		-- Apply any flags as needed.
-		ix.flag.OnSpawn(client)
-		ix.attributes.Setup(client)
+		ws.flag.OnSpawn(client)
+		ws.attributes.Setup(client)
 
 		hook.Run("PostPlayerLoadout", client)
 
@@ -583,8 +583,8 @@ function GM:PostPlayerLoadout(client)
 		end
 	end
 
-	if (ix.config.Get("allowVoice")) then
-		timer.Create(client:SteamID64() .. "ixCanHearPlayersVoice", 0.5, 0, function()
+	if (ws.config.Get("allowVoice")) then
+		timer.Create(client:SteamID64() .. "wsCanHearPlayersVoice", 0.5, 0, function()
 			CalcPlayerCanHearPlayersVoice(client)
 		end)
 	end
@@ -611,10 +611,10 @@ function GM:DoPlayerDeath(client, attacker, damageinfo)
 		end
 	end
 
-	net.Start("ixPlayerDeath")
+	net.Start("wsPlayerDeath")
 	net.Send(client)
 
-	client:SetAction("@respawning", ix.config.Get("spawnTime", 5))
+	client:SetAction("@respawning", ws.config.Get("spawnTime", 5))
 	client:SetDSP(31)
 end
 
@@ -622,17 +622,17 @@ function GM:PlayerDeath(client, inflictor, attacker)
 	local character = client:GetCharacter()
 
 	if (character) then
-		if (IsValid(client.ixRagdoll)) then
-			client.ixRagdoll.ixIgnoreDelete = true
+		if (IsValid(client.wsRagdoll)) then
+			client.wsRagdoll.wsIgnoreDelete = true
 			client:SetLocalVar("blur", nil)
 
 			if (hook.Run("ShouldRemoveRagdollOnDeath", client) != false) then
-				client.ixRagdoll:Remove()
+				client.wsRagdoll:Remove()
 			end
 		end
 
 		client:SetNetVar("deathStartTime", CurTime())
-		client:SetNetVar("deathTime", CurTime() + ix.config.Get("spawnTime", 5))
+		client:SetNetVar("deathTime", CurTime() + ws.config.Get("spawnTime", 5))
 
 		character:SetData("health", nil)
 
@@ -650,7 +650,7 @@ function GM:PlayerDeath(client, inflictor, attacker)
 
 		local weapon = attacker:IsPlayer() and attacker:GetActiveWeapon()
 
-		ix.log.Add(client, "playerDeath",
+		ws.log.Add(client, "playerDeath",
 			attacker:GetName() ~= "" and attacker:GetName() or attacker:GetClass(), IsValid(weapon) and weapon:GetClass())
 	end
 end
@@ -677,7 +677,7 @@ function GM:GetPlayerPainSound(client)
 end
 
 function GM:PlayerHurt(client, attacker, health, damage)
-	if ((client.ixNextPain or 0) < CurTime() and health > 0) then
+	if ((client.wsNextPain or 0) < CurTime() and health > 0) then
 		local painSound = hook.Run("GetPlayerPainSound", client) or painSounds[math.random(1, #painSounds)]
 
 		if (client:IsFemale() and !painSound:find("female")) then
@@ -685,10 +685,10 @@ function GM:PlayerHurt(client, attacker, health, damage)
 		end
 
 		client:EmitSound(painSound)
-		client.ixNextPain = CurTime() + 0.33
+		client.wsNextPain = CurTime() + 0.33
 	end
 
-	ix.log.Add(client, "playerHurt", damage, attacker:GetName() ~= "" and attacker:GetName() or attacker:GetClass())
+	ws.log.Add(client, "playerHurt", damage, attacker:GetName() ~= "" and attacker:GetName() or attacker:GetClass())
 end
 
 function GM:PlayerDeathThink(client)
@@ -719,28 +719,28 @@ function GM:PlayerDisconnected(client)
 
 		hook.Run("OnCharacterDisconnect", client, character)
 			character:Save()
-		ix.chat.Send(nil, "disconnect", client:SteamName())
+		ws.chat.Send(nil, "disconnect", client:SteamName())
 	end
 
-	if (IsValid(client.ixRagdoll)) then
-		client.ixRagdoll:Remove()
+	if (IsValid(client.wsRagdoll)) then
+		client.wsRagdoll:Remove()
 	end
 
 	client:ClearNetVars()
 
-	if (!client.ixVoiceHear) then
+	if (!client.wsVoiceHear) then
 		return
 	end
 
 	for _, v in player.Iterator() do
-		if (!v.ixVoiceHear) then
+		if (!v.wsVoiceHear) then
 			continue
 		end
 
-		v.ixVoiceHear[client] = nil
+		v.wsVoiceHear[client] = nil
 	end
 
-	timer.Remove(client:SteamID64() .. "ixCanHearPlayersVoice")
+	timer.Remove(client:SteamID64() .. "wsCanHearPlayersVoice")
 end
 
 function GM:InitPostEntity()
@@ -750,13 +750,13 @@ function GM:InitPostEntity()
 		local parent = v:GetOwner()
 
 		if (IsValid(parent)) then
-			v.ixPartner = parent
-			parent.ixPartner = v
+			v.wsPartner = parent
+			parent.wsPartner = v
 		else
 			for _, v2 in ipairs(doors) do
 				if (v2:GetOwner() == v) then
-					v2.ixPartner = v
-					v.ixPartner = v2
+					v2.wsPartner = v
+					v.wsPartner = v2
 
 					break
 				end
@@ -765,17 +765,17 @@ function GM:InitPostEntity()
 	end
 
 	timer.Simple(2, function()
-		ix.entityDataLoaded = true
+		ws.entityDataLoaded = true
 	end)
 end
 
 function GM:SaveData()
-	ix.date.Save()
+	ws.date.Save()
 end
 
 function GM:ShutDown()
-	ix.shuttingDown = true
-	ix.config.Save()
+	ws.shuttingDown = true
+	ws.config.Save()
 
 	hook.Run("SaveData")
 
@@ -812,7 +812,7 @@ function GM:PlayerCanHearPlayersVoice(listener, speaker)
 		return false
 	end
 
-	local bCanHear = listener.ixVoiceHear and listener.ixVoiceHear[speaker]
+	local bCanHear = listener.wsVoiceHear and listener.wsVoiceHear[speaker]
 	return bCanHear, true
 end
 
@@ -827,7 +827,7 @@ function GM:PlayerCanPickupWeapon(client, weapon)
 		return true
 	end
 
-	return client.ixWeaponGive
+	return client.wsWeaponGive
 end
 
 function GM:OnPhysgunFreeze(weapon, physObj, entity, client)
@@ -872,7 +872,7 @@ function GM:PreCleanupMap()
 end
 
 function GM:PostCleanupMap()
-	ix.plugin.RunLoadData()
+	ws.plugin.RunLoadData()
 end
 
 function GM:CharacterPreSave(character)
@@ -887,7 +887,7 @@ function GM:CharacterPreSave(character)
 	character:SetData("health", client:Alive() and client:Health() or nil)
 end
 
-timer.Create("ixLifeGuard", 1, 0, function()
+timer.Create("wsLifeGuard", 1, 0, function()
 	for _, v in player.Iterator() do
 		if (v:GetCharacter() and v:Alive() and hook.Run("ShouldPlayerDrowned", v) != false) then
 			if (v:WaterLevel() >= 3) then
@@ -922,13 +922,13 @@ timer.Create("ixLifeGuard", 1, 0, function()
 	end
 end)
 
-net.Receive("ixStringRequest", function(length, client)
+net.Receive("wsStringRequest", function(length, client)
 	local time = net.ReadUInt(32)
 	local text = net.ReadString()
 
-	if (client.ixStrReqs and client.ixStrReqs[time]) then
-		client.ixStrReqs[time](text)
-		client.ixStrReqs[time] = nil
+	if (client.wsStrReqs and client.wsStrReqs[time]) then
+		client.wsStrReqs[time](text)
+		client.wsStrReqs[time] = nil
 	end
 end)
 
@@ -947,19 +947,19 @@ function GM:GetPreferredCarryAngles(entity)
 end
 
 function GM:PluginShouldLoad(uniqueID)
-	return !ix.plugin.unloaded[uniqueID]
+	return !ws.plugin.unloaded[uniqueID]
 end
 
 function GM:DatabaseConnected()
 	-- Create the SQL tables if they do not exist.
-	ix.db.LoadTables()
-	ix.log.LoadTables()
+	ws.db.LoadTables()
+	ws.log.LoadTables()
 
-	MsgC(Color(0, 255, 0), "Database Type: " .. ix.db.config.adapter .. ".\n")
+	MsgC(Color(0, 255, 0), "Database Type: " .. ws.db.config.adapter .. ".\n")
 
-	timer.Create("ixDatabaseThink", 0.5, 0, function()
+	timer.Create("wsDatabaseThink", 0.5, 0, function()
 		mysql:Think()
 	end)
 
-	ix.plugin.RunLoadData()
+	ws.plugin.RunLoadData()
 end

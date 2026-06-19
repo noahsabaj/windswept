@@ -37,12 +37,12 @@ if (SERVER) then
 	end
 
 	function ENT:Use(activator)
-		activator:PerformInteraction(ix.config.Get("itemPickupTime", 0.5), self, function(client)
+		activator:PerformInteraction(ws.config.Get("itemPickupTime", 0.5), self, function(client)
 			if (client:GetCharacter() and client:GetCharacter():GetID() == self:GetNetVar("owner", 0)
 			and hook.Run("CanPlayerOpenShipment", client, self) != false) then
-				client.ixShipment = self
+				client.wsShipment = self
 
-				net.Start("ixShipmentOpen")
+				net.Start("wsShipmentOpen")
 					net.WriteEntity(self)
 					net.WriteTable(self.items)
 				net.Send(client)
@@ -104,8 +104,8 @@ else
 			surface.SetDrawColor(0, 0, 0, 200)
 			surface.DrawTexturedRect(-size / 2, -size / 2 - 10, size, size)
 
-			ix.util.DrawText("k", 0, 0, color_white, 1, 4, "ixIconsBig")
-			ix.util.DrawText(delTime, 0, -10, color_white, 1, 5, "ixBigFont")
+			ws.util.DrawText("k", 0, 0, color_white, 1, 4, "wsIconsBig")
+			ws.util.DrawText(delTime, 0, -10, color_white, 1, 5, "wsBigFont")
 		end
 
 		cam.Start3D2D(pos, ang, .15)
@@ -121,7 +121,7 @@ else
 	end
 
 	function ENT:OnPopulateEntityInfo(container)
-		local owner = ix.char.loaded[self:GetNetVar("owner", 0)]
+		local owner = ws.char.loaded[self:GetNetVar("owner", 0)]
 
 		local name = container:AddRow("name")
 		name:SetImportant()

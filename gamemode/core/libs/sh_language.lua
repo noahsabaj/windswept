@@ -27,29 +27,29 @@ does not have a set language. An example:
 	Entity(1):ChatPrint(L("areaEditMode"))
 	> -- "Area Edit Mode" will print in the player's chatbox
 ]]
--- @module ix.lang
+-- @module ws.lang
 
-ix.lang = ix.lang or {}
-ix.lang.stored = ix.lang.stored or {}
-ix.lang.names = ix.lang.names or {}
+ws.lang = ws.lang or {}
+ws.lang.stored = ws.lang.stored or {}
+ws.lang.names = ws.lang.names or {}
 
 --- Loads language files from a directory.
 -- @realm shared
 -- @internal
 -- @string directory Directory to load language files from
-function ix.lang.LoadFromDir(directory)
+function ws.lang.LoadFromDir(directory)
 	for _, v in ipairs(file.Find(directory.."/sh_*.lua", "LUA")) do
 		local niceName = v:sub(4, -5):lower()
 
-		ix.util.Include(directory.."/"..v, "shared")
+		ws.util.Include(directory.."/"..v, "shared")
 
 		if (LANGUAGE) then
 			if (NAME) then
-				ix.lang.names[niceName] = NAME
+				ws.lang.names[niceName] = NAME
 				NAME = nil
 			end
 
-			ix.lang.AddTable(niceName, LANGUAGE)
+			ws.lang.AddTable(niceName, LANGUAGE)
 			LANGUAGE = nil
 		end
 	end
@@ -60,19 +60,19 @@ end
 -- @realm shared
 -- @string language The ID of the language
 -- @tab data Language data to add to the given language
--- @usage ix.lang.AddTable("english", {
+-- @usage ws.lang.AddTable("english", {
 -- 	myPhrase = "My Phrase"
 -- })
-function ix.lang.AddTable(language, data)
+function ws.lang.AddTable(language, data)
 	language = tostring(language):lower()
-	ix.lang.stored[language] = table.Merge(ix.lang.stored[language] or {}, data)
+	ws.lang.stored[language] = table.Merge(ws.lang.stored[language] or {}, data)
 end
 
 if (SERVER) then
 	-- luacheck: globals L
 	function L(key, client, ...)
-		local languages = ix.lang.stored
-		local langKey = ix.option.Get(client, "language", "english")
+		local languages = ws.lang.stored
+		local langKey = ws.option.Get(client, "language", "english")
 		local info = languages[langKey] or languages.english
 
 		return string.format(info and info[key] or languages.english[key] or key, ...)
@@ -80,8 +80,8 @@ if (SERVER) then
 
 	-- luacheck: globals L2
 	function L2(key, client, ...)
-		local languages = ix.lang.stored
-		local langKey = ix.option.Get(client, "language", "english")
+		local languages = ws.lang.stored
+		local langKey = ws.option.Get(client, "language", "english")
 		local info = languages[langKey] or languages.english
 
 		if (info and info[key]) then
@@ -90,16 +90,16 @@ if (SERVER) then
 	end
 else
 	function L(key, ...)
-		local languages = ix.lang.stored
-		local langKey = ix.option.Get("language", "english")
+		local languages = ws.lang.stored
+		local langKey = ws.option.Get("language", "english")
 		local info = languages[langKey] or languages.english
 
 		return string.format(info and info[key] or languages.english[key] or key, ...)
 	end
 
 	function L2(key, ...)
-		local langKey = ix.option.Get("language", "english")
-		local info = ix.lang.stored[langKey]
+		local langKey = ws.option.Get("language", "english")
+		local info = ws.lang.stored[langKey]
 
 		if (info and info[key]) then
 			return string.format(info[key], ...)

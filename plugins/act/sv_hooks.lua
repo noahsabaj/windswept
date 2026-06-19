@@ -1,8 +1,8 @@
 
 local PLUGIN = PLUGIN
 
-util.AddNetworkString("ixActEnter")
-util.AddNetworkString("ixActLeave")
+util.AddNetworkString("wsActEnter")
+util.AddNetworkString("wsActLeave")
 
 function PLUGIN:CanPlayerEnterAct(client, modelClass, variant, act)
 	if (!client:Alive() or client:GetLocalVar("ragdoll") or client:WaterLevel() > 0 or !client:IsOnGround()) then
@@ -10,7 +10,7 @@ function PLUGIN:CanPlayerEnterAct(client, modelClass, variant, act)
 	end
 
 	-- check if player's model class has an entry in this act table
-	modelClass = modelClass or ix.anim.GetModelClass(client:GetModel())
+	modelClass = modelClass or ws.anim.GetModelClass(client:GetModel())
 	local data = act[modelClass]
 
 	if (!data) then
@@ -28,25 +28,25 @@ function PLUGIN:CanPlayerEnterAct(client, modelClass, variant, act)
 end
 
 function PLUGIN:PlayerDeath(client)
-	if (client.ixUntimedSequence) then
+	if (client.wsUntimedSequence) then
 		client:SetNetVar("actEnterAngle")
 		client:LeaveSequence()
-		client.ixUntimedSequence = nil
+		client.wsUntimedSequence = nil
 	end
 end
 
 function PLUGIN:PlayerSpawn(client)
-	if (client.ixUntimedSequence) then
+	if (client.wsUntimedSequence) then
 		client:SetNetVar("actEnterAngle")
 		client:LeaveSequence()
-		client.ixUntimedSequence = nil
+		client.wsUntimedSequence = nil
 	end
 end
 
 function PLUGIN:OnCharacterFallover(client)
-	if (client.ixUntimedSequence) then
+	if (client.wsUntimedSequence) then
 		client:SetNetVar("actEnterAngle")
 		client:LeaveSequence()
-		client.ixUntimedSequence = nil
+		client.wsUntimedSequence = nil
 	end
 end

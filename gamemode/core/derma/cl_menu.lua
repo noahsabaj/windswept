@@ -2,17 +2,17 @@
 local animationTime = 1
 local matrixZScale = Vector(1, 1, 0.0001)
 
-DEFINE_BASECLASS("ixSubpanelParent")
+DEFINE_BASECLASS("wsSubpanelParent")
 local PANEL = {}
 
 AccessorFunc(PANEL, "bCharacterOverview", "CharacterOverview", FORCE_BOOL)
 
 function PANEL:Init()
-	if (IsValid(ix.gui.menu)) then
-		ix.gui.menu:Remove()
+	if (IsValid(ws.gui.menu)) then
+		ws.gui.menu:Remove()
 	end
 
-	ix.gui.menu = self
+	ws.gui.menu = self
 
 	-- properties
 	self.manualChildren = {}
@@ -41,7 +41,7 @@ function PANEL:Init()
 	self.buttons:Dock(LEFT)
 	self.buttons:SetPaintedManually(true)
 
-	local close = self.buttons:Add("ixMenuButton")
+	local close = self.buttons:Add("wsMenuButton")
 	close:SetText("return")
 	close:SizeToContents()
 	close:Dock(BOTTOM)
@@ -49,13 +49,13 @@ function PANEL:Init()
 		self:Remove()
 	end
 
-	local characters = self.buttons:Add("ixMenuButton")
+	local characters = self.buttons:Add("wsMenuButton")
 	characters:SetText("characters")
 	characters:SizeToContents()
 	characters:Dock(BOTTOM)
 	characters.DoClick = function()
 		self:Remove()
-		vgui.Create("ixCharMenu")
+		vgui.Create("wsCharMenu")
 	end
 
 	-- @todo make a better way to avoid clicks in the padding PLEASE
@@ -148,7 +148,7 @@ function PANEL:TransitionSubpanel(id)
 		subpanel.info:OnSelected(subpanel)
 	end
 
-	ix.gui.lastMenuTab = id
+	ws.gui.lastMenuTab = id
 end
 
 function PANEL:SetCharacterOverview(bValue, length)
@@ -244,7 +244,7 @@ end
 
 function PANEL:SetupTab(name, info, sectionParent)
 	local bTable = istable(info)
-	local buttonColor = (bTable and info.buttonColor) or (ix.config.Get("color") or Color(140, 140, 140, 255))
+	local buttonColor = (bTable and info.buttonColor) or (ws.config.Get("color") or Color(140, 140, 140, 255))
 	local bDefault = (bTable and info.bDefault) or false
 	local qualifiedName = sectionParent and (sectionParent.name .. "/" .. name) or name
 
@@ -275,7 +275,7 @@ function PANEL:SetupTab(name, info, sectionParent)
 		button = sectionParent:AddSection(L(name))
 		name = qualifiedName
 	else
-		button = self.tabs:Add("ixMenuSelectionButton")
+		button = self.tabs:Add("wsMenuSelectionButton")
 		button:SetText(L(name))
 		button:SizeToContents()
 		button:Dock(TOP)
@@ -320,11 +320,11 @@ function PANEL:PopulateTabs()
 		end
 	end
 
-	if (ix.gui.lastMenuTab) then
+	if (ws.gui.lastMenuTab) then
 		for i = 1, #self.tabs.buttons do
 			local button = self.tabs.buttons[i]
 
-			if (button.id == ix.gui.lastMenuTab) then
+			if (button.id == ws.gui.lastMenuTab) then
 				default = button
 				break
 			end
@@ -387,7 +387,7 @@ function PANEL:Think()
 	if ((!self.anchorMode and !bTabDown) or gui.IsGameUIVisible()) then
 		self:Remove()
 
-		if (ix.option.Get("escCloseMenu", false)) then
+		if (ws.option.Get("escCloseMenu", false)) then
 			gui.HideGameUI()
 		end
 	end
@@ -420,9 +420,9 @@ function PANEL:Paint(width, height)
 		self.manualChildren[i]:PaintManual()
 	end
 
-	if (IsValid(ix.gui.inv1) and ix.gui.inv1.childPanels) then
-		for i = 1, #ix.gui.inv1.childPanels do
-			local panel = ix.gui.inv1.childPanels[i]
+	if (IsValid(ws.gui.inv1) and ws.gui.inv1.childPanels) then
+		for i = 1, #ws.gui.inv1.childPanels do
+			local panel = ws.gui.inv1.childPanels[i]
 
 			if (IsValid(panel)) then
 				panel:PaintManual()
@@ -446,9 +446,9 @@ function PANEL:Remove()
 	self:SetCharacterOverview(false, animationTime * 0.5)
 
 	-- remove input from opened child panels since they grab focus
-	if (IsValid(ix.gui.inv1) and ix.gui.inv1.childPanels) then
-		for i = 1, #ix.gui.inv1.childPanels do
-			local panel = ix.gui.inv1.childPanels[i]
+	if (IsValid(ws.gui.inv1) and ws.gui.inv1.childPanels) then
+		for i = 1, #ws.gui.inv1.childPanels do
+			local panel = ws.gui.inv1.childPanels[i]
 
 			if (IsValid(panel)) then
 				panel:SetMouseInputEnabled(false)
@@ -486,10 +486,10 @@ function PANEL:Remove()
 	})
 end
 
-vgui.Register("ixMenu", PANEL, "ixSubpanelParent")
+vgui.Register("wsMenu", PANEL, "wsSubpanelParent")
 
-if (IsValid(ix.gui.menu)) then
-	ix.gui.menu:Remove()
+if (IsValid(ws.gui.menu)) then
+	ws.gui.menu:Remove()
 end
 
-ix.gui.lastMenuTab = nil
+ws.gui.lastMenuTab = nil

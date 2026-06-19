@@ -10,7 +10,7 @@ AccessorFunc(PANEL, "backgroundColor", "BackgroundColor")
 AccessorFunc(PANEL, "backgroundAlpha", "BackgroundAlpha")
 
 function PANEL:Init()
-	self:SetFont("ixMenuButtonFont")
+	self:SetFont("wsMenuButtonFont")
 	self:SetTextColor(color_white)
 	self:SetPaintBackground(false)
 	self:SetContentAlignment(4)
@@ -117,7 +117,7 @@ function PANEL:OnMousePressed(code)
 	if (self.color) then
 		self:SetTextColor(self.color)
 	else
-		self:SetTextColor(ix.config.Get("color"))
+		self:SetTextColor(ws.config.Get("color"))
 	end
 
 	LocalPlayer():EmitSound("Helix.Press")
@@ -141,10 +141,10 @@ function PANEL:OnMouseReleased(key)
 	end
 end
 
-vgui.Register("ixMenuButton", PANEL, "DButton")
+vgui.Register("wsMenuButton", PANEL, "DButton")
 
 -- selection menu button
-DEFINE_BASECLASS("ixMenuButton")
+DEFINE_BASECLASS("wsMenuButton")
 PANEL = {}
 
 AccessorFunc(PANEL, "backgroundColor", "BackgroundColor")
@@ -195,7 +195,7 @@ end
 function PANEL:AddSection(name)
 	if (!IsValid(self.sectionPanel)) then
 		-- add section panel to regular button list
-		self.sectionPanel = vgui.Create("ixMenuSelectionList", self:GetParent())
+		self.sectionPanel = vgui.Create("wsMenuSelectionList", self:GetParent())
 		self.sectionPanel:Dock(self:GetDock())
 		self.sectionPanel:SetParentButton(self)
 	end
@@ -217,7 +217,7 @@ end
 function PANEL:OnSelected()
 end
 
-vgui.Register("ixMenuSelectionButton", PANEL, "ixMenuButton")
+vgui.Register("wsMenuSelectionButton", PANEL, "wsMenuButton")
 
 -- collapsable list for menu button sections
 PANEL = {}
@@ -234,14 +234,14 @@ function PANEL:Init()
 end
 
 function PANEL:AddButton(name, buttonList)
-	assert(IsValid(self.parent), "attempted to add button to ixMenuSelectionList without a ParentButton")
-	assert(buttonList ~= nil, "attempted to add button to ixMenuSelectionList without a buttonList")
+	assert(IsValid(self.parent), "attempted to add button to wsMenuSelectionList without a ParentButton")
+	assert(buttonList ~= nil, "attempted to add button to wsMenuSelectionList without a buttonList")
 
-	local button = self:Add("ixMenuSelectionButton")
+	local button = self:Add("wsMenuSelectionButton")
 	button.sectionParent = self.parent
 	button:SetTextInset(buttonPadding * 2, 0)
 	button:SetPadding(nil, 8, nil, 8)
-	button:SetFont("ixMenuButtonFontSmall")
+	button:SetFont("wsMenuButtonFontSmall")
 	button:Dock(TOP)
 	button:SetText(name)
 	button:SizeToContents()
@@ -292,4 +292,4 @@ function PANEL:Paint(width, height)
 	surface.DrawRect(0, height - 1, width, 1)
 end
 
-vgui.Register("ixMenuSelectionList", PANEL, "Panel")
+vgui.Register("wsMenuSelectionList", PANEL, "Panel")

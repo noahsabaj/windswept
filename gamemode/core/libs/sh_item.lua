@@ -1,21 +1,21 @@
 --[[--
 Item manipulation and helper functions.
 ]]
--- @module ix.item
+-- @module ws.item
 
-ix.item = ix.item or {}
-ix.item.list = ix.item.list or {}
-ix.item.base = ix.item.base or {}
-ix.item.instances = ix.item.instances or {}
-ix.item.inventories = ix.item.inventories or {
+ws.item = ws.item or {}
+ws.item.list = ws.item.list or {}
+ws.item.base = ws.item.base or {}
+ws.item.instances = ws.item.instances or {}
+ws.item.inventories = ws.item.inventories or {
 	[0] = {}
 }
-ix.item.inventoryTypes = ix.item.inventoryTypes or {}
+ws.item.inventoryTypes = ws.item.inventoryTypes or {}
 
-ix.util.Include("helix/gamemode/core/meta/sh_item.lua")
+ws.util.Include("windswept/gamemode/core/meta/sh_item.lua")
 
 -- Declare some supports for logic inventory
-local zeroInv = ix.item.inventories[0]
+local zeroInv = ws.item.inventories[0]
 
 function zeroInv:GetID()
 	return 0
@@ -39,13 +39,13 @@ function zeroInv:Add(uniqueID, quantity, data, x, y)
 				return
 			end
 
-			local itemTable = ix.item.list[uniqueID]
+			local itemTable = ws.item.list[uniqueID]
 
 			if (!itemTable) then
 				return false, "invalidItem"
 			end
 
-			ix.item.Instance(0, uniqueID, data, x, y, function(item)
+			ws.item.Instance(0, uniqueID, data, x, y, function(item)
 				self[item:GetID()] = item
 			end)
 
@@ -56,8 +56,8 @@ function zeroInv:Add(uniqueID, quantity, data, x, y)
 	end
 end
 
-function ix.item.Instance(index, uniqueID, itemData, x, y, callback, characterID, playerID)
-	if (!uniqueID or ix.item.list[uniqueID]) then
+function ws.item.Instance(index, uniqueID, itemData, x, y, callback, characterID, playerID)
+	if (!uniqueID or ws.item.list[uniqueID]) then
 		itemData = istable(itemData) and itemData or {}
 
 		local query = mysql:Insert("ix_items")
@@ -76,7 +76,7 @@ function ix.item.Instance(index, uniqueID, itemData, x, y, callback, characterID
 			end
 
 			query:Callback(function(result, status, lastID)
-				local item = ix.item.New(uniqueID, lastID)
+				local item = ws.item.New(uniqueID, lastID)
 
 				if (item) then
 					item.data = table.Copy(itemData)
@@ -103,18 +103,18 @@ end
 -- @realm shared
 -- @string identifier Unique ID of the item
 -- @treturn item Item table
--- @usage print(ix.item.Get("example"))
+-- @usage print(ws.item.Get("example"))
 -- > "item[example][0]"
-function ix.item.Get(identifier)
-	return ix.item.base[identifier] or ix.item.list[identifier]
+function ws.item.Get(identifier)
+	return ws.item.base[identifier] or ws.item.list[identifier]
 end
 
-function ix.item.Load(path, baseID, isBaseItem)
+function ws.item.Load(path, baseID, isBaseItem)
 	local uniqueID = path:match("sh_([_%w]+)%.lua")
 
 	if (uniqueID) then
 		uniqueID = (isBaseItem and "base_" or "")..uniqueID
-		ix.item.Register(uniqueID, baseID, isBaseItem, path)
+		ws.item.Register(uniqueID, baseID, isBaseItem, path)
 	else
 		if (!path:find(".txt")) then
 			ErrorNoHalt("[Helix] Item at '"..path.."' follows invalid naming convention!\n")
@@ -122,11 +122,11 @@ function ix.item.Load(path, baseID, isBaseItem)
 	end
 end
 
-function ix.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
-	local meta = ix.meta.item
+function ws.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
+	local meta = ws.meta.item
 
 	if (uniqueID) then
-		ITEM = (isBaseItem and ix.item.base or ix.item.list)[uniqueID] or setmetatable({}, meta)
+		ITEM = (isBaseItem and ws.item.base or ws.item.list)[uniqueID] or setmetatable({}, meta)
 			ITEM.uniqueID = uniqueID
 			ITEM.base = baseID or ITEM.base
 			ITEM.isBase = isBaseItem or false
@@ -181,7 +181,7 @@ function ix.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 			local oldBase = ITEM.base
 
 			if (ITEM.base) then
-				local baseTable = ix.item.base[ITEM.base]
+				local baseTable = ws.item.base[ITEM.base]
 
 				if (baseTable) then
 					for k, v in pairs(baseTable) do
@@ -204,11 +204,11 @@ function ix.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 			end
 
 			if (!luaGenerated and path) then
-				ix.util.Include(path)
+				ws.util.Include(path)
 			end
 
 			if (ITEM.base and oldBase != ITEM.base) then
-				local baseTable = ix.item.base[ITEM.base]
+				local baseTable = ws.item.base[ITEM.base]
 
 				if (baseTable) then
 					for k, v in pairs(baseTable) do
@@ -235,13 +235,13 @@ function ix.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 				ITEM:OnRegistered()
 			end
 
-			(isBaseItem and ix.item.base or ix.item.list)[ITEM.uniqueID] = ITEM
+			(isBaseItem and ws.item.base or ws.item.list)[ITEM.uniqueID] = ITEM
 
 			if (IX_RELOADED) then
 				-- we don't know which item was actually edited, so we'll refresh all of them
-				for _, v in pairs(ix.item.instances) do
+				for _, v in pairs(ws.item.instances) do
 					if (v.uniqueID == uniqueID) then
-						ix.util.MetatableSafeTableMerge(v, ITEM)
+						ws.util.MetatableSafeTableMerge(v, ITEM)
 					end
 				end
 			end
@@ -255,13 +255,13 @@ function ix.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 	end
 end
 
-function ix.item.LoadFromDir(directory)
+function ws.item.LoadFromDir(directory)
 	local files, folders
 
 	files = file.Find(directory.."/base/*.lua", "LUA")
 
 	for _, v in ipairs(files) do
-		ix.item.Load(directory.."/base/"..v, nil, true)
+		ws.item.Load(directory.."/base/"..v, nil, true)
 	end
 
 	files, folders = file.Find(directory.."/*", "LUA")
@@ -272,21 +272,21 @@ function ix.item.LoadFromDir(directory)
 		end
 
 		for _, v2 in ipairs(file.Find(directory.."/"..v.."/*.lua", "LUA")) do
-			ix.item.Load(directory.."/"..v .. "/".. v2, "base_"..v)
+			ws.item.Load(directory.."/"..v .. "/".. v2, "base_"..v)
 		end
 	end
 
 	for _, v in ipairs(files) do
-		ix.item.Load(directory.."/"..v)
+		ws.item.Load(directory.."/"..v)
 	end
 end
 
-function ix.item.New(uniqueID, id)
-	if (ix.item.instances[id] and ix.item.instances[id].uniqueID == uniqueID) then
-		return ix.item.instances[id]
+function ws.item.New(uniqueID, id)
+	if (ws.item.instances[id] and ws.item.instances[id].uniqueID == uniqueID) then
+		return ws.item.instances[id]
 	end
 
-	local stockItem = ix.item.list[uniqueID]
+	local stockItem = ws.item.list[uniqueID]
 
 	if (stockItem) then
 		local item = setmetatable({id = id, data = {}}, {
@@ -295,7 +295,7 @@ function ix.item.New(uniqueID, id)
 			__tostring = stockItem.__tostring
 		})
 
-		ix.item.instances[id] = item
+		ws.item.instances[id] = item
 
 		return item
 	else
@@ -304,33 +304,33 @@ function ix.item.New(uniqueID, id)
 end
 
 do
-	function ix.item.GetInv(invID)
-		ErrorNoHalt("ix.item.GetInv is deprecated. Use ix.inventory.Get instead!\n")
-		return ix.inventory.Get(invID)
+	function ws.item.GetInv(invID)
+		ErrorNoHalt("ws.item.GetInv is deprecated. Use ws.inventory.Get instead!\n")
+		return ws.inventory.Get(invID)
 	end
 
-	function ix.item.RegisterInv(invType, w, h, isBag)
-		ErrorNoHalt("ix.item.RegisterInv is deprecated. Use ix.inventory.Register instead!\n")
-		return ix.inventory.Register(invType, w, h, isBag)
+	function ws.item.RegisterInv(invType, w, h, isBag)
+		ErrorNoHalt("ws.item.RegisterInv is deprecated. Use ws.inventory.Register instead!\n")
+		return ws.inventory.Register(invType, w, h, isBag)
 	end
 
-	function ix.item.NewInv(owner, invType, callback)
-		ErrorNoHalt("ix.item.NewInv is deprecated. Use ix.inventory.New instead!\n")
-		return ix.inventory.New(owner, invType, callback)
+	function ws.item.NewInv(owner, invType, callback)
+		ErrorNoHalt("ws.item.NewInv is deprecated. Use ws.inventory.New instead!\n")
+		return ws.inventory.New(owner, invType, callback)
 	end
 
-	function ix.item.CreateInv(width, height, id)
-		ErrorNoHalt("ix.item.CreateInv is deprecated. Use ix.inventory.Create instead!\n")
-		return ix.inventory.Create(width, height, id)
+	function ws.item.CreateInv(width, height, id)
+		ErrorNoHalt("ws.item.CreateInv is deprecated. Use ws.inventory.Create instead!\n")
+		return ws.inventory.Create(width, height, id)
 	end
 
-	function ix.item.RestoreInv(invID, width, height, callback)
-		ErrorNoHalt("ix.item.RestoreInv is deprecated. Use ix.inventory.Restore instead!\n")
-		return ix.inventory.Restore(invID, width, height, callback)
+	function ws.item.RestoreInv(invID, width, height, callback)
+		ErrorNoHalt("ws.item.RestoreInv is deprecated. Use ws.inventory.Restore instead!\n")
+		return ws.inventory.Restore(invID, width, height, callback)
 	end
 
 	if (CLIENT) then
-		net.Receive("ixInventorySync", function()
+		net.Receive("wsInventorySync", function()
 			local slots = net.ReadTable()
 			local id = net.ReadUInt(32)
 			local w, h = net.ReadUInt(6), net.ReadUInt(6)
@@ -341,8 +341,8 @@ do
 				return
 			end
 
-			local character = owner and ix.char.loaded[owner]
-			local inventory = ix.inventory.Create(w, h, id)
+			local character = owner and ws.char.loaded[owner]
+			local inventory = ws.inventory.Create(w, h, id)
 			inventory.slots = {}
 			inventory.vars = vars
 
@@ -353,7 +353,7 @@ do
 
 				inventory.slots[x] = inventory.slots[x] or {}
 
-				local item = ix.item.New(v[3], v[4])
+				local item = ws.item.New(v[3], v[4])
 
 				item.data = {}
 				if (v[5]) then
@@ -380,9 +380,9 @@ do
 			end
 		end)
 
-		net.Receive("ixInventoryData", function()
+		net.Receive("wsInventoryData", function()
 			local id = net.ReadUInt(32)
-			local item = ix.item.instances[id]
+			local item = ws.item.instances[id]
 
 			if (item) then
 				local key = net.ReadString()
@@ -392,14 +392,14 @@ do
 				item.data[key] = value
 
 				local invID = item.invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or item.invID
-				local panel = ix.gui["inv" .. invID]
+				local panel = ws.gui["inv" .. invID]
 
 				if (panel and panel.panels) then
 					local icon = panel.panels[id]
 
 					if (icon) then
 						icon:SetHelixTooltip(function(tooltip)
-							ix.hud.PopulateItemTooltip(tooltip, item)
+							ws.hud.PopulateItemTooltip(tooltip, item)
 						end)
 					end
 				end
@@ -408,10 +408,10 @@ do
 
 		-- Batched item data updates (multiple key-value pairs in one message)
 		-- This is the optimized path - multiple SetData calls get batched into one net message
-		net.Receive("ixInventoryDataBatch", function()
+		net.Receive("wsInventoryDataBatch", function()
 			local id = net.ReadUInt(32)
 			local changes = net.ReadTable()
-			local item = ix.item.instances[id]
+			local item = ws.item.instances[id]
 
 			if (item and changes) then
 				item.data = item.data or {}
@@ -427,14 +427,14 @@ do
 					local charInv = character:GetInventory()
 					if (charInv) then
 						local invID = item.invID == charInv:GetID() and 1 or item.invID
-						local panel = ix.gui["inv" .. invID]
+						local panel = ws.gui["inv" .. invID]
 
 						if (panel and panel.panels) then
 							local icon = panel.panels[id]
 
 							if (icon) then
 								icon:SetHelixTooltip(function(tooltip)
-									ix.hud.PopulateItemTooltip(tooltip, item)
+									ws.hud.PopulateItemTooltip(tooltip, item)
 								end)
 							end
 						end
@@ -443,7 +443,7 @@ do
 			end
 		end)
 
-		net.Receive("ixInventorySet", function()
+		net.Receive("wsInventorySet", function()
 			local invID = net.ReadUInt(32)
 			local x, y = net.ReadUInt(6), net.ReadUInt(6)
 			local uniqueID = net.ReadString()
@@ -451,13 +451,13 @@ do
 			local owner = net.ReadUInt(32)
 			local data = net.ReadTable()
 
-			local character = owner != 0 and ix.char.loaded[owner] or LocalPlayer():GetCharacter()
+			local character = owner != 0 and ws.char.loaded[owner] or LocalPlayer():GetCharacter()
 
 			if (character) then
-				local inventory = ix.item.inventories[invID]
+				local inventory = ws.item.inventories[invID]
 
 				if (inventory) then
-					local item = (uniqueID != "" and id != 0) and ix.item.New(uniqueID, id) or nil
+					local item = (uniqueID != "" and id != 0) and ws.item.New(uniqueID, id) or nil
 					item.invID = invID
 					item.data = {}
 
@@ -470,7 +470,7 @@ do
 
 					invID = invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or invID
 
-					local panel = ix.gui["inv" .. invID]
+					local panel = ws.gui["inv" .. invID]
 
 					if (IsValid(panel)) then
 						local icon = panel:AddIcon(
@@ -479,7 +479,7 @@ do
 
 						if (IsValid(icon)) then
 							icon:SetHelixTooltip(function(tooltip)
-								ix.hud.PopulateItemTooltip(tooltip, item)
+								ws.hud.PopulateItemTooltip(tooltip, item)
 							end)
 
 							icon.itemID = item.id
@@ -490,9 +490,9 @@ do
 			end
 		end)
 
-		net.Receive("ixInventoryMove", function()
+		net.Receive("wsInventoryMove", function()
 			local invID = net.ReadUInt(32)
-			local inventory = ix.item.inventories[invID]
+			local inventory = ws.item.inventories[invID]
 
 			if (!inventory) then
 				return
@@ -506,8 +506,8 @@ do
 
 			invID = invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or invID
 
-			local item = ix.item.instances[itemID]
-			local panel = ix.gui["inv" .. invID]
+			local item = ws.item.instances[itemID]
+			local panel = ws.gui["inv" .. invID]
 
 			-- update inventory UI if it's open
 			if (IsValid(panel)) then
@@ -527,11 +527,11 @@ do
 			end
 		end)
 
-		net.Receive("ixInventoryRemove", function()
+		net.Receive("wsInventoryRemove", function()
 			local id = net.ReadUInt(32)
 			local invID = net.ReadUInt(32)
 
-			local inventory = ix.item.inventories[invID]
+			local inventory = ws.item.inventories[invID]
 
 			if (!inventory) then
 				return
@@ -540,7 +540,7 @@ do
 			inventory:Remove(id)
 
 			invID = invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or invID
-			local panel = ix.gui["inv" .. invID]
+			local panel = ws.gui["inv" .. invID]
 
 			if (IsValid(panel)) then
 				local icon = panel.panels[id]
@@ -556,7 +556,7 @@ do
 				end
 			end
 
-			local item = ix.item.instances[id]
+			local item = ws.item.instances[id]
 
 			if (!item) then
 				return
@@ -567,7 +567,7 @@ do
 				local itemInv = item:GetInventory()
 
 				if (itemInv) then
-					local frame = ix.gui["inv" .. itemInv:GetID()]
+					local frame = ws.gui["inv" .. itemInv:GetID()]
 
 					if (IsValid(frame)) then
 						frame:Remove()
@@ -576,15 +576,15 @@ do
 			end
 		end)
 	else
-		util.AddNetworkString("ixInventorySync")
-		util.AddNetworkString("ixInventorySet")
-		util.AddNetworkString("ixInventoryMove")
-		util.AddNetworkString("ixInventoryRemove")
-		util.AddNetworkString("ixInventoryData")
-		util.AddNetworkString("ixInventoryDataBatch") -- Batched SetData updates for performance
-		util.AddNetworkString("ixInventoryAction")
+		util.AddNetworkString("wsInventorySync")
+		util.AddNetworkString("wsInventorySet")
+		util.AddNetworkString("wsInventoryMove")
+		util.AddNetworkString("wsInventoryRemove")
+		util.AddNetworkString("wsInventoryData")
+		util.AddNetworkString("wsInventoryDataBatch") -- Batched SetData updates for performance
+		util.AddNetworkString("wsInventoryAction")
 
-		function ix.item.LoadItemByID(itemIndex, recipientFilter)
+		function ws.item.LoadItemByID(itemIndex, recipientFilter)
 			local query = mysql:Select("ix_items")
 				query:Select("item_id")
 				query:Select("unique_id")
@@ -598,12 +598,12 @@ do
 							local itemID = tonumber(v.item_id)
 							local data = util.JSONToTable(v.data or "[]")
 							local uniqueID = v.unique_id
-							local itemTable = ix.item.list[uniqueID]
+							local itemTable = ws.item.list[uniqueID]
 							local characterID = tonumber(v.character_id)
 							local playerID = tostring(v.player_id)
 
 							if (itemTable and itemID) then
-								local item = ix.item.New(uniqueID, itemID)
+								local item = ws.item.New(uniqueID, itemID)
 
 								item.data = data or {}
 								item.invID = 0
@@ -616,14 +616,14 @@ do
 			query:Execute()
 		end
 
-		function ix.item.PerformInventoryAction(client, action, item, invID, data)
+		function ws.item.PerformInventoryAction(client, action, item, invID, data)
 			local character = client:GetCharacter()
 
 			if (!character) then
 				return
 			end
 
-			local inventory = ix.item.inventories[invID or 0]
+			local inventory = ws.item.inventories[invID or 0]
 
 			if (hook.Run("CanPlayerInteractItem", client, action, item, data) == false) then
 				return
@@ -636,8 +636,8 @@ do
 			if (isentity(item)) then
 				if (IsValid(item)) then
 					local entity = item
-					local itemID = item.ixItemID
-					item = ix.item.instances[itemID]
+					local itemID = item.wsItemID
+					item = ws.item.instances[itemID]
 
 					if (!item) then
 						return
@@ -649,7 +649,7 @@ do
 					return
 				end
 			elseif (isnumber(item)) then
-				item = ix.item.instances[item]
+				item = ws.item.instances[item]
 
 				if (!item) then
 					return
@@ -716,7 +716,7 @@ do
 
 				if (result != false) then
 					if (IsValid(entity)) then
-						entity.ixIsSafe = true
+						entity.wsIsSafe = true
 						entity:Remove()
 					else
 						item:Remove()
@@ -731,7 +731,7 @@ do
 		end
 
 		local function NetworkInventoryMove(receiver, invID, itemID, oldX, oldY, x, y)
-			net.Start("ixInventoryMove")
+			net.Start("wsInventoryMove")
 				net.WriteUInt(invID, 32)
 				net.WriteUInt(itemID, 32)
 				net.WriteUInt(oldX, 6)
@@ -741,14 +741,14 @@ do
 			net.Send(receiver)
 		end
 
-		net.Receive("ixInventoryMove", function(length, client)
+		net.Receive("wsInventoryMove", function(length, client)
 			local oldX, oldY, x, y = net.ReadUInt(6), net.ReadUInt(6), net.ReadUInt(6), net.ReadUInt(6)
 			local invID, newInvID = net.ReadUInt(32), net.ReadUInt(32)
 
 			local character = client:GetCharacter()
 
 			if (character) then
-				local inventory = ix.item.inventories[invID]
+				local inventory = ws.item.inventories[invID]
 
 				if (!inventory) then
 					return
@@ -759,7 +759,7 @@ do
 
 					if (item) then
 						if (newInvID and invID != newInvID) then
-							local inventory2 = ix.item.inventories[newInvID]
+							local inventory2 = ws.item.inventories[newInvID]
 
 							if (inventory2) then
 								local bStatus, error = item:Transfer(newInvID, x, y, client)
@@ -840,8 +840,8 @@ do
 			end
 		end)
 
-		net.Receive("ixInventoryAction", function(length, client)
-			ix.item.PerformInventoryAction(client, net.ReadString(), net.ReadUInt(32), net.ReadUInt(32), net.ReadTable())
+		net.Receive("wsInventoryAction", function(length, client)
+			ws.item.PerformInventoryAction(client, net.ReadString(), net.ReadUInt(32), net.ReadUInt(32), net.ReadTable())
 		end)
 	end
 
@@ -852,8 +852,8 @@ do
 	-- @func[opt=nil] callback Function to call when the item entity is created
 	-- @angle[opt=angle_zero] angles The angles at which the item's entity will spawn
 	-- @tab[opt=nil] data Additional data for this item instance
-	function ix.item.Spawn(uniqueID, position, callback, angles, data)
-		ix.item.Instance(0, uniqueID, data or {}, 1, 1, function(item)
+	function ws.item.Spawn(uniqueID, position, callback, angles, data)
+		ws.item.Instance(0, uniqueID, data or {}, 1, 1, function(item)
 			local entity = item:Spawn(position, angles)
 
 			if (callback) then
@@ -870,7 +870,7 @@ end
 -- @function GetInventory
 -- @realm shared
 -- @treturn Inventory This character's inventory
-ix.char.RegisterVar("Inventory", {
+ws.char.RegisterVar("Inventory", {
 	bNoNetworking = true,
 	bNoDisplay = true,
 	OnGet = function(character, index)

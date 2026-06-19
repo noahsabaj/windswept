@@ -10,22 +10,22 @@ function PANEL:Init()
 
 	self.moneyLabel = self:Add("DLabel")
 	self.moneyLabel:Dock(TOP)
-	self.moneyLabel:SetFont("ixGenericFont")
+	self.moneyLabel:SetFont("wsGenericFont")
 	self.moneyLabel:SetText("")
 	self.moneyLabel:SetTextInset(2, 0)
 	self.moneyLabel:SizeToContents()
 	self.moneyLabel.Paint = function(panel, width, height)
-		derma.SkinFunc("DrawImportantBackground", 0, 0, width, height, ix.config.Get("color"))
+		derma.SkinFunc("DrawImportantBackground", 0, 0, width, height, ws.config.Get("color"))
 	end
 
-	self.amountEntry = self:Add("ixTextEntry")
+	self.amountEntry = self:Add("wsTextEntry")
 	self.amountEntry:Dock(FILL)
-	self.amountEntry:SetFont("ixGenericFont")
+	self.amountEntry:SetFont("wsGenericFont")
 	self.amountEntry:SetNumeric(true)
 	self.amountEntry:SetValue("0")
 
 	self.transferButton = self:Add("DButton")
-	self.transferButton:SetFont("ixIconsMedium")
+	self.transferButton:SetFont("wsIconsMedium")
 	self:SetLeft(false)
 	self.transferButton.DoClick = function()
 		local amount = math.max(0, math.Round(tonumber(self.amountEntry:GetValue()) or 0))
@@ -50,7 +50,7 @@ function PANEL:SetLeft(bValue)
 end
 
 function PANEL:SetMoney(money)
-	local name = string.gsub(ix.util.ExpandCamelCase(ix.currency.plural), "%s", "")
+	local name = string.gsub(ws.util.ExpandCamelCase(ws.currency.plural), "%s", "")
 
 	self.money = math.max(math.Round(tonumber(money) or 0), 0)
 	self.moneyLabel:SetText(string.format("%s: %d", name, money))
@@ -63,7 +63,7 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintBaseFrame", self, width, height)
 end
 
-vgui.Register("ixStorageMoney", PANEL, "EditablePanel")
+vgui.Register("wsStorageMoney", PANEL, "EditablePanel")
 
 DEFINE_BASECLASS("Panel")
 PANEL = {}
@@ -73,23 +73,23 @@ AccessorFunc(PANEL, "frameMargin", "FrameMargin", FORCE_NUMBER)
 AccessorFunc(PANEL, "storageID", "StorageID", FORCE_NUMBER)
 
 function PANEL:Init()
-	if (IsValid(ix.gui.openedStorage)) then
-		ix.gui.openedStorage:Remove()
+	if (IsValid(ws.gui.openedStorage)) then
+		ws.gui.openedStorage:Remove()
 	end
 
-	ix.gui.openedStorage = self
+	ws.gui.openedStorage = self
 
 	self:SetSize(ScrW(), ScrH())
 	self:SetPos(0, 0)
 	self:SetFadeTime(0.25)
 	self:SetFrameMargin(4)
 
-	self.storageInventory = self:Add("ixInventory")
+	self.storageInventory = self:Add("wsInventory")
 	self.storageInventory.bNoBackgroundBlur = true
 	self.storageInventory:ShowCloseButton(true)
 	self.storageInventory:SetTitle("Storage")
 	self.storageInventory.Close = function(this)
-		net.Start("ixStorageClose")
+		net.Start("wsStorageClose")
 		net.SendToServer()
 		self:Remove()
 	end
@@ -97,11 +97,11 @@ function PANEL:Init()
 	-- REMOVED: Physical currency system - money is now inventory items (cash/coins)
 	-- self.storageMoney removed - cash can be dragged like any other item
 
-	ix.gui.inv1 = self:Add("ixInventory")
-	ix.gui.inv1.bNoBackgroundBlur = true
-	ix.gui.inv1:ShowCloseButton(true)
-	ix.gui.inv1.Close = function(this)
-		net.Start("ixStorageClose")
+	ws.gui.inv1 = self:Add("wsInventory")
+	ws.gui.inv1.bNoBackgroundBlur = true
+	ws.gui.inv1:ShowCloseButton(true)
+	ws.gui.inv1.Close = function(this)
+		net.Start("wsStorageClose")
 		net.SendToServer()
 		self:Remove()
 	end
@@ -113,7 +113,7 @@ function PANEL:Init()
 	self:AlphaTo(255, self:GetFadeTime())
 
 	self.storageInventory:MakePopup()
-	ix.gui.inv1:MakePopup()
+	ws.gui.inv1:MakePopup()
 end
 
 function PANEL:OnChildAdded(panel)
@@ -121,9 +121,9 @@ function PANEL:OnChildAdded(panel)
 end
 
 function PANEL:SetLocalInventory(inventory)
-	if (IsValid(ix.gui.inv1) and !IsValid(ix.gui.menu)) then
-		ix.gui.inv1:SetInventory(inventory)
-		ix.gui.inv1:SetPos(self:GetWide() / 2 + self:GetFrameMargin() / 2, self:GetTall() / 2 - ix.gui.inv1:GetTall() / 2)
+	if (IsValid(ws.gui.inv1) and !IsValid(ws.gui.menu)) then
+		ws.gui.inv1:SetInventory(inventory)
+		ws.gui.inv1:SetPos(self:GetWide() / 2 + self:GetFrameMargin() / 2, self:GetTall() / 2 - ws.gui.inv1:GetTall() / 2)
 	end
 end
 
@@ -142,7 +142,7 @@ function PANEL:SetStorageInventory(inventory)
 		self:GetTall() / 2 - self.storageInventory:GetTall() / 2
 	)
 
-	ix.gui["inv" .. inventory:GetID()] = self.storageInventory
+	ws.gui["inv" .. inventory:GetID()] = self.storageInventory
 end
 
 function PANEL:SetStorageMoney(money)
@@ -150,7 +150,7 @@ function PANEL:SetStorageMoney(money)
 end
 
 function PANEL:Paint(width, height)
-	ix.util.DrawBlurAt(0, 0, width, height)
+	ws.util.DrawBlurAt(0, 0, width, height)
 
 	for _, v in ipairs(self:GetChildren()) do
 		v:PaintManual()
@@ -165,10 +165,10 @@ function PANEL:Remove()
 end
 
 function PANEL:OnRemove()
-	if (!IsValid(ix.gui.menu)) then
+	if (!IsValid(ws.gui.menu)) then
 		self.storageInventory:Remove()
-		ix.gui.inv1:Remove()
+		ws.gui.inv1:Remove()
 	end
 end
 
-vgui.Register("ixStorageView", PANEL, "Panel")
+vgui.Register("wsStorageView", PANEL, "Panel")

@@ -16,7 +16,7 @@ if (SERVER) then
 	local invalidBoundsMax = Vector(8, 8, 8)
 
 	function ENT:Initialize()
-		self:SetModel(ix.currency.model)
+		self:SetModel(ws.currency.model)
 		self:SetSolid(SOLID_VPHYSICS)
 		self:PhysicsInit(SOLID_VPHYSICS)
 		self:SetUseType(SIMPLE_USE)
@@ -33,20 +33,20 @@ if (SERVER) then
 	end
 
 	function ENT:Use(activator)
-		if (self.ixSteamID and self.ixCharID) then
+		if (self.wsSteamID and self.wsCharID) then
 			local char = activator:GetCharacter()
 
-			if (char and self.ixCharID != char:GetID() and self.ixSteamID == activator:SteamID()) then
+			if (char and self.wsCharID != char:GetID() and self.wsSteamID == activator:SteamID()) then
 				activator:NotifyLocalized("itemOwned")
 				return false
 			end
 		end
 
-		activator:PerformInteraction(ix.config.Get("itemPickupTime", 0.5), self, function(client)
+		activator:PerformInteraction(ws.config.Get("itemPickupTime", 0.5), self, function(client)
 			if not IsValid(self) then return end
 
 			-- Use physical currency pickup handler
-			if ix.currency.HandlePickup(client, self) then
+			if ws.currency.HandlePickup(client, self) then
 				self:Remove()
 			end
 			-- If pickup failed (inventory full), entity stays on ground
@@ -62,8 +62,8 @@ else
 	function ENT:OnPopulateEntityInfo(container)
 		local text = container:AddRow("name")
 		text:SetImportant()
-		-- GetAmount() returns dollars, ix.currency.Get() expects cents
-		text:SetText(ix.currency.Get(self:GetAmount() * ix.currency.CENTS_PER_DOLLAR))
+		-- GetAmount() returns dollars, ws.currency.Get() expects cents
+		text:SetText(ws.currency.Get(self:GetAmount() * ws.currency.CENTS_PER_DOLLAR))
 		text:SizeToContents()
 	end
 end

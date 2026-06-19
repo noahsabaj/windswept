@@ -95,7 +95,7 @@ local TEXTURE_FLAGS_CLAMP_S = 0x0004
 local TEXTURE_FLAGS_CLAMP_T = 0x0008
 
 ikon.max = ikon.maxSize * 64
-ikon.RT = GetRenderTargetEx("ixIconRendered",
+ikon.RT = GetRenderTargetEx("wsIconRendered",
 	ikon.max,
 	ikon.max,
 	RT_SIZE_NO_CHANGE,
@@ -105,8 +105,8 @@ ikon.RT = GetRenderTargetEx("ixIconRendered",
 	IMAGE_FORMAT_RGBA8888
 )
 
-local tex_effect = GetRenderTarget("ixIconRenderedOutline", ikon.max, ikon.max)
-local mat_outline = CreateMaterial("ixIconRenderedTemp", "UnlitGeneric", {
+local tex_effect = GetRenderTarget("wsIconRenderedOutline", ikon.max, ikon.max)
+local mat_outline = CreateMaterial("wsIconRenderedTemp", "UnlitGeneric", {
 	["$basetexture"] = tex_effect:GetName(),
 	["$translucent"] = 1
 })
@@ -163,7 +163,7 @@ function ikon:renderHook()
 			end
 
 			if (tab.outline) then
-				ix.util.ResetStencilValues()
+				ws.util.ResetStencilValues()
 				render.SetStencilEnable(true)
 				render.SetStencilWriteMask(137) -- yeah random number to avoid confliction
 				render.SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS)

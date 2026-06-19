@@ -1,18 +1,18 @@
 
 --- Helper library for creating/setting config options.
--- @module ix.config
+-- @module ws.config
 
-ix.config = ix.config or {}
-ix.config.stored = ix.config.stored or {}
+ws.config = ws.config or {}
+ws.config.stored = ws.config.stored or {}
 
 if (SERVER) then
-	util.AddNetworkString("ixConfigList")
-	util.AddNetworkString("ixConfigSet")
-	util.AddNetworkString("ixConfigRequestUnloadedList")
-	util.AddNetworkString("ixConfigUnloadedList")
-	util.AddNetworkString("ixConfigPluginToggle")
+	util.AddNetworkString("wsConfigList")
+	util.AddNetworkString("wsConfigSet")
+	util.AddNetworkString("wsConfigRequestUnloadedList")
+	util.AddNetworkString("wsConfigUnloadedList")
+	util.AddNetworkString("wsConfigPluginToggle")
 
-	ix.config.server = ix.yaml.Read("gamemodes/helix/helix.yml") or {}
+	ws.config.server = ws.yaml.Read("gamemodes/helix/helix.yml") or {}
 end
 
 CAMI.RegisterPrivilege({
@@ -29,11 +29,11 @@ CAMI.RegisterPrivilege({
 -- @tab[opt=nil] data Additional settings for this config option
 -- @bool[opt=false] bNoNetworking Whether or not to prevent networking the config
 -- @bool[opt=false] bSchemaOnly Whether or not the config is for the schema only
-function ix.config.Add(key, value, description, callback, data, bNoNetworking, bSchemaOnly)
+function ws.config.Add(key, value, description, callback, data, bNoNetworking, bSchemaOnly)
 	data = istable(data) and data or {}
 
-	local oldConfig = ix.config.stored[key]
-	local type = data.type or ix.util.GetTypeFromValue(value)
+	local oldConfig = ws.config.stored[key]
+	local type = data.type or ws.util.GetTypeFromValue(value)
 
 	if (!type) then
 		ErrorNoHalt("attempted to add config with invalid type\n")
@@ -54,7 +54,7 @@ function ix.config.Add(key, value, description, callback, data, bNoNetworking, b
 		end
 	end
 
-	ix.config.stored[key] = {
+	ws.config.stored[key] = {
 		type = type,
 		data = data,
 		value = value,
@@ -71,29 +71,29 @@ end
 -- @realm shared
 -- @string key Unique ID of the config
 -- @param value Default value for the config option
-function ix.config.SetDefault(key, value)
-	local config = ix.config.stored[key]
+function ws.config.SetDefault(key, value)
+	local config = ws.config.stored[key]
 
 	if (config) then
 		config.default = value
 	else
 		-- set up dummy config if we're setting default of config that doesn't exist yet (i.e schema setting framework default)
-		ix.config.stored[key] = {
+		ws.config.stored[key] = {
 			value = value,
 			default = value
 		}
 	end
 end
 
-function ix.config.ForceSet(key, value, noSave)
-	local config = ix.config.stored[key]
+function ws.config.ForceSet(key, value, noSave)
+	local config = ws.config.stored[key]
 
 	if (config) then
 		config.value = value
 	end
 
 	if (noSave) then
-		ix.config.Save()
+		ws.config.Save()
 	end
 end
 
@@ -101,8 +101,8 @@ end
 -- @realm shared
 -- @string key Unique ID of the config
 -- @param value New value to assign to the config
-function ix.config.Set(key, value)
-	local config = ix.config.stored[key]
+function ws.config.Set(key, value)
+	local config = ws.config.stored[key]
 
 	if (config) then
 		local oldValue = value
@@ -110,7 +110,7 @@ function ix.config.Set(key, value)
 
 		if (SERVER) then
 			if (!config.bNoNetworking) then
-				net.Start("ixConfigSet")
+				net.Start("wsConfigSet")
 					net.WriteString(key)
 					net.WriteType(value)
 				net.Broadcast()
@@ -120,7 +120,7 @@ function ix.config.Set(key, value)
 				config.callback(oldValue, value)
 			end
 
-			ix.config.Save()
+			ws.config.Save()
 		end
 	end
 end
@@ -130,8 +130,8 @@ end
 -- @string key Unique ID of the config
 -- @param default Default value to return if the config is not set
 -- @return Value associated with the key, or the default that was given if it doesn't exist
-function ix.config.Get(key, default)
-	local config = ix.config.stored[key]
+function ws.config.Get(key, default)
+	local config = ws.config.stored[key]
 
 	-- ensure we aren't accessing a dummy value
 	if (config and config.type) then
@@ -148,27 +148,27 @@ end
 --- Loads all saved config options from disk.
 -- @realm shared
 -- @internal
-function ix.config.Load()
+function ws.config.Load()
 	if (SERVER) then
-		local globals = ix.data.Get("config", nil, true, true)
-		local data = ix.data.Get("config", nil, false, true)
+		local globals = ws.data.Get("config", nil, true, true)
+		local data = ws.data.Get("config", nil, false, true)
 
 		if (globals) then
 			for k, v in pairs(globals) do
-				ix.config.stored[k] = ix.config.stored[k] or {}
-				ix.config.stored[k].value = v
+				ws.config.stored[k] = ws.config.stored[k] or {}
+				ws.config.stored[k].value = v
 			end
 		end
 
 		if (data) then
 			for k, v in pairs(data) do
-				ix.config.stored[k] = ix.config.stored[k] or {}
-				ix.config.stored[k].value = v
+				ws.config.stored[k] = ws.config.stored[k] or {}
+				ws.config.stored[k].value = v
 			end
 		end
 	end
 
-	ix.util.Include("helix/gamemode/config/sh_config.lua")
+	ws.util.Include("windswept/gamemode/config/sh_config.lua")
 
 	if (SERVER or !IX_RELOADED) then
 		hook.Run("InitializedConfig")
@@ -176,10 +176,10 @@ function ix.config.Load()
 end
 
 if (SERVER) then
-	function ix.config.GetChangedValues()
+	function ws.config.GetChangedValues()
 		local data = {}
 
-		for k, v in pairs(ix.config.stored) do
+		for k, v in pairs(ws.config.stored) do
 			if (v.default != v.value) then
 				data[k] = v.value
 			end
@@ -188,21 +188,21 @@ if (SERVER) then
 		return data
 	end
 
-	function ix.config.Send(client)
-		net.Start("ixConfigList")
-			net.WriteTable(ix.config.GetChangedValues())
+	function ws.config.Send(client)
+		net.Start("wsConfigList")
+			net.WriteTable(ws.config.GetChangedValues())
 		net.Send(client)
 	end
 
 	--- Saves all config options to disk.
 	-- @realm server
 	-- @internal
-	function ix.config.Save()
+	function ws.config.Save()
 		local globals = {}
 		local data = {}
 
-		for k, v in pairs(ix.config.GetChangedValues()) do
-			if (ix.config.stored[k].global) then
+		for k, v in pairs(ws.config.GetChangedValues()) do
+			if (ws.config.stored[k].global) then
 				globals[k] = v
 			else
 				data[k] = v
@@ -210,19 +210,19 @@ if (SERVER) then
 		end
 
 		-- Global and schema data set respectively.
-		ix.data.Set("config", globals, true, true)
-		ix.data.Set("config", data, false, true)
+		ws.data.Set("config", globals, true, true)
+		ws.data.Set("config", data, false, true)
 	end
 
-	net.Receive("ixConfigSet", function(length, client)
+	net.Receive("wsConfigSet", function(length, client)
 		local key = net.ReadString()
 		local value = net.ReadType()
 
 		if (CAMI.PlayerHasAccess(client, "Helix - Manage Config", nil) and
-			type(ix.config.stored[key].default) == type(value)) then
-			ix.config.Set(key, value)
+			type(ws.config.stored[key].default) == type(value)) then
+			ws.config.Set(key, value)
 
-			if (ix.util.IsColor(value)) then
+			if (ws.util.IsColor(value)) then
 				value = string.format("[%d, %d, %d]", value.r, value.g, value.b)
 			elseif (istable(value)) then
 				local value2 = "["
@@ -241,59 +241,59 @@ if (SERVER) then
 				value = string.format("[%s]", tostring(value))
 			end
 
-			ix.util.NotifyLocalized("cfgSet", nil, client:Name(), key, tostring(value))
-			ix.log.Add(client, "cfgSet", key, value)
+			ws.util.NotifyLocalized("cfgSet", nil, client:Name(), key, tostring(value))
+			ws.log.Add(client, "cfgSet", key, value)
 		end
 	end)
 
-	net.Receive("ixConfigRequestUnloadedList", function(length, client)
+	net.Receive("wsConfigRequestUnloadedList", function(length, client)
 		if (!CAMI.PlayerHasAccess(client, "Helix - Manage Config", nil)) then
 			return
 		end
 
-		net.Start("ixConfigUnloadedList")
-			net.WriteTable(ix.plugin.unloaded)
+		net.Start("wsConfigUnloadedList")
+			net.WriteTable(ws.plugin.unloaded)
 		net.Send(client)
 	end)
 
-	net.Receive("ixConfigPluginToggle", function(length, client)
+	net.Receive("wsConfigPluginToggle", function(length, client)
 		if (!CAMI.PlayerHasAccess(client, "Helix - Manage Config", nil)) then
 			return
 		end
 
 		local uniqueID = net.ReadString()
-		local bUnloaded = !!ix.plugin.unloaded[uniqueID]
+		local bUnloaded = !!ws.plugin.unloaded[uniqueID]
 		local bShouldEnable = net.ReadBool()
 
 		if ((bShouldEnable and bUnloaded) or (!bShouldEnable and !bUnloaded)) then
-			ix.plugin.SetUnloaded(uniqueID, !bShouldEnable) -- flip bool since we're setting unloaded, not enabled
+			ws.plugin.SetUnloaded(uniqueID, !bShouldEnable) -- flip bool since we're setting unloaded, not enabled
 
-			ix.util.NotifyLocalized(bShouldEnable and "pluginLoaded" or "pluginUnloaded", nil, client:GetName(), uniqueID)
-			ix.log.Add(client, bShouldEnable and "pluginLoaded" or "pluginUnloaded", uniqueID)
+			ws.util.NotifyLocalized(bShouldEnable and "pluginLoaded" or "pluginUnloaded", nil, client:GetName(), uniqueID)
+			ws.log.Add(client, bShouldEnable and "pluginLoaded" or "pluginUnloaded", uniqueID)
 
-			net.Start("ixConfigPluginToggle")
+			net.Start("wsConfigPluginToggle")
 				net.WriteString(uniqueID)
 				net.WriteBool(bShouldEnable)
 			net.Broadcast()
 		end
 	end)
 else
-	net.Receive("ixConfigList", function()
+	net.Receive("wsConfigList", function()
 		local data = net.ReadTable()
 
 		for k, v in pairs(data) do
-			if (ix.config.stored[k]) then
-				ix.config.stored[k].value = v
+			if (ws.config.stored[k]) then
+				ws.config.stored[k].value = v
 			end
 		end
 
 		hook.Run("InitializedConfig", data)
 	end)
 
-	net.Receive("ixConfigSet", function()
+	net.Receive("wsConfigSet", function()
 		local key = net.ReadString()
 		local value = net.ReadType()
-		local config = ix.config.stored[key]
+		local config = ws.config.stored[key]
 
 		if (config) then
 			if (config.callback) then
@@ -302,7 +302,7 @@ else
 
 			config.value = value
 
-			local properties = ix.gui.properties
+			local properties = ws.gui.properties
 
 			if (IsValid(properties)) then
 				local row = properties:GetCategory(L(config.data and config.data.category or "misc")):GetRow(key)
@@ -318,38 +318,38 @@ else
 		end
 	end)
 
-	net.Receive("ixConfigUnloadedList", function()
-		ix.plugin.unloaded = net.ReadTable()
-		ix.gui.bReceivedUnloadedPlugins = true
+	net.Receive("wsConfigUnloadedList", function()
+		ws.plugin.unloaded = net.ReadTable()
+		ws.gui.bReceivedUnloadedPlugins = true
 
-		if (IsValid(ix.gui.pluginManager)) then
-			ix.gui.pluginManager:UpdateUnloaded()
+		if (IsValid(ws.gui.pluginManager)) then
+			ws.gui.pluginManager:UpdateUnloaded()
 		end
 	end)
 
-	net.Receive("ixConfigPluginToggle", function()
+	net.Receive("wsConfigPluginToggle", function()
 		local uniqueID = net.ReadString()
 		local bEnabled = net.ReadBool()
 
 		if (bEnabled) then
-			ix.plugin.unloaded[uniqueID] = false
+			ws.plugin.unloaded[uniqueID] = false
 		else
-			ix.plugin.unloaded[uniqueID] = true
+			ws.plugin.unloaded[uniqueID] = true
 		end
 
-		if (IsValid(ix.gui.pluginManager)) then
-			ix.gui.pluginManager:UpdatePlugin(uniqueID, bEnabled)
+		if (IsValid(ws.gui.pluginManager)) then
+			ws.gui.pluginManager:UpdatePlugin(uniqueID, bEnabled)
 		end
 	end)
 
-	hook.Add("CreateMenuButtons", "ixConfig", function(tabs)
+	hook.Add("CreateMenuButtons", "wsConfig", function(tabs)
 		if (!CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Manage Config", nil)) then
 			return
 		end
 
 		tabs["config"] = {
 			Create = function(info, container)
-				container.panel = container:Add("ixConfigManager")
+				container.panel = container:Add("wsConfigManager")
 			end,
 
 			OnSelected = function(info, container)
@@ -359,11 +359,11 @@ else
 			Sections = {
 				plugins = {
 					Create = function(info, container)
-						ix.gui.pluginManager = container:Add("ixPluginManager")
+						ws.gui.pluginManager = container:Add("wsPluginManager")
 					end,
 
 					OnSelected = function(info, container)
-						ix.gui.pluginManager.searchEntry:RequestFocus()
+						ws.gui.pluginManager.searchEntry:RequestFocus()
 					end
 				}
 			}

@@ -2,23 +2,23 @@
 --[[--
 Inventory manipulation and helper functions.
 ]]
--- @module ix.inventory
+-- @module ws.inventory
 
-ix.inventory = ix.inventory or {}
+ws.inventory = ws.inventory or {}
 
-ix.util.Include("helix/gamemode/core/meta/sh_inventory.lua")
+ws.util.Include("windswept/gamemode/core/meta/sh_inventory.lua")
 
 --- Retrieves an inventory table.
 -- @realm shared
 -- @number invID Index of the inventory
 -- @treturn Inventory Inventory table
-function ix.inventory.Get(invID)
-	return ix.item.inventories[invID]
+function ws.inventory.Get(invID)
+	return ws.item.inventories[invID]
 end
 
-function ix.inventory.Create(width, height, id)
-	local inventory = ix.meta.inventory:New(id, width, height)
-		ix.item.inventories[id] = inventory
+function ws.inventory.Create(width, height, id)
+	local inventory = ws.meta.inventory:New(id, width, height)
+		ws.item.inventories[id] = inventory
 	return inventory
 end
 
@@ -30,12 +30,12 @@ end
 -- @number width Width of inventory (this is not used when passing a table to `invID`)
 -- @number height Height of inventory (this is not used when passing a table to `invID`)
 -- @func callback Function to call when inventory is restored
--- @usage ix.inventory.Restore({
+-- @usage ws.inventory.Restore({
 -- 	[10] = {5, 5},
 -- 	[11] = {7, 4}
 -- })
 -- -- inventories 10 and 11 with sizes (5, 5) and (7, 4) will be loaded
-function ix.inventory.Restore(invID, width, height, callback)
+function ws.inventory.Restore(invID, width, height, callback)
 	local inventories = {}
 
 	if (!istable(invID)) then
@@ -44,11 +44,11 @@ function ix.inventory.Restore(invID, width, height, callback)
 		end
 
 		inventories[invID] = {width, height}
-		ix.inventory.Create(width, height, invID)
+		ws.inventory.Create(width, height, invID)
 	else
 		for k, v in pairs(invID) do
 			inventories[k] = {v[1], v[2]}
-			ix.inventory.Create(v[1], v[2], k)
+			ws.inventory.Create(v[1], v[2], k)
 		end
 	end
 
@@ -75,7 +75,7 @@ function ix.inventory.Restore(invID, width, height, callback)
 						continue
 					end
 
-					local inventory = ix.item.inventories[itemInvID]
+					local inventory = ws.item.inventories[itemInvID]
 					local x, y = tonumber(item.x), tonumber(item.y)
 					local itemID = tonumber(item.item_id)
 					local data = util.JSONToTable(item.data or "[]")
@@ -83,7 +83,7 @@ function ix.inventory.Restore(invID, width, height, callback)
 
 					if (x and y and itemID) then
 						if (x <= inventory.w and x > 0 and y <= inventory.h and y > 0) then
-							local item2 = ix.item.New(item.unique_id, itemID)
+							local item2 = ws.item.New(item.unique_id, itemID)
 
 							if (item2) then
 								invSlots[itemInvID] = invSlots[itemInvID] or {}
@@ -117,34 +117,34 @@ function ix.inventory.Restore(invID, width, height, callback)
 				end
 
 				for k, v in pairs(invSlots) do
-					ix.item.inventories[k].slots = v
+					ws.item.inventories[k].slots = v
 				end
 			end
 
 			if (callback) then
 				for k, _ in pairs(inventories) do
-					callback(ix.item.inventories[k])
+					callback(ws.item.inventories[k])
 				end
 			end
 		end)
 	query:Execute()
 end
 
-function ix.inventory.New(owner, invType, callback)
-	local invData = ix.item.inventoryTypes[invType] or {w = 1, h = 1}
+function ws.inventory.New(owner, invType, callback)
+	local invData = ws.item.inventoryTypes[invType] or {w = 1, h = 1}
 
 	local query = mysql:Insert("ix_inventories")
 		query:Insert("inventory_type", invType)
 		query:Insert("character_id", owner)
 		query:Callback(function(result, status, lastID)
-			local inventory = ix.inventory.Create(invData.w, invData.h, lastID)
+			local inventory = ws.inventory.Create(invData.w, invData.h, lastID)
 
 			if (invType) then
 				inventory.vars.isBag = invType
 			end
 
 			if (isnumber(owner) and owner > 0) then
-				local character = ix.char.loaded[owner]
+				local character = ws.char.loaded[owner]
 				local client = character:GetPlayer()
 
 				inventory:SetOwner(owner)
@@ -161,12 +161,12 @@ function ix.inventory.New(owner, invType, callback)
 	query:Execute()
 end
 
-function ix.inventory.Register(invType, w, h, isBag)
-	ix.item.inventoryTypes[invType] = {w = w, h = h}
+function ws.inventory.Register(invType, w, h, isBag)
+	ws.item.inventoryTypes[invType] = {w = w, h = h}
 
 	if (isBag) then
-		ix.item.inventoryTypes[invType].isBag = invType
+		ws.item.inventoryTypes[invType].isBag = invType
 	end
 
-	return ix.item.inventoryTypes[invType]
+	return ws.item.inventoryTypes[invType]
 end

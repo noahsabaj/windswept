@@ -46,7 +46,7 @@ function PANEL:SetModel(model, skin, bodygroups)
 
 	-- we don't have a cached spawnicon texture, so we need to forcefully generate one
 	if (material:IsError()) then
-		self.id = "ixScoreboardIcon" .. self.path
+		self.id = "wsScoreboardIcon" .. self.path
 		self.renderer = self:Add("ModelImage")
 		self.renderer:SetVisible(false)
 		self.renderer:SetModel(model, skin, self.bodygroups)
@@ -114,7 +114,7 @@ function PANEL:Remove()
 	end
 end
 
-vgui.Register("ixScoreboardIcon", PANEL, "Panel")
+vgui.Register("wsScoreboardIcon", PANEL, "Panel")
 
 -- player row
 PANEL = {}
@@ -124,7 +124,7 @@ AccessorFunc(PANEL, "paintFunction", "BackgroundPaintFunction")
 function PANEL:Init()
 	self:SetTall(64)
 
-	self.icon = self:Add("ixScoreboardIcon")
+	self.icon = self:Add("wsScoreboardIcon")
 	self.icon:Dock(LEFT)
 	self.icon.DoRightClick = function()
 		local client = self.player
@@ -151,7 +151,7 @@ function PANEL:Init()
 		local client = self.player
 
 		if (IsValid(self) and IsValid(client)) then
-			ix.hud.PopulatePlayerTooltip(tooltip, client)
+			ws.hud.PopulatePlayerTooltip(tooltip, client)
 		end
 	end)
 
@@ -159,13 +159,13 @@ function PANEL:Init()
 	self.name:DockMargin(4, 4, 0, 0)
 	self.name:Dock(TOP)
 	self.name:SetTextColor(color_white)
-	self.name:SetFont("ixGenericFont")
+	self.name:SetFont("wsGenericFont")
 
 	self.description = self:Add("DLabel")
 	self.description:DockMargin(5, 0, 0, 0)
 	self.description:Dock(TOP)
 	self.description:SetTextColor(color_white)
-	self.description:SetFont("ixSmallFont")
+	self.description:SetFont("wsSmallFont")
 
 	self.paintFunction = rowPaintFunctions[1]
 	self.nextThink = CurTime() + 1
@@ -239,7 +239,7 @@ function PANEL:Paint(width, height)
 	self.paintFunction(width, height)
 end
 
-vgui.Register("ixScoreboardRow", PANEL, "EditablePanel")
+vgui.Register("wsScoreboardRow", PANEL, "EditablePanel")
 
 -- faction grouping
 PANEL = {}
@@ -259,14 +259,14 @@ function PANEL:AddPlayer(client, index)
 	end
 
 	local id = index % 2 == 0 and 1 or 2
-	local panel = self:Add("ixScoreboardRow")
+	local panel = self:Add("wsScoreboardRow")
 	panel:SetPlayer(client)
 	panel:Dock(TOP)
 	panel:SetZPos(2)
 	panel:SetBackgroundPaintFunction(rowPaintFunctions[id])
 
 	self:SizeToContents()
-	client.ixScoreboardSlot = panel
+	client.wsScoreboardSlot = panel
 
 	return true
 end
@@ -285,7 +285,7 @@ function PANEL:SetFactionless()
 	-- No header for factionless - just raw player list
 	self:SetTall(0)  -- Will be sized by children
 	self:DockMargin(0, 8, 0, 8)  -- Small margin to separate from factions above
-	-- Remove the header padding that ixCategoryPanel adds
+	-- Remove the header padding that wsCategoryPanel adds
 	self.paddingTop = 0
 	self:DockPadding(0, 0, 0, 0)
 end
@@ -319,12 +319,12 @@ function PANEL:Update()
 			if (IsValid(v) and v:GetCharacter()) then
 				local playerFaction = v:Team()
 				if (playerFaction == nil or playerFaction == TEAM_UNASSIGNED) then
-					if (!IsValid(v.ixScoreboardSlot)) then
+					if (!IsValid(v.wsScoreboardSlot)) then
 						if (self:AddPlayer(v, k)) then
 							bHasPlayers = true
 						end
 					else
-						v.ixScoreboardSlot:Update()
+						v.wsScoreboardSlot:Update()
 						bHasPlayers = true
 					end
 				end
@@ -348,12 +348,12 @@ function PANEL:Update()
 		local bHasPlayers
 
 		for k, v in ipairs(team.GetPlayers(faction.index)) do
-			if (!IsValid(v.ixScoreboardSlot)) then
+			if (!IsValid(v.wsScoreboardSlot)) then
 				if (self:AddPlayer(v, k)) then
 					bHasPlayers = true
 				end
 			else
-				v.ixScoreboardSlot:Update()
+				v.wsScoreboardSlot:Update()
 				bHasPlayers = true
 			end
 		end
@@ -373,14 +373,14 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintCategoryPanel", self, self.text, self.color)
 end
 
-vgui.Register("ixScoreboardFaction", PANEL, "ixCategoryPanel")
+vgui.Register("wsScoreboardFaction", PANEL, "wsCategoryPanel")
 
 -- main scoreboard panel
 PANEL = {}
 
 function PANEL:Init()
-	if (IsValid(ix.gui.scoreboard)) then
-		ix.gui.scoreboard:Remove()
+	if (IsValid(ws.gui.scoreboard)) then
+		ws.gui.scoreboard:Remove()
 	end
 
 	self:Dock(FILL)
@@ -388,10 +388,10 @@ function PANEL:Init()
 	self.factions = {}
 	self.nextThink = 0
 
-	for i = 1, #ix.faction.indices do
-		local faction = ix.faction.indices[i]
+	for i = 1, #ws.faction.indices do
+		local faction = ws.faction.indices[i]
 
-		local panel = self:Add("ixScoreboardFaction")
+		local panel = self:Add("wsScoreboardFaction")
 		panel:SetFaction(faction)
 		panel:Dock(TOP)
 
@@ -399,11 +399,11 @@ function PANEL:Init()
 	end
 
 	-- Add factionless section at the end
-	self.factionless = self:Add("ixScoreboardFaction")
+	self.factionless = self:Add("wsScoreboardFaction")
 	self.factionless:SetFactionless()
 	self.factionless:Dock(TOP)
 
-	ix.gui.scoreboard = self
+	ws.gui.scoreboard = self
 end
 
 function PANEL:Think()
@@ -423,15 +423,15 @@ function PANEL:Think()
 	end
 end
 
-vgui.Register("ixScoreboard", PANEL, "DScrollPanel")
+vgui.Register("wsScoreboard", PANEL, "DScrollPanel")
 
-hook.Add("CreateMenuButtons", "ixScoreboard", function(tabs)
+hook.Add("CreateMenuButtons", "wsScoreboard", function(tabs)
 	-- Only admins can see the scoreboard - prevents metagaming about who's online
 	if (!LocalPlayer():IsAdmin()) then
 		return
 	end
 
 	tabs["scoreboard"] = function(container)
-		container:Add("ixScoreboard")
+		container:Add("wsScoreboard")
 	end
 end)

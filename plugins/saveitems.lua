@@ -52,10 +52,10 @@ function PLUGIN:LoadData()
 								local itemID = tonumber(v.item_id)
 								local data = util.JSONToTable(v.data or "[]")
 								local uniqueID = v.unique_id
-								local itemTable = ix.item.list[uniqueID]
+								local itemTable = ws.item.list[uniqueID]
 
 								if (itemTable and itemID) then
-									local item = ix.item.New(uniqueID, itemID)
+									local item = ws.item.New(uniqueID, itemID)
 									item.data = data or {}
 
 									local itemInfo = info[itemID]
@@ -66,7 +66,7 @@ function PLUGIN:LoadData()
 									end
 
 									local itemEntity = item:Spawn(position, angles)
-									itemEntity.ixItemID = itemID
+									itemEntity.wsItemID = itemID
 
 									local physicsObject = itemEntity:GetPhysicsObject()
 
@@ -78,7 +78,7 @@ function PLUGIN:LoadData()
 									loadedItems[#loadedItems + 1] = item
 
 									if (item.isBag) then
-										local invType = ix.item.inventoryTypes[uniqueID]
+										local invType = ws.item.inventoryTypes[uniqueID]
 										bagInventories[item:GetData("id")] = {invType.w, invType.h}
 									end
 								end
@@ -87,7 +87,7 @@ function PLUGIN:LoadData()
 							-- we need to manually restore bag inventories in the world since they don't have a current owner
 							-- that it can automatically restore along with the character when it's loaded
 							if (!table.IsEmpty(bagInventories)) then
-								ix.inventory.Restore(bagInventories)
+								ws.inventory.Restore(bagInventories)
 							end
 
 							hook.Run("OnSavedItemLoaded", loadedItems) -- when you have something in the dropped item.
@@ -103,7 +103,7 @@ function PLUGIN:SaveData()
 	local items = {}
 
 	for _, v in ipairs(ents.FindByClass("ix_item")) do
-		if (v.ixItemID and !v.bTemporary) then
+		if (v.wsItemID and !v.bTemporary) then
 			local physicsObject = v:GetPhysicsObject()
 			local bMovable = nil
 
@@ -112,7 +112,7 @@ function PLUGIN:SaveData()
 			end
 
 			items[#items + 1] = {
-				v.ixItemID, v:GetPos(), v:GetAngles(), bMovable
+				v.wsItemID, v:GetPos(), v:GetAngles(), bMovable
 			}
 		end
 	end

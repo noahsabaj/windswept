@@ -1,62 +1,62 @@
 
 if (CLIENT) then
-	ix.option.Add("animationScale", ix.type.number, 1, {
+	ws.option.Add("animationScale", ws.type.number, 1, {
 		category = "appearance", min = 0.3, max = 2, decimals = 1
 	})
 
-	ix.option.Add("24hourTime", ix.type.bool, false, {
+	ws.option.Add("24hourTime", ws.type.bool, false, {
 		category = "appearance"
 	})
 
-	ix.option.Add("altLower", ix.type.bool, true, {
+	ws.option.Add("altLower", ws.type.bool, true, {
 		category = "general"
 	})
 
-	ix.option.Add("alwaysShowBars", ix.type.bool, false, {
+	ws.option.Add("alwaysShowBars", ws.type.bool, false, {
 		category = "appearance"
 	})
 
-	ix.option.Add("minimalTooltips", ix.type.bool, false, {
+	ws.option.Add("minimalTooltips", ws.type.bool, false, {
 		category = "appearance"
 	})
 
-	ix.option.Add("noticeDuration", ix.type.number, 8, {
+	ws.option.Add("noticeDuration", ws.type.number, 8, {
 		category = "appearance", min = 0.1, max = 20, decimals = 1
 	})
 
-	ix.option.Add("noticeMax", ix.type.number, 4, {
+	ws.option.Add("noticeMax", ws.type.number, 4, {
 		category = "appearance", min = 1, max = 20
 	})
 
-	ix.option.Add("cheapBlur", ix.type.bool, false, {
+	ws.option.Add("cheapBlur", ws.type.bool, false, {
 		category = "performance"
 	})
 
-	ix.option.Add("disableAnimations", ix.type.bool, false, {
+	ws.option.Add("disableAnimations", ws.type.bool, false, {
 		category = "performance"
 	})
 
-	ix.option.Add("openBags", ix.type.bool, true, {
+	ws.option.Add("openBags", ws.type.bool, true, {
 		category = "general"
 	})
 
-	ix.option.Add("showIntro", ix.type.bool, true, {
+	ws.option.Add("showIntro", ws.type.bool, true, {
 		category = "general"
 	})
 
-	ix.option.Add("escCloseMenu", ix.type.bool, false, {
+	ws.option.Add("escCloseMenu", ws.type.bool, false, {
 		category = "general"
 	})
 end
 
-ix.option.Add("language", ix.type.array, ix.config.language or "english", {
+ws.option.Add("language", ws.type.array, ws.config.language or "english", {
 	category = "general",
 	bNetworked = true,
 	populate = function()
 		local entries = {}
 
-		for k, _ in SortedPairs(ix.lang.stored) do
-			local name = ix.lang.names[k]
+		for k, _ in SortedPairs(ws.lang.stored) do
+			local name = ws.lang.names[k]
 			local name2 = k:utf8sub(1, 1):utf8upper() .. k:utf8sub(2)
 
 			if (name) then

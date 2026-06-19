@@ -1,5 +1,5 @@
 
-local TOOL = ix.meta.tool or {}
+local TOOL = ws.meta.tool or {}
 
 -- code replicated from gamemodes/sandbox/entities/weapons/gmod_tool/stool.lua
 function TOOL:Create()
@@ -127,4 +127,4 @@ function TOOL:CheckObjects()
 	end
 end
 
-ix.meta.tool = TOOL
+ws.meta.tool = TOOL

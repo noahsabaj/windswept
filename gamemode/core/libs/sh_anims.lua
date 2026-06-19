@@ -14,13 +14,13 @@ a few standard animation sets that are built-in that should cover most non-playe
 	fastZombie
 
 If you find that your models are T-posing when they work elsewhere, you'll probably need to set the model class for your
-model with `ix.anim.SetModelClass` in order for the correct animations to be used. If you'd like to add your own animation
-class, simply add to the `ix.anim` table with a model class name and the required animation translation table.
+model with `ws.anim.SetModelClass` in order for the correct animations to be used. If you'd like to add your own animation
+class, simply add to the `ws.anim` table with a model class name and the required animation translation table.
 ]]
--- @module ix.anim
+-- @module ws.anim
 
-ix.anim = ix.anim or {}
-ix.anim.citizen_male = {
+ws.anim = ws.anim or {}
+ws.anim.citizen_male = {
 	normal = {
 		[ACT_MP_STAND_IDLE] = {ACT_IDLE, ACT_IDLE_ANGRY_SMG1},
 		[ACT_MP_CROUCH_IDLE] = {ACT_COVER_LOW, ACT_COVER_LOW},
@@ -85,7 +85,7 @@ ix.anim.citizen_male = {
 	},
 }
 
-ix.anim.citizen_female = {
+ws.anim.citizen_female = {
 	normal = {
 		[ACT_MP_STAND_IDLE] = {ACT_IDLE, ACT_IDLE_ANGRY_SMG1},
 		[ACT_MP_CROUCH_IDLE] = {ACT_COVER_LOW, ACT_COVER_LOW},
@@ -142,9 +142,9 @@ ix.anim.citizen_female = {
 		attack = ACT_MELEE_ATTACK_SWING
 	},
 	glide = ACT_GLIDE,
-	vehicle = ix.anim.citizen_male.vehicle
+	vehicle = ws.anim.citizen_male.vehicle
 }
-ix.anim.metrocop = {
+ws.anim.metrocop = {
 	normal = {
 		[ACT_MP_STAND_IDLE] = {ACT_IDLE, ACT_IDLE_ANGRY_SMG1},
 		[ACT_MP_CROUCH_IDLE] = {ACT_COVER_PISTOL_LOW, ACT_COVER_SMG1_LOW},
@@ -205,7 +205,7 @@ ix.anim.metrocop = {
 		["prop_vehicle_prisoner_pod"] = {ACT_IDLE, Vector(-4, -0.5, 0)}
 	}
 }
-ix.anim.overwatch = {
+ws.anim.overwatch = {
 	normal = {
 		[ACT_MP_STAND_IDLE] = {"idle_unarmed", ACT_IDLE_ANGRY},
 		[ACT_MP_CROUCH_IDLE] = {ACT_CROUCHIDLE, ACT_CROUCHIDLE},
@@ -257,7 +257,7 @@ ix.anim.overwatch = {
 	},
 	glide = ACT_GLIDE
 }
-ix.anim.vortigaunt = {
+ws.anim.vortigaunt = {
 	melee = {
 		["attack"] = ACT_MELEE_ATTACK1,
 		[ACT_MP_STAND_IDLE] = {ACT_IDLE, "ActionIdle"},
@@ -318,7 +318,7 @@ ix.anim.vortigaunt = {
 	},
 	glide = "jump_holding_glide"
 }
-ix.anim.player = {
+ws.anim.player = {
 	normal = {
 		[ACT_MP_STAND_IDLE] = ACT_HL2MP_IDLE,
 		[ACT_MP_CROUCH_IDLE] = ACT_HL2MP_IDLE_CROUCH,
@@ -334,7 +334,7 @@ ix.anim.player = {
 		[ACT_LAND] = {ACT_RESET, ACT_RESET}
 	}
 }
-ix.anim.zombie = {
+ws.anim.zombie = {
 	[ACT_MP_STAND_IDLE] = ACT_HL2MP_IDLE_ZOMBIE,
 	[ACT_MP_CROUCH_IDLE] = ACT_HL2MP_IDLE_CROUCH_ZOMBIE,
 	[ACT_MP_CROUCHWALK] = ACT_HL2MP_WALK_CROUCH_ZOMBIE_01,
@@ -342,7 +342,7 @@ ix.anim.zombie = {
 	[ACT_MP_RUN] = ACT_HL2MP_RUN_ZOMBIE,
 	[ACT_LAND] = {ACT_RESET, ACT_RESET}
 }
-ix.anim.fastZombie = {
+ws.anim.fastZombie = {
 	[ACT_MP_STAND_IDLE] = ACT_HL2MP_WALK_ZOMBIE,
 	[ACT_MP_CROUCH_IDLE] = ACT_HL2MP_IDLE_CROUCH_ZOMBIE,
 	[ACT_MP_CROUCHWALK] = ACT_HL2MP_WALK_CROUCH_ZOMBIE_05,
@@ -357,9 +357,9 @@ local translations = {}
 -- @realm shared
 -- @string model Model name to set the animation class for
 -- @string class Animation class to assign to the model
--- @usage ix.anim.SetModelClass("models/police.mdl", "metrocop")
-function ix.anim.SetModelClass(model, class)
-	if (!ix.anim[class]) then
+-- @usage ws.anim.SetModelClass("models/police.mdl", "metrocop")
+function ws.anim.SetModelClass(model, class)
+	if (!ws.anim[class]) then
 		error("'" .. tostring(class) .. "' is not a valid animation class!")
 	end
 
@@ -371,9 +371,9 @@ end
 -- @string model Model to get the animation class for
 -- @treturn[1] string Animation class of the model
 -- @treturn[2] nil If there was no animation associated with the given model
--- @usage ix.anim.GetModelClass("models/police.mdl")
+-- @usage ws.anim.GetModelClass("models/police.mdl")
 -- > metrocop
-function ix.anim.GetModelClass(model)
+function ws.anim.GetModelClass(model)
 	model = string.lower(model)
 	local class = translations[model]
 
@@ -393,18 +393,18 @@ function ix.anim.GetModelClass(model)
 	return class
 end
 
-ix.anim.SetModelClass("models/police.mdl", "metrocop")
-ix.anim.SetModelClass("models/combine_super_soldier.mdl", "overwatch")
-ix.anim.SetModelClass("models/combine_soldier_prisonGuard.mdl", "overwatch")
-ix.anim.SetModelClass("models/combine_soldier.mdl", "overwatch")
-ix.anim.SetModelClass("models/vortigaunt.mdl", "vortigaunt")
-ix.anim.SetModelClass("models/vortigaunt_blue.mdl", "vortigaunt")
-ix.anim.SetModelClass("models/vortigaunt_doctor.mdl", "vortigaunt")
-ix.anim.SetModelClass("models/vortigaunt_slave.mdl", "vortigaunt")
+ws.anim.SetModelClass("models/police.mdl", "metrocop")
+ws.anim.SetModelClass("models/combine_super_soldier.mdl", "overwatch")
+ws.anim.SetModelClass("models/combine_soldier_prisonGuard.mdl", "overwatch")
+ws.anim.SetModelClass("models/combine_soldier.mdl", "overwatch")
+ws.anim.SetModelClass("models/vortigaunt.mdl", "vortigaunt")
+ws.anim.SetModelClass("models/vortigaunt_blue.mdl", "vortigaunt")
+ws.anim.SetModelClass("models/vortigaunt_doctor.mdl", "vortigaunt")
+ws.anim.SetModelClass("models/vortigaunt_slave.mdl", "vortigaunt")
 
 if (SERVER) then
-	util.AddNetworkString("ixSequenceSet")
-	util.AddNetworkString("ixSequenceReset")
+	util.AddNetworkString("wsSequenceSet")
+	util.AddNetworkString("wsSequenceReset")
 
 	local playerMeta = FindMetaTable("Player")
 
@@ -424,7 +424,7 @@ if (SERVER) then
 		hook.Run("PlayerEnterSequence", self, sequence, callback, time, bNoFreeze)
 
 		if (!sequence) then
-			net.Start("ixSequenceReset")
+			net.Start("wsSequenceReset")
 				net.WriteEntity(self)
 			-- Send to PVS instead of all clients (animation only matters to nearby players)
 			net.SendPVS(self:GetPos())
@@ -437,8 +437,8 @@ if (SERVER) then
 		if (sequence and sequence > 0) then
 			time = time or self:SequenceDuration(sequence)
 
-			self.ixCouldShoot = self:GetNetVar("canShoot", false)
-			self.ixSeqCallback = callback
+			self.wsCouldShoot = self:GetNetVar("canShoot", false)
+			self.wsSeqCallback = callback
 			self:SetCycle(0)
 			self:SetPlaybackRate(1)
 			self:SetNetVar("forcedSequence", sequence)
@@ -449,14 +449,14 @@ if (SERVER) then
 			end
 
 			if (time > 0) then
-				timer.Create("ixSeq"..self:EntIndex(), time, 1, function()
+				timer.Create("wsSeq"..self:EntIndex(), time, 1, function()
 					if (IsValid(self)) then
 						self:LeaveSequence()
 					end
 				end)
 			end
 
-			net.Start("ixSequenceSet")
+			net.Start("wsSequenceSet")
 				net.WriteEntity(self)
 			-- Send to PVS instead of all clients (animation only matters to nearby players)
 			net.SendPVS(self:GetPos())
@@ -474,22 +474,22 @@ if (SERVER) then
 	function playerMeta:LeaveSequence()
 		hook.Run("PlayerLeaveSequence", self)
 
-		net.Start("ixSequenceReset")
+		net.Start("wsSequenceReset")
 			net.WriteEntity(self)
 		-- Send to PVS instead of all clients (animation only matters to nearby players)
 		net.SendPVS(self:GetPos())
 
-		self:SetNetVar("canShoot", self.ixCouldShoot)
+		self:SetNetVar("canShoot", self.wsCouldShoot)
 		self:SetNetVar("forcedSequence", nil)
 		self:SetMoveType(MOVETYPE_WALK)
-		self.ixCouldShoot = nil
+		self.wsCouldShoot = nil
 
-		if (self.ixSeqCallback) then
-			self:ixSeqCallback()
+		if (self.wsSeqCallback) then
+			self:wsSeqCallback()
 		end
 	end
 else
-	net.Receive("ixSequenceSet", function()
+	net.Receive("wsSequenceSet", function()
 		local entity = net.ReadEntity()
 
 		if (IsValid(entity)) then
@@ -497,7 +497,7 @@ else
 		end
 	end)
 
-	net.Receive("ixSequenceReset", function()
+	net.Receive("wsSequenceReset", function()
 		local entity = net.ReadEntity()
 
 		if (IsValid(entity)) then

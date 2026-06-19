@@ -1,24 +1,24 @@
 
-ix.hud = {}
+ws.hud = {}
 
-function ix.hud.DrawItemPickup()
-	local pickupTime = ix.config.Get("itemPickupTime", 0.5)
+function ws.hud.DrawItemPickup()
+	local pickupTime = ws.config.Get("itemPickupTime", 0.5)
 
 	if (pickupTime == 0) then
 		return
 	end
 
 	local client = LocalPlayer()
-	local entity = client.ixInteractionTarget
-	local startTime = client.ixInteractionStartTime
+	local entity = client.wsInteractionTarget
+	local startTime = client.wsInteractionStartTime
 
 	if (IsValid(entity) and startTime) then
 		local sysTime = SysTime()
 		local endTime = startTime + pickupTime
 
 		if (sysTime >= endTime or client:GetEyeTrace().Entity != entity) then
-			client.ixInteractionTarget = nil
-			client.ixInteractionStartTime = nil
+			client.wsInteractionTarget = nil
+			client.wsInteractionStartTime = nil
 
 			return
 		end
@@ -30,11 +30,11 @@ function ix.hud.DrawItemPickup()
 		local endAngle = startAngle + (1 - fraction) * 360
 		local color = ColorAlpha(color_white, fraction * 255)
 
-		ix.util.DrawArc(x, y, radius, thickness, startAngle, endAngle, 2, color)
+		ws.util.DrawArc(x, y, radius, thickness, startAngle, endAngle, 2, color)
 	end
 end
 
-function ix.hud.PopulateItemTooltip(tooltip, item)
+function ws.hud.PopulateItemTooltip(tooltip, item)
 	local name = tooltip:AddRow("name")
 	name:SetImportant()
 	name:SetText(item.GetName and item:GetName() or L(item.name))
@@ -52,7 +52,7 @@ function ix.hud.PopulateItemTooltip(tooltip, item)
 	hook.Run("PopulateItemTooltip", tooltip, item)
 end
 
-function ix.hud.PopulatePlayerTooltip(tooltip, client)
+function ws.hud.PopulatePlayerTooltip(tooltip, client)
 	local name = tooltip:AddRow("name")
 	name:SetImportant()
 	name:SetText(client:SteamName())
@@ -84,6 +84,6 @@ function ix.hud.PopulatePlayerTooltip(tooltip, client)
 	hook.Run("PopulatePlayerTooltip", client, tooltip)
 end
 
-function ix.hud.DrawAll()
-	ix.hud.DrawItemPickup()
+function ws.hud.DrawAll()
+	ws.hud.DrawItemPickup()
 end

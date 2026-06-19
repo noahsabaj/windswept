@@ -17,7 +17,7 @@ if (CLIENT) then
 	function PLUGIN:CalcView(client, origin, angles, fov)
 		local scenes = self.scenes
 
-		if (IsValid(ix.gui.characterMenu) and !IsValid(ix.gui.menu) and !ix.gui.characterMenu:IsClosing() and
+		if (IsValid(ws.gui.characterMenu) and !IsValid(ws.gui.menu) and !ws.gui.characterMenu:IsClosing() and
 			!table.IsEmpty(scenes)) then
 			local key = self.index
 			local value = scenes[self.index]
@@ -93,24 +93,24 @@ if (CLIENT) then
 	end
 
 	function PLUGIN:PreDrawViewModel(viewModel, client, weapon)
-		if (IsValid(ix.gui.characterMenu) and !ix.gui.characterMenu:IsClosing()) then
+		if (IsValid(ws.gui.characterMenu) and !ws.gui.characterMenu:IsClosing()) then
 			return true
 		end
 	end
 
-	net.Receive("ixMapSceneAdd", function()
+	net.Receive("wsMapSceneAdd", function()
 		local data = net.ReadTable()
 
 		PLUGIN.scenes[#PLUGIN.scenes + 1] = data
 	end)
 
-	net.Receive("ixMapSceneRemove", function()
+	net.Receive("wsMapSceneRemove", function()
 		local index = net.ReadUInt(16)
 
 		PLUGIN.scenes[index] = nil
 	end)
 
-	net.Receive("ixMapSceneAddPair", function()
+	net.Receive("wsMapSceneAddPair", function()
 		local data = net.ReadTable()
 		local origin = net.ReadVector()
 
@@ -119,7 +119,7 @@ if (CLIENT) then
 		table.insert(PLUGIN.ordered, {origin, data})
 	end)
 
-	net.Receive("ixMapSceneRemovePair", function()
+	net.Receive("wsMapSceneRemovePair", function()
 		local key = net.ReadVector()
 
 		PLUGIN.scenes[key] = nil
@@ -133,7 +133,7 @@ if (CLIENT) then
 		end
 	end)
 
-	net.Receive("ixMapSceneSync", function()
+	net.Receive("wsMapSceneSync", function()
 		local length = net.ReadUInt(32)
 		local data = net.ReadData(length)
 		local uncompressed = util.Decompress(data)
@@ -153,12 +153,12 @@ if (CLIENT) then
 		end
 	end)
 else
-	util.AddNetworkString("ixMapSceneSync")
-	util.AddNetworkString("ixMapSceneAdd")
-	util.AddNetworkString("ixMapSceneRemove")
+	util.AddNetworkString("wsMapSceneSync")
+	util.AddNetworkString("wsMapSceneAdd")
+	util.AddNetworkString("wsMapSceneRemove")
 
-	util.AddNetworkString("ixMapSceneAddPair")
-	util.AddNetworkString("ixMapSceneRemovePair")
+	util.AddNetworkString("wsMapSceneAddPair")
+	util.AddNetworkString("wsMapSceneRemovePair")
 
 	function PLUGIN:SaveScenes()
 		self:SetData(self.scenes)
@@ -173,7 +173,7 @@ else
 		local compressed = util.Compress(json)
 		local length = compressed:len()
 
-		net.Start("ixMapSceneSync")
+		net.Start("wsMapSceneSync")
 			net.WriteUInt(length, 32)
 			net.WriteData(compressed, length)
 		net.Send(client)
@@ -186,7 +186,7 @@ else
 			data = {origin=position, position2, angles, angles2}
 			self.scenes[#self.scenes + 1] = data
 
-			net.Start("ixMapSceneAddPair")
+			net.Start("wsMapSceneAddPair")
 				net.WriteTable(data)
 				net.WriteVector(position)
 			net.Broadcast()
@@ -194,7 +194,7 @@ else
 			data = {position, angles}
 			self.scenes[#self.scenes + 1] = data
 
-			net.Start("ixMapSceneAdd")
+			net.Start("wsMapSceneAdd")
 				net.WriteTable(data)
 			net.Broadcast()
 		end
@@ -203,23 +203,23 @@ else
 	end
 end
 
-ix.command.Add("MapSceneAdd", {
+ws.command.Add("MapSceneAdd", {
 	description = "@cmdMapSceneAdd",
 	privilege = "Manage Map Scenes",
 	adminOnly = true,
-	arguments = bit.bor(ix.type.bool, ix.type.optional),
+	arguments = bit.bor(ws.type.bool, ws.type.optional),
 	OnRun = function(self, client, bIsPair)
 		local position, angles = client:EyePos(), client:EyeAngles()
 
 		-- This scene is in a pair for moving scenes.
-		if (tobool(bIsPair) and !client.ixScnPair) then
-			client.ixScnPair = {position, angles}
+		if (tobool(bIsPair) and !client.wsScnPair) then
+			client.wsScnPair = {position, angles}
 
 			return "@mapRepeat"
 		else
-			if (client.ixScnPair) then
-				PLUGIN:AddScene(client.ixScnPair[1], client.ixScnPair[2], position, angles)
-				client.ixScnPair = nil
+			if (client.wsScnPair) then
+				PLUGIN:AddScene(client.wsScnPair[1], client.wsScnPair[2], position, angles)
+				client.wsScnPair = nil
 			else
 				PLUGIN:AddScene(position, angles)
 			end
@@ -229,11 +229,11 @@ ix.command.Add("MapSceneAdd", {
 	end
 })
 
-ix.command.Add("MapSceneRemove", {
+ws.command.Add("MapSceneRemove", {
 	description = "@cmdMapSceneRemove",
 	privilege = "Manage Map Scenes",
 	adminOnly = true,
-	arguments = bit.bor(ix.type.number, ix.type.optional),
+	arguments = bit.bor(ws.type.number, ws.type.optional),
 	OnRun = function(self, client, radius)
 		radius = radius or 280
 
@@ -253,11 +253,11 @@ ix.command.Add("MapSceneRemove", {
 
 			if (delete) then
 				if (isvector(k)) then
-					net.Start("ixMapSceneRemovePair")
+					net.Start("wsMapSceneRemovePair")
 						net.WriteVector(k)
 					net.Broadcast()
 				else
-					net.Start("ixMapSceneRemove")
+					net.Start("wsMapSceneRemove")
 						net.WriteString(k)
 					net.Broadcast()
 				end

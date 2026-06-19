@@ -6,9 +6,9 @@ PLUGIN.author = "Black Tea"
 PLUGIN.description = "Saves the ammo of a character."
 PLUGIN.ammoList = {}
 
-ix.ammo = ix.ammo or {}
+ws.ammo = ws.ammo or {}
 
-function ix.ammo.Register(name)
+function ws.ammo.Register(name)
 	name = name:lower()
 
 	if (!table.HasValue(PLUGIN.ammoList, name)) then
@@ -17,30 +17,30 @@ function ix.ammo.Register(name)
 end
 
 -- Register Default HL2 Ammunition.
-ix.ammo.Register("ar2")
-ix.ammo.Register("pistol")
-ix.ammo.Register("357")
-ix.ammo.Register("smg1")
-ix.ammo.Register("xbowbolt")
-ix.ammo.Register("buckshot")
-ix.ammo.Register("rpg_round")
-ix.ammo.Register("smg1_grenade")
-ix.ammo.Register("grenade")
-ix.ammo.Register("ar2altfire")
-ix.ammo.Register("slam")
+ws.ammo.Register("ar2")
+ws.ammo.Register("pistol")
+ws.ammo.Register("357")
+ws.ammo.Register("smg1")
+ws.ammo.Register("xbowbolt")
+ws.ammo.Register("buckshot")
+ws.ammo.Register("rpg_round")
+ws.ammo.Register("smg1_grenade")
+ws.ammo.Register("grenade")
+ws.ammo.Register("ar2altfire")
+ws.ammo.Register("slam")
 
 -- Register Cut HL2 Ammunition.
-ix.ammo.Register("alyxgun")
-ix.ammo.Register("sniperround")
-ix.ammo.Register("sniperpenetratedround")
-ix.ammo.Register("thumper")
-ix.ammo.Register("gravity")
-ix.ammo.Register("battery")
-ix.ammo.Register("gaussenergy")
-ix.ammo.Register("combinecannon")
-ix.ammo.Register("airboatgun")
-ix.ammo.Register("striderminigun")
-ix.ammo.Register("helicoptergun")
+ws.ammo.Register("alyxgun")
+ws.ammo.Register("sniperround")
+ws.ammo.Register("sniperpenetratedround")
+ws.ammo.Register("thumper")
+ws.ammo.Register("gravity")
+ws.ammo.Register("battery")
+ws.ammo.Register("gaussenergy")
+ws.ammo.Register("combinecannon")
+ws.ammo.Register("airboatgun")
+ws.ammo.Register("striderminigun")
+ws.ammo.Register("helicoptergun")
 
 -- Called right before the character has its information save.
 function PLUGIN:CharacterPreSave(character)

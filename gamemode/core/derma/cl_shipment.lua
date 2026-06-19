@@ -20,7 +20,7 @@ function PANEL:SetItems(entity, items)
 	self.itemPanels = {}
 
 	for k, v in SortedPairs(items) do
-		local itemTable = ix.item.list[k]
+		local itemTable = ws.item.list[k]
 
 		if (itemTable) then
 			local item = self.list:Add("DPanel")
@@ -33,7 +33,7 @@ function PANEL:SetItems(entity, items)
 			item.icon:SetSize(32, 32)
 			item.icon:SetModel(itemTable:GetModel())
 			item.icon:SetHelixTooltip(function(tooltip)
-				ix.hud.PopulateItemTooltip(tooltip, itemTable)
+				ws.hud.PopulateItemTooltip(tooltip, itemTable)
 			end)
 
 			item.quantity = item.icon:Add("DLabel")
@@ -47,7 +47,7 @@ function PANEL:SetItems(entity, items)
 			item.name = item:Add("DLabel")
 			item.name:SetPos(38, 0)
 			item.name:SetSize(200, 36)
-			item.name:SetFont("ixSmallFont")
+			item.name:SetFont("wsSmallFont")
 			item.name:SetText(L(itemTable.name))
 			item.name:SetContentAlignment(4)
 			item.name:SetTextColor(color_white)
@@ -59,7 +59,7 @@ function PANEL:SetItems(entity, items)
 			item.take:DockMargin(3, 3, 3, 3)
 			item.take:SetTextColor(color_white)
 			item.take.DoClick = function(this)
-				net.Start("ixShipmentUse")
+				net.Start("wsShipmentUse")
 					net.WriteString(k)
 					net.WriteBool(false)
 				net.SendToServer()
@@ -85,7 +85,7 @@ function PANEL:SetItems(entity, items)
 			item.drop:DockMargin(3, 3, 0, 3)
 			item.drop:SetTextColor(color_white)
 			item.drop.DoClick = function(this)
-				net.Start("ixShipmentUse")
+				net.Start("wsShipmentUse")
 					net.WriteString(k)
 					net.WriteBool(true)
 				net.SendToServer()
@@ -105,7 +105,7 @@ function PANEL:SetItems(entity, items)
 end
 
 function PANEL:Close()
-	net.Start("ixShipmentClose")
+	net.Start("wsShipmentClose")
 	net.SendToServer()
 
 	self:Remove()
@@ -117,4 +117,4 @@ function PANEL:Think()
 	end
 end
 
-vgui.Register("ixShipment", PANEL, "DFrame")
+vgui.Register("wsShipment", PANEL, "DFrame")

@@ -10,7 +10,7 @@ the business menu to characters that have a permit item, rather than using flags
 
 Flags are a single alphanumeric character that can be checked on the server. Serverside callbacks can be used to provide
 functionality whenever the flag is added or removed. For example:
-	ix.flag.Add("z", "Access to some cool stuff.", function(client, bGiven)
+	ws.flag.Add("z", "Access to some cool stuff.", function(client, bGiven)
 		print("z flag given:", bGiven)
 	end)
 
@@ -25,18 +25,18 @@ functionality whenever the flag is added or removed. For example:
 
 Check out `Character:GiveFlags` and `Character:TakeFlags` for additional info.
 ]]
--- @module ix.flag
+-- @module ws.flag
 
-ix.flag = ix.flag or {}
-ix.flag.list = ix.flag.list or {}
+ws.flag = ws.flag or {}
+ws.flag.list = ws.flag.list or {}
 
 --- Creates a flag. This should be called shared in order for the client to be aware of the flag's existence.
 -- @realm shared
 -- @string flag Alphanumeric character to use for the flag
 -- @string description Description of the flag
 -- @func callback Function to call when the flag is given or taken from a player
-function ix.flag.Add(flag, description, callback)
-	ix.flag.list[flag] = {
+function ws.flag.Add(flag, description, callback)
+	ws.flag.list[flag] = {
 		description = description,
 		callback = callback
 	}
@@ -47,7 +47,7 @@ if (SERVER) then
 	-- @realm server
 	-- @internal
 	-- @player client Player to setup flags for
-	function ix.flag.OnSpawn(client)
+	function ws.flag.OnSpawn(client)
 		-- Check if they have a valid character.
 		if (client:GetCharacter()) then
 			-- Get all of the character's flags.
@@ -56,7 +56,7 @@ if (SERVER) then
 			for i = 1, #flags do
 				-- Get each individual flag.
 				local flag = flags[i]
-				local info = ix.flag.list[flag]
+				local info = ws.flag.list[flag]
 
 				-- Check if the flag has a callback.
 				if (info and info.callback) then
@@ -69,7 +69,7 @@ if (SERVER) then
 end
 
 do
-	local character = ix.meta.character
+	local character = ws.meta.character
 
 	if (SERVER) then
 		--- Flag util functions for character
@@ -95,7 +95,7 @@ do
 			-- Get the individual flags within the flag string.
 			for i = 1, #flags do
 				local flag = flags[i]
-				local info = ix.flag.list[flag]
+				local info = ws.flag.list[flag]
 
 				if (info) then
 					if (!self:HasFlags(flag)) then
@@ -128,7 +128,7 @@ do
 			-- Get the individual flags within the flag string.
 			for i = 1, #flags do
 				local flag = flags[i]
-				local info = ix.flag.list[flag]
+				local info = ws.flag.list[flag]
 
 				-- Call the callback if the flag has been registered.
 				if (info and info.callback) then
@@ -177,7 +177,7 @@ do
 end
 
 do
-	ix.flag.Add("p", "Access to the physgun.", function(client, isGiven)
+	ws.flag.Add("p", "Access to the physgun.", function(client, isGiven)
 		if (isGiven) then
 			client:Give("weapon_physgun")
 			client:SelectWeapon("weapon_physgun")
@@ -186,7 +186,7 @@ do
 		end
 	end)
 
-	ix.flag.Add("t", "Access to the toolgun", function(client, isGiven)
+	ws.flag.Add("t", "Access to the toolgun", function(client, isGiven)
 		if (isGiven) then
 			client:Give("gmod_tool")
 			client:SelectWeapon("gmod_tool")
@@ -195,9 +195,9 @@ do
 		end
 	end)
 
-	ix.flag.Add("c", "Access to spawn chairs.")
-	ix.flag.Add("C", "Access to spawn vehicles.")
-	ix.flag.Add("r", "Access to spawn ragdolls.")
-	ix.flag.Add("e", "Access to spawn props.")
-	ix.flag.Add("n", "Access to spawn NPCs.")
+	ws.flag.Add("c", "Access to spawn chairs.")
+	ws.flag.Add("C", "Access to spawn vehicles.")
+	ws.flag.Add("r", "Access to spawn ragdolls.")
+	ws.flag.Add("e", "Access to spawn props.")
+	ws.flag.Add("n", "Access to spawn NPCs.")
 end

@@ -18,7 +18,7 @@ if (SERVER) then
 		self:SetUseType(SIMPLE_USE)
 		self.receivers = {}
 
-		local definition = ix.container.stored[self:GetModel():lower()]
+		local definition = ws.container.stored[self:GetModel():lower()]
 
 		if (definition) then
 			self:SetDisplayName(definition.name)
@@ -46,11 +46,11 @@ if (SERVER) then
 	function ENT:OnRemove()
 		local index = self:GetID()
 
-		if (!ix.shuttingDown and !self.ixIsSafe and ix.entityDataLoaded and index) then
-			local inventory = ix.item.inventories[index]
+		if (!ws.shuttingDown and !self.wsIsSafe and ws.entityDataLoaded and index) then
+			local inventory = ws.item.inventories[index]
 
 			if (inventory) then
-				ix.item.inventories[index] = nil
+				ws.item.inventories[index] = nil
 
 				local query = mysql:Delete("ix_items")
 					query:Where("inventory_id", index)
@@ -70,12 +70,12 @@ if (SERVER) then
 
 		if (inventory) then
 			local name = self:GetDisplayName()
-			local definition = ix.container.stored[self:GetModel():lower()]
+			local definition = ws.container.stored[self:GetModel():lower()]
 
-			ix.storage.Open(activator, inventory, {
+			ws.storage.Open(activator, inventory, {
 				name = name,
 				entity = self,
-				searchTime = ix.config.Get("containerOpenTime", 0.7),
+				searchTime = ws.config.Get("containerOpenTime", 0.7),
 				data = {},  -- Physical currency: no money data, cash is inventory items
 				OnPlayerOpen = function()
 					if (definition.OnOpen) then
@@ -87,7 +87,7 @@ if (SERVER) then
 						definition.OnClose(self, activator)
 					end
 
-					ix.log.Add(activator, "closeContainer", name, inventory:GetID())
+					ws.log.Add(activator, "closeContainer", name, inventory:GetID())
 				end
 			})
 
@@ -95,24 +95,24 @@ if (SERVER) then
 				self.Sessions[activator:GetCharacter():GetID()] = true
 			end
 
-			ix.log.Add(activator, "openContainer", name, inventory:GetID())
+			ws.log.Add(activator, "openContainer", name, inventory:GetID())
 		end
 	end
 
 	function ENT:Use(activator)
 		local inventory = self:GetInventory()
 
-		if (inventory and (activator.ixNextOpen or 0) < CurTime()) then
+		if (inventory and (activator.wsNextOpen or 0) < CurTime()) then
 			local character = activator:GetCharacter()
 
 			if (character) then
-				local definition = ix.container.stored[self:GetModel():lower()]
+				local definition = ws.container.stored[self:GetModel():lower()]
 
 				if (self:GetLocked() and !self.Sessions[character:GetID()]) then
 					self:EmitSound(definition.locksound or "doors/default_locked.wav")
 
 					if (!self.keypad) then
-						net.Start("ixContainerPassword")
+						net.Start("wsContainerPassword")
 							net.WriteEntity(self)
 						net.Send(activator)
 					end
@@ -121,7 +121,7 @@ if (SERVER) then
 				end
 			end
 
-			activator.ixNextOpen = CurTime() + 1
+			activator.wsNextOpen = CurTime() + 1
 		end
 	end
 else
@@ -131,10 +131,10 @@ else
 	local COLOR_UNLOCKED = Color(135, 211, 124, 200)
 
 	function ENT:OnPopulateEntityInfo(tooltip)
-		local definition = ix.container.stored[self:GetModel():lower()]
+		local definition = ws.container.stored[self:GetModel():lower()]
 		local bLocked = self:GetLocked()
 
-		surface.SetFont("ixIconsSmall")
+		surface.SetFont("wsIconsSmall")
 
 		local iconText = bLocked and "P" or "Q"
 		local iconWidth, iconHeight = surface.GetTextSize(iconText)
@@ -142,7 +142,7 @@ else
 		-- minimal tooltips have centered text so we'll draw the icon above the name instead
 		if (tooltip:IsMinimal()) then
 			local icon = tooltip:AddRow("icon")
-			icon:SetFont("ixIconsSmall")
+			icon:SetFont("wsIconsSmall")
 			icon:SetTextColor(bLocked and COLOR_LOCKED or COLOR_UNLOCKED)
 			icon:SetText(iconText)
 			icon:SizeToContents()
@@ -151,7 +151,7 @@ else
 		local title = tooltip:AddRow("name")
 		title:SetImportant()
 		title:SetText(self:GetDisplayName())
-		title:SetBackgroundColor(ix.config.Get("color"))
+		title:SetBackgroundColor(ws.config.Get("color"))
 		title:SetTextInset(iconWidth + 8, 0)
 		title:SizeToContents()
 
@@ -159,7 +159,7 @@ else
 			title.Paint = function(panel, width, height)
 				panel:PaintBackground(width, height)
 
-				surface.SetFont("ixIconsSmall")
+				surface.SetFont("wsIconsSmall")
 				surface.SetTextColor(bLocked and COLOR_LOCKED or COLOR_UNLOCKED)
 				surface.SetTextPos(4, height * 0.5 - iconHeight * 0.5)
 				surface.DrawText(iconText)
@@ -173,5 +173,5 @@ else
 end
 
 function ENT:GetInventory()
-	return ix.item.inventories[self:GetID()]
+	return ws.item.inventories[self:GetID()]
 end

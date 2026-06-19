@@ -14,11 +14,11 @@ end
 local PANEL = {}
 
 function PANEL:Init()
-    if (IsValid(ix.gui.dev_icon)) then
-        ix.gui.dev_icon:Remove()
+    if (IsValid(ws.gui.dev_icon)) then
+        ws.gui.dev_icon:Remove()
     end
 
-    ix.gui.dev_icon = self
+    ws.gui.dev_icon = self
     local pW, pH = ScrW() * 0.6, ScrH() * 0.6
     self:SetSize(pW, pH)
     self:MakePopup()
@@ -39,7 +39,7 @@ function PANEL:Init()
     self.best = vgui.Create("DButton", self)
     self.best:SetSize(buttonSize, buttonSize)
     self.best:SetPos(x, pH - buttonSize - scale(4))
-    self.best:SetFont("ixIconsMenuButton")
+    self.best:SetFont("wsIconsMenuButton")
     self.best:SetText("b")
     self.best:SetTooltip(L("iconEditorAlignBest"))
 
@@ -60,7 +60,7 @@ function PANEL:Init()
     self.front = vgui.Create("DButton", self)
     self.front:SetSize(buttonSize, buttonSize)
     self.front:SetPos(x, pH - buttonSize - scale(4))
-    self.front:SetFont("ixIconsMenuButton")
+    self.front:SetFont("wsIconsMenuButton")
     self.front:SetText("m")
     self.front:SetTooltip(L("iconEditorAlignFront"))
 
@@ -78,7 +78,7 @@ function PANEL:Init()
     self.above = vgui.Create("DButton", self)
     self.above:SetSize(buttonSize, buttonSize)
     self.above:SetPos(x, pH - buttonSize - scale(4))
-    self.above:SetFont("ixIconsMenuButton")
+    self.above:SetFont("wsIconsMenuButton")
     self.above:SetText("u")
     self.above:SetTooltip(L("iconEditorAlignAbove"))
 
@@ -96,7 +96,7 @@ function PANEL:Init()
     self.right = vgui.Create("DButton", self)
     self.right:SetSize(buttonSize, buttonSize)
     self.right:SetPos(x, pH - buttonSize - scale(4))
-    self.right:SetFont("ixIconsMenuButton")
+    self.right:SetFont("wsIconsMenuButton")
     self.right:SetText("t")
     self.right:SetTooltip(L("iconEditorAlignRight"))
 
@@ -114,7 +114,7 @@ function PANEL:Init()
     self.center = vgui.Create("DButton", self)
     self.center:SetSize(buttonSize, buttonSize)
     self.center:SetPos(x, pH - buttonSize - scale(4))
-    self.center:SetFont("ixIconsMenuButton")
+    self.center:SetFont("wsIconsMenuButton")
     self.center:SetText("T")
     self.center:SetTooltip(L("iconEditorAlignCenter"))
 
@@ -139,13 +139,13 @@ function PANEL:Init()
     self.modelLabel = self.preview:Add("DLabel")
     self.modelLabel:Dock(TOP)
     self.modelLabel:SetText("Model")
-    self.modelLabel:SetFont("ixMenuButtonFontSmall")
+    self.modelLabel:SetFont("wsMenuButtonFontSmall")
     self.modelLabel:DockMargin(4, 4, 4, 4)
 
-    self.modelPath = vgui.Create("ixTextEntry", self.preview)
+    self.modelPath = vgui.Create("wsTextEntry", self.preview)
     self.modelPath:SetValue(self.model:GetModel())
     self.modelPath:Dock(TOP)
-    self.modelPath:SetFont("ixMenuButtonFontSmall")
+    self.modelPath:SetFont("wsMenuButtonFontSmall")
     self.modelPath:SetPlaceholderText("Model...")
 
     self.modelPath.OnEnter = function(pnl)
@@ -166,7 +166,7 @@ function PANEL:Init()
         end
     end
 
-    self.width = vgui.Create("ixSettingsRowNumber", self.preview)
+    self.width = vgui.Create("wsSettingsRowNumber", self.preview)
     self.width:Dock(TOP)
     self.width:SetText(L("iconEditorWidth"))
     self.width:SetMin(1)
@@ -178,7 +178,7 @@ function PANEL:Init()
         self.item:Rebuild()
     end
 
-    self.height = vgui.Create("ixSettingsRowNumber", self.preview)
+    self.height = vgui.Create("wsSettingsRowNumber", self.preview)
     self.height:Dock(TOP)
     self.height:SetText(L("iconEditorHeight"))
     self.height:SetMin(1)
@@ -232,7 +232,7 @@ function PANEL:Init()
     self.copy = vgui.Create("DButton", self)
     self.copy:SetSize(buttonSize, buttonSize)
     self.copy:SetPos(pW - buttonSize - scale_x(12), pH - buttonSize - scale(12))
-    self.copy:SetFont("ixIconsMenuButton")
+    self.copy:SetFont("wsIconsMenuButton")
     self.copy:SetText("}")
     self.copy:SetTooltip(L("iconEditorCopy"))
     self.copy.DoClick = function()
@@ -248,7 +248,7 @@ function PANEL:Init()
 		.."}\n"
 
         SetClipboardText(str)
-        ix.util.Notify(L("iconEditorCopied"))
+        ws.util.Notify(L("iconEditorCopied"))
     end
 end
 

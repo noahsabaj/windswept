@@ -1,5 +1,5 @@
 
-local RECEIVER_NAME = "ixInventoryItem"
+local RECEIVER_NAME = "wsInventoryItem"
 
 -- The queue for the rendered icons.
 ICON_RENDER_QUEUE = ICON_RENDER_QUEUE or {}
@@ -25,7 +25,7 @@ local function RenderNewIcon(panel, itemTable)
 end
 
 local function InventoryAction(action, itemID, invID, data)
-	net.Start("ixInventoryAction")
+	net.Start("wsInventoryAction")
 		net.WriteString(action)
 		net.WriteUInt(itemID, 32)
 		net.WriteUInt(invID, 32)
@@ -271,7 +271,7 @@ function PANEL:Paint(width, height)
 	self:ExtraPaint(width, height)
 end
 
-vgui.Register("ixItemIcon", PANEL, "SpawnIcon")
+vgui.Register("wsItemIcon", PANEL, "SpawnIcon")
 
 PANEL = {}
 DEFINE_BASECLASS("DFrame")
@@ -366,12 +366,12 @@ function PANEL:SetInventory(inventory, bFitParent)
 		local invWidth, invHeight = inventory:GetSize()
 		self.invID = inventory:GetID()
 
-		if (IsValid(ix.gui.inv1) and ix.gui.inv1.childPanels and inventory != LocalPlayer():GetCharacter():GetInventory()) then
-			self:SetIconSize(ix.gui.inv1:GetIconSize())
+		if (IsValid(ws.gui.inv1) and ws.gui.inv1.childPanels and inventory != LocalPlayer():GetCharacter():GetInventory()) then
+			self:SetIconSize(ws.gui.inv1:GetIconSize())
 			self:SetPaintedManually(true)
 			self.bNoBackgroundBlur = true
 
-			ix.gui.inv1.childPanels[#ix.gui.inv1.childPanels + 1] = self
+			ws.gui.inv1.childPanels[#ws.gui.inv1.childPanels + 1] = self
 		elseif (bFitParent) then
 			self:FitParent(invWidth, invHeight)
 		else
@@ -384,7 +384,7 @@ function PANEL:SetInventory(inventory, bFitParent)
 			for y, data in pairs(items) do
 				if (!data.id) then continue end
 
-				local item = ix.item.instances[data.id]
+				local item = ws.item.instances[data.id]
 
 				if (item and !IsValid(self.panels[item.id])) then
 					local icon = self:AddIcon(item:GetModel() or "models/props_junk/popcan01a.mdl",
@@ -392,7 +392,7 @@ function PANEL:SetInventory(inventory, bFitParent)
 
 					if (IsValid(icon)) then
 						icon:SetHelixTooltip(function(tooltip)
-							ix.hud.PopulateItemTooltip(tooltip, item)
+							ws.hud.PopulateItemTooltip(tooltip, item)
 						end)
 
 						self.panels[item.id] = icon
@@ -486,7 +486,7 @@ function PANEL:PaintDragPreview(width, height, mouseX, mouseY, itemPanel)
 	local item = itemPanel:GetItemTable()
 
 	if (item) then
-		local inventory = ix.item.inventories[self.invID]
+		local inventory = ws.item.inventories[self.invID]
 		local dropX = math.ceil((mouseX - 4 - (itemPanel.gridW - 1) * 32) / iconSize)
 		local dropY = math.ceil((mouseY - self:GetPadding(2) - (itemPanel.gridH - 1) * 32) / iconSize)
 
@@ -587,7 +587,7 @@ function PANEL:IsAllEmpty(x, y, width, height, this)
 end
 
 function PANEL:OnTransfer(oldX, oldY, x, y, oldInventory, noSend)
-	local inventories = ix.item.inventories
+	local inventories = ws.item.inventories
 	local inventory = inventories[oldInventory.invID]
 	local inventory2 = inventories[self.invID]
 	local item
@@ -610,7 +610,7 @@ function PANEL:OnTransfer(oldX, oldY, x, y, oldInventory, noSend)
 	end
 
 	if (!noSend) then
-		net.Start("ixInventoryMove")
+		net.Start("wsInventoryMove")
 			net.WriteUInt(oldX, 6)
 			net.WriteUInt(oldY, 6)
 			net.WriteUInt(x, 6)
@@ -637,7 +637,7 @@ function PANEL:AddIcon(model, x, y, w, h, skin)
 	h = h or 1
 
 	if (self.slots[x] and self.slots[x][y]) then
-		local panel = self:Add("ixItemIcon")
+		local panel = self:Add("wsItemIcon")
 		panel:SetSize(w * iconSize, h * iconSize)
 		panel:SetZPos(999)
 		panel:InvalidateLayout(true)
@@ -648,7 +648,7 @@ function PANEL:AddIcon(model, x, y, w, h, skin)
 		panel.gridW = w
 		panel.gridH = h
 
-		local inventory = ix.item.inventories[self.invID]
+		local inventory = ws.item.inventories[self.invID]
 
 		if (!inventory) then
 			return
@@ -720,7 +720,7 @@ function PANEL:ReceiveDrop(panels, bDropped, menuIndex, x, y)
 	end
 
 	if (bDropped) then
-		local inventory = ix.item.inventories[self.invID]
+		local inventory = ws.item.inventories[self.invID]
 
 		if (inventory and panel.OnDrop) then
 			local dropX = math.ceil((x - 4 - (panel.gridW - 1) * 32) / self.iconSize)
@@ -737,9 +737,9 @@ function PANEL:ReceiveDrop(panels, bDropped, menuIndex, x, y)
 	end
 end
 
-vgui.Register("ixInventory", PANEL, "DFrame")
+vgui.Register("wsInventory", PANEL, "DFrame")
 
-hook.Add("CreateMenuButtons", "ixInventory", function(tabs)
+hook.Add("CreateMenuButtons", "wsInventory", function(tabs)
 	if (hook.Run("CanPlayerViewInventory") == false) then
 		return
 	end
@@ -755,9 +755,9 @@ hook.Add("CreateMenuButtons", "ixInventory", function(tabs)
 			canvas:SetSpaceY(2)
 			canvas:Dock(FILL)
 
-			ix.gui.menuInventoryContainer = canvas
+			ws.gui.menuInventoryContainer = canvas
 
-			local panel = canvas:Add("ixInventory")
+			local panel = canvas:Add("wsInventory")
 			panel:SetPos(0, 0)
 			panel:SetDraggable(false)
 			panel:SetSizable(false)
@@ -771,9 +771,9 @@ hook.Add("CreateMenuButtons", "ixInventory", function(tabs)
 				panel:SetInventory(inventory)
 			end
 
-			ix.gui.inv1 = panel
+			ws.gui.inv1 = panel
 
-			if (ix.option.Get("openBags", true)) then
+			if (ws.option.Get("openBags", true)) then
 				for k, _ in inventory:Iter() do
 					if (!k.isBag) then
 						continue
@@ -789,8 +789,8 @@ hook.Add("CreateMenuButtons", "ixInventory", function(tabs)
 	}
 end)
 
-hook.Add("PostRenderVGUI", "ixInvHelper", function()
-	local pnl = ix.gui.inv1
+hook.Add("PostRenderVGUI", "wsInvHelper", function()
+	local pnl = ws.gui.inv1
 
 	hook.Run("PostDrawInventory", pnl)
 end)

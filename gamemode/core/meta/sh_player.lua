@@ -16,13 +16,13 @@ if (SERVER) then
 	-- @realm shared
 	-- @treturn number Number of seconds the player has played on the server
 	function meta:GetPlayTime()
-		return self.ixPlayTime + (RealTime() - (self.ixJoinTime or RealTime()))
+		return self.wsPlayTime + (RealTime() - (self.wsJoinTime or RealTime()))
 	end
 else
-	ix.playTime = ix.playTime or 0
+	ws.playTime = ws.playTime or 0
 
 	function meta:GetPlayTime()
-		return ix.playTime + (RealTime() - ix.joinTime or 0)
+		return ws.playTime + (RealTime() - ws.joinTime or 0)
 	end
 end
 
@@ -66,7 +66,7 @@ function meta:IsFemale()
 	local model = self:GetModel():lower()
 
 	return (model:find("female") or model:find("alyx") or model:find("mossman")) != nil or
-		ix.anim.GetModelClass(model) == "citizen_female"
+		ws.anim.GetModelClass(model) == "citizen_female"
 end
 
 --- Whether or not this player is stuck and cannot move.
@@ -130,7 +130,7 @@ end
 -- end)
 -- -- prints "hello!" after looking at the entity for 4 seconds
 function meta:DoStaredAction(entity, callback, time, onCancel, distance)
-	local uniqueID = "ixStare"..self:SteamID64()
+	local uniqueID = "wsStare"..self:SteamID64()
 	local data = {}
 	data.filter = self
 
@@ -167,9 +167,9 @@ function meta:ResetBodygroups()
 end
 
 if (SERVER) then
-	util.AddNetworkString("ixActionBar")
-	util.AddNetworkString("ixActionBarReset")
-	util.AddNetworkString("ixStringRequest")
+	util.AddNetworkString("wsActionBar")
+	util.AddNetworkString("wsActionBarReset")
+	util.AddNetworkString("wsStringRequest")
 
 	--- Sets whether or not this player's current weapon is raised.
 	-- @realm server
@@ -185,17 +185,17 @@ if (SERVER) then
 
 			if (bCanShoot) then
 				-- delay shooting while the raise animation is playing
-				timer.Create("ixWeaponRaise" .. self:SteamID64(), 1, 1, function()
+				timer.Create("wsWeaponRaise" .. self:SteamID64(), 1, 1, function()
 					if (IsValid(self)) then
 						self:SetNetVar("canShoot", true)
 					end
 				end)
 			else
-				timer.Remove("ixWeaponRaise" .. self:SteamID64())
+				timer.Remove("wsWeaponRaise" .. self:SteamID64())
 				self:SetNetVar("canShoot", false)
 			end
 		else
-			timer.Remove("ixWeaponRaise" .. self:SteamID64())
+			timer.Remove("wsWeaponRaise" .. self:SteamID64())
 			self:SetNetVar("raised", false)
 			self:SetNetVar("canShoot", false)
 		end
@@ -230,29 +230,29 @@ if (SERVER) then
 	-- @func callback Function to run when the timer completes. It will be ran right away if `time` is `0`. Returning `false` in
 	-- the callback will not mark this interaction as dirty if you're managing the interaction state manually.
 	function meta:PerformInteraction(time, entity, callback)
-		if (!IsValid(entity) or entity.ixInteractionDirty) then
+		if (!IsValid(entity) or entity.wsInteractionDirty) then
 			return
 		end
 
 		if (time > 0) then
-			self.ixInteractionTarget = entity
-			self.ixInteractionCharacter = self:GetCharacter():GetID()
+			self.wsInteractionTarget = entity
+			self.wsInteractionCharacter = self:GetCharacter():GetID()
 
-			timer.Create("ixCharacterInteraction" .. self:SteamID(), time, 1, function()
-				if (IsValid(self) and IsValid(entity) and IsValid(self.ixInteractionTarget) and
-					self.ixInteractionCharacter == self:GetCharacter():GetID()) then
+			timer.Create("wsCharacterInteraction" .. self:SteamID(), time, 1, function()
+				if (IsValid(self) and IsValid(entity) and IsValid(self.wsInteractionTarget) and
+					self.wsInteractionCharacter == self:GetCharacter():GetID()) then
 					local useEntity = self:GetUseEntity()
 
-					if (IsValid(useEntity) and useEntity == self.ixInteractionTarget and !useEntity.ixInteractionDirty) then
+					if (IsValid(useEntity) and useEntity == self.wsInteractionTarget and !useEntity.wsInteractionDirty) then
 						if (callback(self) != false) then
-							useEntity.ixInteractionDirty = true
+							useEntity.wsInteractionDirty = true
 						end
 					end
 				end
 			end)
 		else
 			if (callback(self) != false) then
-				entity.ixInteractionDirty = true
+				entity.wsInteractionDirty = true
 			end
 		end
 	end
@@ -281,19 +281,19 @@ if (SERVER) then
 		finishTime = finishTime or (startTime + time)
 
 		if (text == false) then
-			timer.Remove("ixAct"..self:SteamID64())
+			timer.Remove("wsAct"..self:SteamID64())
 
-			net.Start("ixActionBarReset")
+			net.Start("wsActionBarReset")
 			net.Send(self)
 
 			return
 		end
 
 		if (!text) then
-			net.Start("ixActionBarReset")
+			net.Start("wsActionBarReset")
 			net.Send(self)
 		else
-			net.Start("ixActionBar")
+			net.Start("wsActionBar")
 				net.WriteFloat(startTime)
 				net.WriteFloat(finishTime)
 				net.WriteString(text)
@@ -303,7 +303,7 @@ if (SERVER) then
 		-- If we have provided a callback, run it delayed.
 		if (callback) then
 			-- Create a timer that runs once with a delay.
-			timer.Create("ixAct"..self:SteamID64(), time, 1, function()
+			timer.Create("wsAct"..self:SteamID64(), time, 1, function()
 				-- Call the callback if the player is still valid.
 				if (IsValid(self)) then
 					callback(self)
@@ -326,10 +326,10 @@ if (SERVER) then
 	function meta:RequestString(title, subTitle, callback, default)
 		local time = math.floor(os.time())
 
-		self.ixStrReqs = self.ixStrReqs or {}
-		self.ixStrReqs[time] = callback
+		self.wsStrReqs = self.wsStrReqs or {}
+		self.wsStrReqs[time] = callback
 
-		net.Start("ixStringRequest")
+		net.Start("wsStringRequest")
 			net.WriteUInt(time, 32)
 			net.WriteString(title)
 			net.WriteString(subTitle)
@@ -349,12 +349,12 @@ if (SERVER) then
 				self:SetLocalVar("restrictNoMsg", true)
 			end
 
-			self.ixRestrictWeps = self.ixRestrictWeps or {}
+			self.wsRestrictWeps = self.wsRestrictWeps or {}
 
 			for _, v in ipairs(self:GetWeapons()) do
-				self.ixRestrictWeps[#self.ixRestrictWeps + 1] = {
+				self.wsRestrictWeps[#self.wsRestrictWeps + 1] = {
 					class = v:GetClass(),
-					item = v.ixItem,
+					item = v.wsItem,
 					clip = v:Clip1()
 				}
 
@@ -369,18 +369,18 @@ if (SERVER) then
 				self:SetLocalVar("restrictNoMsg")
 			end
 
-			if (self.ixRestrictWeps) then
-				for _, v in ipairs(self.ixRestrictWeps) do
+			if (self.wsRestrictWeps) then
+				for _, v in ipairs(self.wsRestrictWeps) do
 					local weapon = self:Give(v.class, true)
 
 					if (v.item) then
-						weapon.ixItem = v.item
+						weapon.wsItem = v.item
 					end
 
 					weapon:SetClip1(v.clip)
 				end
 
-				self.ixRestrictWeps = nil
+				self.wsRestrictWeps = nil
 			end
 
 			hook.Run("OnPlayerUnRestricted", self)
@@ -449,8 +449,8 @@ if (SERVER) then
 		getUpGrace = getUpGrace or time or 5
 
 		if (bState) then
-			if (IsValid(self.ixRagdoll)) then
-				self.ixRagdoll:Remove()
+			if (IsValid(self.wsRagdoll)) then
+				self.wsRagdoll:Remove()
 			end
 
 			local entity = self:CreateServerRagdoll()
@@ -460,24 +460,24 @@ if (SERVER) then
 					self:SetLocalVar("blur", nil)
 					self:SetLocalVar("ragdoll", nil)
 
-					if (!entity.ixNoReset) then
+					if (!entity.wsNoReset) then
 						self:SetPos(entity:GetPos())
 					end
 
 					self:SetNoDraw(false)
 					self:SetNotSolid(false)
 					self:SetMoveType(MOVETYPE_WALK)
-					self:SetLocalVelocity(IsValid(entity) and entity.ixLastVelocity or vector_origin)
+					self:SetLocalVelocity(IsValid(entity) and entity.wsLastVelocity or vector_origin)
 				end
 
-				if (IsValid(self) and !entity.ixIgnoreDelete) then
-					if (entity.ixWeapons) then
-						for _, v in ipairs(entity.ixWeapons) do
+				if (IsValid(self) and !entity.wsIgnoreDelete) then
+					if (entity.wsWeapons) then
+						for _, v in ipairs(entity.wsWeapons) do
 							if (v.class) then
 								local weapon = self:Give(v.class, true)
 
 								if (v.item) then
-									weapon.ixItem = v.item
+									weapon.wsItem = v.item
 								end
 
 								self:SetAmmo(v.ammo, weapon:GetPrimaryAmmoType())
@@ -489,9 +489,9 @@ if (SERVER) then
 						end
 					end
 
-					if (entity.ixActiveWeapon) then
-						if (self:HasWeapon(entity.ixActiveWeapon)) then
-							self:SetActiveWeapon(self:GetWeapon(entity.ixActiveWeapon))
+					if (entity.wsActiveWeapon) then
+						if (self:HasWeapon(entity.wsActiveWeapon)) then
+							self:SetActiveWeapon(self:GetWeapon(entity.wsActiveWeapon))
 						else
 							local weapons = self:GetWeapons()
 							if (#weapons > 0) then
@@ -504,7 +504,7 @@ if (SERVER) then
 						entity:DropToFloor()
 						self:SetPos(entity:GetPos() + Vector(0, 0, 16))
 
-						local positions = ix.util.FindEmptySpace(self, {entity, self})
+						local positions = ws.util.FindEmptySpace(self, {entity, self})
 
 						for _, v in ipairs(positions) do
 							self:SetPos(v)
@@ -518,40 +518,40 @@ if (SERVER) then
 			end)
 
 			self:SetLocalVar("blur", 25)
-			self.ixRagdoll = entity
+			self.wsRagdoll = entity
 
-			entity.ixWeapons = {}
-			entity.ixPlayer = self
+			entity.wsWeapons = {}
+			entity.wsPlayer = self
 
 			if (getUpGrace) then
-				entity.ixGrace = CurTime() + getUpGrace
+				entity.wsGrace = CurTime() + getUpGrace
 			end
 
 			if (time and time > 0) then
-				entity.ixStart = CurTime()
-				entity.ixFinish = entity.ixStart + time
+				entity.wsStart = CurTime()
+				entity.wsFinish = entity.wsStart + time
 
-				self:SetAction("@wakingUp", nil, nil, entity.ixStart, entity.ixFinish)
+				self:SetAction("@wakingUp", nil, nil, entity.wsStart, entity.wsFinish)
 			end
 
 			if (IsValid(self:GetActiveWeapon())) then
-				entity.ixActiveWeapon = self:GetActiveWeapon():GetClass()
+				entity.wsActiveWeapon = self:GetActiveWeapon():GetClass()
 			end
 
 			for _, v in ipairs(self:GetWeapons()) do
-				if (v.ixItem and v.ixItem.Equip and v.ixItem.Unequip) then
-					entity.ixWeapons[#entity.ixWeapons + 1] = {
-						item = v.ixItem,
-						invID = v.ixItem.invID,
+				if (v.wsItem and v.wsItem.Equip and v.wsItem.Unequip) then
+					entity.wsWeapons[#entity.wsWeapons + 1] = {
+						item = v.wsItem,
+						invID = v.wsItem.invID,
 						ammo = self:GetAmmoCount(v:GetPrimaryAmmoType())
 					}
-					v.ixItem:Unequip(self, false)
+					v.wsItem:Unequip(self, false)
 				else
 					local clip = v:Clip1()
 					local reserve = self:GetAmmoCount(v:GetPrimaryAmmoType())
-					entity.ixWeapons[#entity.ixWeapons + 1] = {
+					entity.wsWeapons[#entity.wsWeapons + 1] = {
 						class = v:GetClass(),
-						item = v.ixItem,
+						item = v.wsItem,
 						clip = clip,
 						ammo = reserve
 					}
@@ -564,26 +564,26 @@ if (SERVER) then
 			self:SetNoDraw(true)
 			self:SetNotSolid(true)
 
-			local uniqueID = "ixUnRagdoll" .. self:SteamID()
+			local uniqueID = "wsUnRagdoll" .. self:SteamID()
 
 			if (time) then
 				timer.Create(uniqueID, 0.33, 0, function()
-					if (IsValid(entity) and IsValid(self) and self.ixRagdoll == entity) then
+					if (IsValid(entity) and IsValid(self) and self.wsRagdoll == entity) then
 						local velocity = entity:GetVelocity()
-						entity.ixLastVelocity = velocity
+						entity.wsLastVelocity = velocity
 
 						self:SetPos(entity:GetPos())
 
 						if (velocity:Length2D() >= 8) then
-							if (!entity.ixPausing) then
+							if (!entity.wsPausing) then
 								self:SetAction()
-								entity.ixPausing = true
+								entity.wsPausing = true
 							end
 
 							return
-						elseif (entity.ixPausing) then
+						elseif (entity.wsPausing) then
 							self:SetAction("@wakingUp", time)
-							entity.ixPausing = false
+							entity.wsPausing = false
 						end
 
 						time = time - 0.33
@@ -597,7 +597,7 @@ if (SERVER) then
 				end)
 			else
 				timer.Create(uniqueID, 0.33, 0, function()
-					if (IsValid(entity) and IsValid(self) and self.ixRagdoll == entity) then
+					if (IsValid(entity) and IsValid(self) and self.wsRagdoll == entity) then
 						self:SetPos(entity:GetPos())
 					else
 						timer.Remove(uniqueID)
@@ -607,8 +607,8 @@ if (SERVER) then
 
 			self:SetLocalVar("ragdoll", entity:EntIndex())
 			hook.Run("OnCharacterFallover", self, entity, true)
-		elseif (IsValid(self.ixRagdoll)) then
-			self.ixRagdoll:Remove()
+		elseif (IsValid(self.wsRagdoll)) then
+			self.wsRagdoll:Remove()
 
 			hook.Run("OnCharacterFallover", self, nil, false)
 		end

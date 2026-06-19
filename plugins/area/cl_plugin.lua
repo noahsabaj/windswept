@@ -12,15 +12,15 @@ function PLUGIN:GetPlayerAreaTrace()
 end
 
 function PLUGIN:StartEditing()
-	ix.area.bEditing = true
+	ws.area.bEditing = true
 	self.editStart = nil
 	self.editProperties = nil
 end
 
 function PLUGIN:StopEditing()
-	ix.area.bEditing = false
+	ws.area.bEditing = false
 
-	if (IsValid(ix.gui.areaEdit)) then
-		ix.gui.areaEdit:Remove()
+	if (IsValid(ws.gui.areaEdit)) then
+		ws.gui.areaEdit:Remove()
 	end
 end

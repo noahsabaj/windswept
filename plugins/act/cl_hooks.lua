@@ -25,7 +25,7 @@ function PLUGIN:PlayerBindPress(client, bind, bPressed)
 	end
 
 	if (bind:find("+jump") and bPressed) then
-		ix.command.Send("ExitAct")
+		ws.command.Send("ExitAct")
 		return true
 	end
 end
@@ -73,7 +73,7 @@ function PLUGIN:CalcView(client, origin)
 
 	local bFirstPerson = true
 
-	if (ix.option.Get("thirdpersonEnabled", false)) then
+	if (ws.option.Get("thirdpersonEnabled", false)) then
 		local originPosition = head and client:GetBonePosition(head) or client:GetPos()
 
 		-- check if the camera will hit something
@@ -124,16 +124,16 @@ function PLUGIN:CalcView(client, origin)
 	return view
 end
 
-net.Receive("ixActEnter", function()
+net.Receive("wsActEnter", function()
 	PLUGIN.bIdle = net.ReadBool()
 	PLUGIN.forward = LocalPlayer():GetNetVar("actEnterAngle"):Forward()
-	PLUGIN.cameraTween = ix.tween.new(animationTime, PLUGIN, {
+	PLUGIN.cameraTween = ws.tween.new(animationTime, PLUGIN, {
 		cameraFraction = 1
 	}, "outQuint")
 end)
 
-net.Receive("ixActLeave", function()
-	PLUGIN.cameraTween = ix.tween.new(animationTime * 0.5, PLUGIN, {
+net.Receive("wsActLeave", function()
+	PLUGIN.cameraTween = ws.tween.new(animationTime * 0.5, PLUGIN, {
 		cameraFraction = 0
 	}, "outQuint")
 end)

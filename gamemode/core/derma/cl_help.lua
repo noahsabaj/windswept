@@ -27,7 +27,7 @@ function PANEL:SizeToContents()
 	self:SetSize(math.max(32, math.min(width, self.maxWidth)), self:GetParent():GetTall())
 end
 
-vgui.Register("ixHelpMenuCategories", PANEL, "EditablePanel")
+vgui.Register("wsHelpMenuCategories", PANEL, "EditablePanel")
 
 -- help menu
 PANEL = {}
@@ -37,7 +37,7 @@ function PANEL:Init()
 
 	self.categories = {}
 	self.categorySubpanels = {}
-	self.categoryPanel = self:Add("ixHelpMenuCategories")
+	self.categoryPanel = self:Add("wsHelpMenuCategories")
 
 	self.canvasPanel = self:Add("EditablePanel")
 	self.canvasPanel:Dock(FILL)
@@ -51,7 +51,7 @@ function PANEL:Init()
 
 		derma.SkinFunc("DrawHelixCurved", width * 0.5, height * 0.5, width * 0.25)
 
-		surface.SetFont("ixIntroSubtitleFont")
+		surface.SetFont("wsIntroSubtitleFont")
 		local text = L("helix"):lower()
 		local textWidth, textHeight = surface.GetTextSize(text)
 
@@ -59,7 +59,7 @@ function PANEL:Init()
 		surface.SetTextPos(width * 0.5 - textWidth * 0.5, height * 0.5 - textHeight * 0.75)
 		surface.DrawText(text)
 
-		surface.SetFont("ixMediumLightFont")
+		surface.SetFont("wsMediumLightFont")
 		text = L("helpIdle")
 		local infoWidth, _ = surface.GetTextSize(text)
 
@@ -86,13 +86,13 @@ function PANEL:Init()
 
 	self.categoryPanel:SizeToContents()
 
-	if (ix.gui.lastHelpMenuTab) then
-		self:OnCategorySelected(ix.gui.lastHelpMenuTab)
+	if (ws.gui.lastHelpMenuTab) then
+		self:OnCategorySelected(ws.gui.lastHelpMenuTab)
 	end
 end
 
 function PANEL:AddCategory(name)
-	local button = self.categoryPanel:Add("ixMenuButton")
+	local button = self.categoryPanel:Add("wsMenuButton")
 	button:SetText(L(name))
 	button:SizeToContents()
 	-- @todo don't hardcode this but it's the only panel that needs docking at the bottom so it'll do for now
@@ -142,10 +142,10 @@ function PANEL:OnCategorySelected(name)
 	self.idlePanel:SetVisible(false)
 
 	self.activeCategory = panel
-	ix.gui.lastHelpMenuTab = name
+	ws.gui.lastHelpMenuTab = name
 end
 
-vgui.Register("ixHelpMenu", PANEL, "EditablePanel")
+vgui.Register("wsHelpMenu", PANEL, "EditablePanel")
 
 local function DrawHelix(width, height, color) -- luacheck: ignore 211
 	local segments = 76
@@ -170,17 +170,17 @@ local function DrawHelix(width, height, color) -- luacheck: ignore 211
 	end
 end
 
-hook.Add("CreateMenuButtons", "ixHelpMenu", function(tabs)
+hook.Add("CreateMenuButtons", "wsHelpMenu", function(tabs)
 	tabs["help"] = function(container)
-		container:Add("ixHelpMenu")
+		container:Add("wsHelpMenu")
 	end
 end)
 
-hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
+hook.Add("PopulateHelpMenu", "wsHelpMenu", function(tabs)
 	tabs["commands"] = function(container)
 		-- info text
 		local info = container:Add("DLabel")
-		info:SetFont("ixSmallFont")
+		info:SetFont("wsSmallFont")
 		info:SetText(L("helpCommands"))
 		info:SetContentAlignment(5)
 		info:SetTextColor(color_white)
@@ -196,7 +196,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 		end
 
 		-- commands
-		for uniqueID, command in SortedPairs(ix.command.list) do
+		for uniqueID, command in SortedPairs(ws.command.list) do
 			if (command.OnCheckAccess and !command:OnCheckAccess(LocalPlayer())) then
 				continue
 			end
@@ -224,10 +224,10 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 
 			-- command name
 			local title = container:Add("DLabel")
-			title:SetFont("ixMediumLightFont")
+			title:SetFont("wsMediumLightFont")
 			title:SetText("/" .. command.name .. aliasText)
 			title:Dock(TOP)
-			title:SetTextColor(ix.config.Get("color"))
+			title:SetTextColor(ws.config.Get("color"))
 			title:SetExpensiveShadow(1, color_black)
 			title:SizeToContents()
 
@@ -237,7 +237,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 
 			if (syntaxText != "" and syntaxText != "[none]") then
 				syntax = container:Add("DLabel")
-				syntax:SetFont("ixMediumLightFont")
+				syntax:SetFont("wsMediumLightFont")
 				syntax:SetText(syntaxText)
 				syntax:Dock(TOP)
 				syntax:SetTextColor(color_white)
@@ -252,7 +252,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 
 			if (descriptionText != "") then
 				local description = container:Add("DLabel")
-				description:SetFont("ixSmallFont")
+				description:SetFont("wsSmallFont")
 				description:SetText(descriptionText)
 				description:Dock(TOP)
 				description:SetTextColor(color_white)
@@ -272,7 +272,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 	tabs["flags"] = function(container)
 		-- info text
 		local info = container:Add("DLabel")
-		info:SetFont("ixSmallFont")
+		info:SetFont("wsSmallFont")
 		info:SetText(L("helpFlags"))
 		info:SetContentAlignment(5)
 		info:SetTextColor(color_white)
@@ -288,7 +288,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 		end
 
 		-- flags
-		for k, v in SortedPairs(ix.flag.list) do
+		for k, v in SortedPairs(ws.flag.list) do
 			local background = ColorAlpha(
 				LocalPlayer():GetCharacter():HasFlags(k) and derma.GetColor("Success", info) or derma.GetColor("Error", info), 88
 			)
@@ -302,7 +302,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 			end
 
 			local flag = panel:Add("DLabel")
-			flag:SetFont("ixMonoMediumFont")
+			flag:SetFont("wsMonoMediumFont")
 			flag:SetText(string.format("[%s]", k))
 			flag:Dock(LEFT)
 			flag:SetTextColor(color_white)
@@ -312,7 +312,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 			flag:SetTall(flag:GetTall() + 8)
 
 			local description = panel:Add("DLabel")
-			description:SetFont("ixMediumLightFont")
+			description:SetFont("wsMediumLightFont")
 			description:SetText(v.description)
 			description:Dock(FILL)
 			description:SetTextColor(color_white)
@@ -326,19 +326,19 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 	end
 
 	tabs["plugins"] = function(container)
-		for _, v in SortedPairsByMemberValue(ix.plugin.list, "name") do
+		for _, v in SortedPairsByMemberValue(ws.plugin.list, "name") do
 			-- name
 			local title = container:Add("DLabel")
-			title:SetFont("ixMediumLightFont")
+			title:SetFont("wsMediumLightFont")
 			title:SetText(v.name or "Unknown")
 			title:Dock(TOP)
-			title:SetTextColor(ix.config.Get("color"))
+			title:SetTextColor(ws.config.Get("color"))
 			title:SetExpensiveShadow(1, color_black)
 			title:SizeToContents()
 
 			-- author
 			local author = container:Add("DLabel")
-			author:SetFont("ixSmallFont")
+			author:SetFont("wsSmallFont")
 			author:SetText(string.format("%s: %s", L("author"), v.author))
 			author:Dock(TOP)
 			author:SetTextColor(color_white)
@@ -352,7 +352,7 @@ hook.Add("PopulateHelpMenu", "ixHelpMenu", function(tabs)
 
 			if (descriptionText != "") then
 				local description = container:Add("DLabel")
-				description:SetFont("ixSmallFont")
+				description:SetFont("wsSmallFont")
 				description:SetText(descriptionText)
 				description:Dock(TOP)
 				description:SetTextColor(color_white)

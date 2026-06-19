@@ -10,27 +10,27 @@ since the epoch.
 This library makes use of a third-party date library found at https://github.com/Tieske/date - you can find all documentation
 regarding the `date` object and its methods there.
 ]]
--- @module ix.date
+-- @module ws.date
 
-ix.date = ix.date or {}
-ix.date.lib = ix.date.lib or include("thirdparty/sh_date.lua")
-ix.date.timeScale = ix.date.timeScale or ix.config.Get("secondsPerMinute", 60) -- seconds per minute
-ix.date.current = ix.date.current or ix.date.lib() -- current in-game date/time
-ix.date.start = ix.date.start or CurTime() -- arbitrary start time for calculating date/time offset
-ix.date.yearOffset = 174 -- offset from real year (2026 + 174 = 2200)
+ws.date = ws.date or {}
+ws.date.lib = ws.date.lib or include("thirdparty/sh_date.lua")
+ws.date.timeScale = ws.date.timeScale or ws.config.Get("secondsPerMinute", 60) -- seconds per minute
+ws.date.current = ws.date.current or ws.date.lib() -- current in-game date/time
+ws.date.start = ws.date.start or CurTime() -- arbitrary start time for calculating date/time offset
+ws.date.yearOffset = 174 -- offset from real year (2026 + 174 = 2200)
 
 if (SERVER) then
-	util.AddNetworkString("ixDateSync")
+	util.AddNetworkString("wsDateSync")
 
 	--- Initializes the date from real-world time with year offset.
 	-- @realm server
 	-- @internal
-	function ix.date.Initialize()
+	function ws.date.Initialize()
 		-- Always sync with real-world date, applying year offset
 		-- Real year 2026 + offset 174 = in-game year 2200
 		local realYear = tonumber(os.date("%Y")) or 2026
 		local currentDate = {
-			year = realYear + ix.date.yearOffset,
+			year = realYear + ws.date.yearOffset,
 			month = tonumber(os.date("%m")) or 1,
 			day = tonumber(os.date("%d")) or 1,
 			hour = tonumber(os.date("%H")) or 0,
@@ -38,23 +38,23 @@ if (SERVER) then
 			sec = tonumber(os.date("%S")) or 0
 		}
 
-		ix.date.timeScale = ix.config.Get("secondsPerMinute", 60)
-		ix.date.current = ix.date.lib(currentDate)
+		ws.date.timeScale = ws.config.Get("secondsPerMinute", 60)
+		ws.date.current = ws.date.lib(currentDate)
 
 		-- Update config to reflect actual date (for display purposes)
-		ix.date.bSaving = true
-		ix.config.Set("year", currentDate.year)
-		ix.config.Set("month", currentDate.month)
-		ix.config.Set("day", currentDate.day)
-		ix.date.bSaving = nil
+		ws.date.bSaving = true
+		ws.config.Set("year", currentDate.year)
+		ws.config.Set("month", currentDate.month)
+		ws.config.Set("day", currentDate.day)
+		ws.date.bSaving = nil
 	end
 
 	--- Updates the internal in-game date/time representation and resets the offset.
 	-- @realm server
 	-- @internal
-	function ix.date.ResolveOffset()
-		ix.date.current = ix.date.Get()
-		ix.date.start = CurTime()
+	function ws.date.ResolveOffset()
+		ws.date.current = ws.date.Get()
+		ws.date.start = CurTime()
 	end
 
 	--- Updates the time scale of the in-game date/time. The time scale is given in seconds per minute (i.e how many real life
@@ -63,21 +63,21 @@ if (SERVER) then
 	-- @realm server
 	-- @internal
 	-- @number secondsPerMinute New time scale
-	function ix.date.UpdateTimescale(secondsPerMinute)
-		ix.date.ResolveOffset()
-		ix.date.timeScale = secondsPerMinute
+	function ws.date.UpdateTimescale(secondsPerMinute)
+		ws.date.ResolveOffset()
+		ws.date.timeScale = secondsPerMinute
 	end
 
 	--- Sends the current date to a player. This is done automatically when the player joins the server.
 	-- @realm server
 	-- @internal
 	-- @player[opt=nil] client Player to send the date to, or `nil` to send to everyone
-	function ix.date.Send(client)
-		net.Start("ixDateSync")
+	function ws.date.Send(client)
+		net.Start("wsDateSync")
 
-		net.WriteFloat(ix.date.timeScale)
-		net.WriteTable(ix.date.current)
-		net.WriteFloat(ix.date.start)
+		net.WriteFloat(ws.date.timeScale)
+		net.WriteTable(ws.date.current)
+		net.WriteFloat(ws.date.start)
 
 		if (client) then
 			net.Send(client)
@@ -89,36 +89,36 @@ if (SERVER) then
 	--- Updates config to reflect current date (no disk persistence needed since we sync from real time).
 	-- @realm server
 	-- @internal
-	function ix.date.Save()
-		ix.date.bSaving = true
-		ix.date.ResolveOffset()
+	function ws.date.Save()
+		ws.date.bSaving = true
+		ws.date.ResolveOffset()
 
 		-- Update config to reflect current date for display purposes
-		ix.config.Set("year", ix.date.current:getyear())
-		ix.config.Set("month", ix.date.current:getmonth())
-		ix.config.Set("day", ix.date.current:getday())
+		ws.config.Set("year", ws.date.current:getyear())
+		ws.config.Set("month", ws.date.current:getmonth())
+		ws.config.Set("day", ws.date.current:getday())
 
-		ix.date.bSaving = nil
+		ws.date.bSaving = nil
 	end
 else
-	net.Receive("ixDateSync", function()
+	net.Receive("wsDateSync", function()
 		local timeScale = net.ReadFloat()
-		local currentDate = ix.date.lib.construct(net.ReadTable())
+		local currentDate = ws.date.lib.construct(net.ReadTable())
 		local startTime = net.ReadFloat()
 
-		ix.date.timeScale = timeScale
-		ix.date.current = currentDate
-		ix.date.start = startTime
+		ws.date.timeScale = timeScale
+		ws.date.current = currentDate
+		ws.date.start = startTime
 	end)
 end
 
 --- Returns the currently set date.
 -- @realm shared
 -- @treturn date Current in-game date
-function ix.date.Get()
-	local minutesSinceStart = (CurTime() - ix.date.start) / ix.date.timeScale
+function ws.date.Get()
+	local minutesSinceStart = (CurTime() - ws.date.start) / ws.date.timeScale
 
-	return ix.date.current:copy():addminutes(minutesSinceStart)
+	return ws.date.current:copy():addminutes(minutesSinceStart)
 end
 
 --- Returns a string formatted version of a date.
@@ -126,22 +126,22 @@ end
 -- @string format Format string
 -- @date[opt=nil] currentDate Date to format. If nil, it will use the currently set date
 -- @treturn string Formatted date
-function ix.date.GetFormatted(format, currentDate)
-	return (currentDate or ix.date.Get()):fmt(format)
+function ws.date.GetFormatted(format, currentDate)
+	return (currentDate or ws.date.Get()):fmt(format)
 end
 
 --- Returns a serialized version of a date. This is useful when you need to network a date to clients, or save a date to disk.
 -- @realm shared
 -- @date[opt=nil] currentDate Date to serialize. If nil, it will use the currently set date
 -- @treturn table Serialized date
-function ix.date.GetSerialized(currentDate)
-	return ix.date.lib.serialize(currentDate or ix.date.Get())
+function ws.date.GetSerialized(currentDate)
+	return ws.date.lib.serialize(currentDate or ws.date.Get())
 end
 
 --- Returns a date object from a table or serialized date.
 -- @realm shared
 -- @param currentDate Date to construct
 -- @treturn date Constructed date object
-function ix.date.Construct(currentDate)
-	return ix.date.lib.construct(currentDate)
+function ws.date.Construct(currentDate)
+	return ws.date.lib.construct(currentDate)
 end

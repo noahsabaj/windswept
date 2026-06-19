@@ -2,8 +2,8 @@ local playerMeta = FindMetaTable("Player")
 
 -- Player data (outside of characters) handling.
 do
-	util.AddNetworkString("ixData")
-	util.AddNetworkString("ixDataSync")
+	util.AddNetworkString("wsData")
+	util.AddNetworkString("wsDataSync")
 
 	function playerMeta:LoadData(callback)
 		local name = self:SteamName()
@@ -23,11 +23,11 @@ do
 						updateQuery:Where("steamid", steamID64)
 					updateQuery:Execute()
 
-					self.ixPlayTime = tonumber(result[1].play_time) or 0
-					self.ixData = util.JSONToTable(result[1].data)
+					self.wsPlayTime = tonumber(result[1].play_time) or 0
+					self.wsData = util.JSONToTable(result[1].data)
 
 					if (callback) then
-						callback(self.ixData)
+						callback(self.wsData)
 					end
 				else
 					local insertQuery = mysql:Insert("ix_players")
@@ -55,18 +55,18 @@ do
 
 		local query = mysql:Update("ix_players")
 			query:Update("steam_name", name)
-			query:Update("play_time", math.floor((self.ixPlayTime or 0) + (RealTime() - (self.ixJoinTime or RealTime() - 1))))
-			query:Update("data", util.TableToJSON(self.ixData))
+			query:Update("play_time", math.floor((self.wsPlayTime or 0) + (RealTime() - (self.wsJoinTime or RealTime() - 1))))
+			query:Update("data", util.TableToJSON(self.wsData))
 			query:Where("steamid", steamID64)
 		query:Execute()
 	end
 
 	function playerMeta:SetData(key, value, bNoNetworking)
-		self.ixData = self.ixData or {}
-		self.ixData[key] = value
+		self.wsData = self.wsData or {}
+		self.wsData[key] = value
 
 		if (!bNoNetworking) then
-			net.Start("ixData")
+			net.Start("wsData")
 				net.WriteString(key)
 				net.WriteType(value)
 			net.Send(self)
@@ -81,7 +81,7 @@ do
 			whitelisted = nil
 		end
 
-		local data = ix.faction.indices[faction]
+		local data = ws.faction.indices[faction]
 
 		if (data) then
 			local whitelists = self:GetData("whitelists", {})
@@ -99,14 +99,14 @@ do
 end
 
 do
-	playerMeta.ixGive = playerMeta.ixGive or playerMeta.Give
+	playerMeta.wsGive = playerMeta.wsGive or playerMeta.Give
 
 	function playerMeta:Give(className, bNoAmmo)
 		local weapon
 
-		self.ixWeaponGive = true
-			weapon = self:ixGive(className, bNoAmmo)
-		self.ixWeaponGive = nil
+		self.wsWeaponGive = true
+			weapon = self:wsGive(className, bNoAmmo)
+		self.wsWeaponGive = nil
 
 		return weapon
 	end

@@ -94,4 +94,4 @@ function PANEL:OnMousePressed()
 	end
 end
 
-vgui.Register("ixSpawnIcon", PANEL, "DModelPanel")
+vgui.Register("wsSpawnIcon", PANEL, "DModelPanel")

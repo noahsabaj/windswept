@@ -1,37 +1,37 @@
 
--- @module ix.attributes
+-- @module ws.attributes
 
-if (!ix.char) then
+if (!ws.char) then
 	include("sh_character.lua")
 end
 
-ix.attributes = ix.attributes or {}
-ix.attributes.list = ix.attributes.list or {}
+ws.attributes = ws.attributes or {}
+ws.attributes.list = ws.attributes.list or {}
 
-function ix.attributes.LoadFromDir(directory)
+function ws.attributes.LoadFromDir(directory)
 	for _, v in ipairs(file.Find(directory.."/*.lua", "LUA")) do
 		local niceName = v:sub(4, -5)
 
-		ATTRIBUTE = ix.attributes.list[niceName] or {}
+		ATTRIBUTE = ws.attributes.list[niceName] or {}
 			if (PLUGIN) then
 				ATTRIBUTE.plugin = PLUGIN.uniqueID
 			end
 
-			ix.util.Include(directory.."/"..v)
+			ws.util.Include(directory.."/"..v)
 
 			ATTRIBUTE.name = ATTRIBUTE.name or "Unknown"
 			ATTRIBUTE.description = ATTRIBUTE.description or "No description availalble."
 
-			ix.attributes.list[niceName] = ATTRIBUTE
+			ws.attributes.list[niceName] = ATTRIBUTE
 		ATTRIBUTE = nil
 	end
 end
 
-function ix.attributes.Setup(client)
+function ws.attributes.Setup(client)
 	local character = client:GetCharacter()
 
 	if (character) then
-		for k, v in pairs(ix.attributes.list) do
+		for k, v in pairs(ws.attributes.list) do
 			if (v.OnSetup) then
 				v:OnSetup(client, character:GetAttribute(k, 0))
 			end
@@ -42,26 +42,26 @@ end
 do
 	--- Character attribute methods
 	-- @classmod Character
-	local charMeta = ix.meta.character
+	local charMeta = ws.meta.character
 
 	if (SERVER) then
-		util.AddNetworkString("ixAttributeUpdate")
+		util.AddNetworkString("wsAttributeUpdate")
 
 		--- Increments one of this character's attributes by the given amount.
 		-- @realm server
 		-- @string key Name of the attribute to update
 		-- @number value Amount to add to the attribute
 		function charMeta:UpdateAttrib(key, value)
-			local attribute = ix.attributes.list[key]
+			local attribute = ws.attributes.list[key]
 			local client = self:GetPlayer()
 
 			if (attribute) then
 				local attrib = self:GetAttributes()
 
-				attrib[key] = math.min((attrib[key] or 0) + value, attribute.maxValue or ix.config.Get("maxAttributes", 100))
+				attrib[key] = math.min((attrib[key] or 0) + value, attribute.maxValue or ws.config.Get("maxAttributes", 100))
 
 				if (IsValid(client)) then
-					net.Start("ixAttributeUpdate")
+					net.Start("wsAttributeUpdate")
 						net.WriteUInt(self:GetID(), 32)
 						net.WriteString(key)
 						net.WriteFloat(attrib[key])
@@ -83,7 +83,7 @@ do
 		-- @string key Name of the attribute to update
 		-- @number value New value for the attribute
 		function charMeta:SetAttrib(key, value)
-			local attribute = ix.attributes.list[key]
+			local attribute = ws.attributes.list[key]
 			local client = self:GetPlayer()
 
 			if (attribute) then
@@ -92,7 +92,7 @@ do
 				attrib[key] = value
 
 				if (IsValid(client)) then
-					net.Start("ixAttributeUpdate")
+					net.Start("wsAttributeUpdate")
 						net.WriteUInt(self:GetID(), 32)
 						net.WriteString(key)
 						net.WriteFloat(attrib[key])
@@ -140,9 +140,9 @@ do
 			return self:SetVar("boosts", boosts, nil, self:GetPlayer())
 		end
 	else
-		net.Receive("ixAttributeUpdate", function()
+		net.Receive("wsAttributeUpdate", function()
 			local id = net.ReadUInt(32)
-			local character = ix.char.loaded[id]
+			local character = ws.char.loaded[id]
 
 			if (character) then
 				local key = net.ReadString()

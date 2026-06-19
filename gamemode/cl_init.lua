@@ -19,7 +19,7 @@ if (!system.IsWindows()) then
 		fontOverrides["Consolas"] = "Courier New"
 	end
 
-	local ixCreateFont = surface.CreateFont
+	local wsCreateFont = surface.CreateFont
 
 	function surface.CreateFont(name, info) -- luacheck: globals surface
 		local font = info.font
@@ -28,12 +28,14 @@ if (!system.IsWindows()) then
 			info.font = fontOverrides[font]
 		end
 
-		ixCreateFont(name, info)
+		wsCreateFont(name, info)
 	end
 end
 
 DeriveGamemode("sandbox")
-ix = ix or {util = {}, gui = {}, meta = {}}
+-- Windswept framework global table (`ws`); `ix` is a temporary transition alias.
+ws = ws or {util = {}, gui = {}, meta = {}}
+ix = ws
 
 -- Include core files.
 include("core/sh_util.lua")

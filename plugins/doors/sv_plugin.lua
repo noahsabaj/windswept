@@ -1,6 +1,6 @@
 
-util.AddNetworkString("ixDoorMenu")
-util.AddNetworkString("ixDoorPermission")
+util.AddNetworkString("wsDoorMenu")
+util.AddNetworkString("wsDoorPermission")
 
 -- Variables for door data.
 local variables = {
@@ -23,16 +23,16 @@ local variables = {
 function PLUGIN:CallOnDoorChildren(entity, callback)
 	local parent
 
-	if (entity.ixChildren) then
+	if (entity.wsChildren) then
 		parent = entity
-	elseif (entity.ixParent) then
-		parent = entity.ixParent
+	elseif (entity.wsParent) then
+		parent = entity.wsParent
 	end
 
 	if (IsValid(parent)) then
 		callback(parent)
 
-		for k, _ in pairs(parent.ixChildren) do
+		for k, _ in pairs(parent.wsChildren) do
 			local child = ents.GetMapCreatedEntity(k)
 
 			if (IsValid(child)) then
@@ -43,7 +43,7 @@ function PLUGIN:CallOnDoorChildren(entity, callback)
 end
 
 function PLUGIN:CopyParentDoor(child)
-	local parent = child.ixParent
+	local parent = child.wsParent
 
 	if (IsValid(parent)) then
 		for _, v in ipairs(variables) do
@@ -75,13 +75,13 @@ function PLUGIN:LoadData()
 			-- Loop through all of our door variables.
 			for k2, v2 in pairs(v) do
 				if (k2 == "children") then
-					entity.ixChildren = v2
+					entity.wsChildren = v2
 
 					for index, _ in pairs(v2) do
 						local door = ents.GetMapCreatedEntity(index)
 
 						if (IsValid(door)) then
-							door.ixParent = entity
+							door.wsParent = entity
 						end
 					end
 				elseif (k2 == "factions") then
@@ -89,21 +89,21 @@ function PLUGIN:LoadData()
 					local factionIDs = {}
 					local factionIndices = {}
 					for _, uniqueID in ipairs(v2) do
-						local factionData = ix.faction.teams[uniqueID]
+						local factionData = ws.faction.teams[uniqueID]
 						if (factionData) then
 							table.insert(factionIDs, uniqueID)
 							table.insert(factionIndices, factionData.index)
 						end
 					end
 					if (#factionIDs > 0) then
-						entity.ixFactionIDs = factionIDs
+						entity.wsFactionIDs = factionIDs
 						entity:SetNetVar("factions", factionIndices)
 					end
 				elseif (k2 == "faction") then
 					-- Backwards compatibility: convert old single-faction format to multi-faction
-					local factionData = ix.faction.teams[v2]
+					local factionData = ws.faction.teams[v2]
 					if (factionData) then
-						entity.ixFactionIDs = {v2}
+						entity.wsFactionIDs = {v2}
 						entity:SetNetVar("factions", {factionData.index})
 					end
 				else
@@ -142,16 +142,16 @@ function PLUGIN:SaveDoorData()
 				end
 			end
 
-			if (v.ixChildren) then
-				doorData.children = v.ixChildren
+			if (v.wsChildren) then
+				doorData.children = v.wsChildren
 			end
 
-			if (v.ixClassID) then
-				doorData.class = v.ixClassID
+			if (v.wsClassID) then
+				doorData.class = v.wsClassID
 			end
 
-			if (v.ixFactionIDs and #v.ixFactionIDs > 0) then
-				doorData.factions = v.ixFactionIDs
+			if (v.wsFactionIDs and #v.wsFactionIDs > 0) then
+				doorData.factions = v.wsFactionIDs
 			end
 
 			-- Add the door to the door information.
@@ -185,9 +185,9 @@ function PLUGIN:CanPlayerAccessDoor(client, door, access)
 	local class = door:GetNetVar("class")
 
 	-- If the door has a faction set which the client is a member of, allow access.
-	local classData = ix.class.list[class]
+	local classData = ws.class.list[class]
 	local charClass = client:GetCharacter():GetClass()
-	local classData2 = ix.class.list[charClass]
+	local classData2 = ws.class.list[charClass]
 
 	if (class and classData and classData2) then
 		if (classData.team) then
@@ -217,17 +217,17 @@ function PLUGIN:ShowTeam(client)
 		if (entity:CheckDoorAccess(client, DOOR_TENANT)) then
 			local door = entity
 
-			if (IsValid(door.ixParent)) then
-				door = door.ixParent
+			if (IsValid(door.wsParent)) then
+				door = door.wsParent
 			end
 
-			net.Start("ixDoorMenu")
+			net.Start("wsDoorMenu")
 				net.WriteEntity(door)
-				net.WriteTable(door.ixAccess)
+				net.WriteTable(door.wsAccess)
 				net.WriteEntity(entity)
 			net.Send(client)
 		elseif (!IsValid(entity:GetDTEntity(0))) then
-			ix.command.Run(client, "doorbuy")
+			ws.command.Run(client, "doorbuy")
 		else
 			client:NotifyLocalized("notAllowed")
 		end
@@ -266,30 +266,30 @@ function PLUGIN:PlayerDisconnected(client)
 	end
 end
 
-net.Receive("ixDoorPermission", function(length, client)
+net.Receive("wsDoorPermission", function(length, client)
 	local door = net.ReadEntity()
 	local target = net.ReadEntity()
 	local access = net.ReadUInt(4)
 
-	if (IsValid(target) and target:GetCharacter() and door.ixAccess and door:GetDTEntity(0) == client and target != client) then
+	if (IsValid(target) and target:GetCharacter() and door.wsAccess and door:GetDTEntity(0) == client and target != client) then
 		access = math.Clamp(access or 0, DOOR_NONE, DOOR_TENANT)
 
-		if (access == door.ixAccess[target]) then
+		if (access == door.wsAccess[target]) then
 			return
 		end
 
-		door.ixAccess[target] = access
+		door.wsAccess[target] = access
 
 		local recipient = {}
 
-		for k, v in pairs(door.ixAccess) do
+		for k, v in pairs(door.wsAccess) do
 			if (v > DOOR_GUEST) then
 				recipient[#recipient + 1] = k
 			end
 		end
 
 		if (#recipient > 0) then
-			net.Start("ixDoorPermission")
+			net.Start("wsDoorPermission")
 				net.WriteEntity(door)
 				net.WriteEntity(target)
 				net.WriteUInt(access, 4)

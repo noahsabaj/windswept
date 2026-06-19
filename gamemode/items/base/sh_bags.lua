@@ -1,6 +1,6 @@
 
 if (SERVER) then
-	util.AddNetworkString("ixBagDrop")
+	util.AddNetworkString("wsBagDrop")
 end
 
 ITEM.name = "Bag"
@@ -18,31 +18,31 @@ ITEM.functions.View = {
 		local index = item:GetData("id", "")
 
 		if (index) then
-			local panel = ix.gui["inv"..index]
-			local inventory = ix.item.inventories[index]
-			local parent = IsValid(ix.gui.menuInventoryContainer) and ix.gui.menuInventoryContainer or ix.gui.openedStorage
+			local panel = ws.gui["inv"..index]
+			local inventory = ws.item.inventories[index]
+			local parent = IsValid(ws.gui.menuInventoryContainer) and ws.gui.menuInventoryContainer or ws.gui.openedStorage
 
 			if (IsValid(panel)) then
 				panel:Remove()
 			end
 
 			if (inventory and inventory.slots) then
-				panel = vgui.Create("ixInventory", IsValid(parent) and parent or nil)
+				panel = vgui.Create("wsInventory", IsValid(parent) and parent or nil)
 				panel:SetInventory(inventory)
 				panel:ShowCloseButton(true)
 				panel:SetTitle(item.GetName and item:GetName() or L(item.name))
 
-				if (parent != ix.gui.menuInventoryContainer) then
+				if (parent != ws.gui.menuInventoryContainer) then
 					panel:Center()
 
-					if (parent == ix.gui.openedStorage) then
+					if (parent == ws.gui.openedStorage) then
 						panel:MakePopup()
 					end
 				else
 					panel:MoveToFront()
 				end
 
-				ix.gui["inv"..index] = panel
+				ws.gui["inv"..index] = panel
 			else
 				ErrorNoHalt("[Helix] Attempt to view an uninitialized inventory '"..index.."'\n")
 			end
@@ -51,12 +51,12 @@ ITEM.functions.View = {
 		return false
 	end,
 	OnCanRun = function(item)
-		return !IsValid(item.entity) and item:GetData("id") and !IsValid(ix.gui["inv" .. item:GetData("id", "")])
+		return !IsValid(item.entity) and item:GetData("id") and !IsValid(ws.gui["inv" .. item:GetData("id", "")])
 	end
 }
 ITEM.functions.combine = {
 	OnRun = function(item, data)
-		ix.item.instances[data[1]]:Transfer(item:GetData("id"), nil, nil, item.player)
+		ws.item.instances[data[1]]:Transfer(item:GetData("id"), nil, nil, item.player)
 
 		return false
 	end,
@@ -64,7 +64,7 @@ ITEM.functions.combine = {
 		local index = item:GetData("id", "")
 
 		if (index) then
-			local inventory = ix.item.inventories[index]
+			local inventory = ws.item.inventories[index]
 
 			if (inventory) then
 				return true
@@ -77,7 +77,7 @@ ITEM.functions.combine = {
 
 if (CLIENT) then
 	function ITEM:PaintOver(item, width, height)
-		local panel = ix.gui["inv" .. item:GetData("id", "")]
+		local panel = ws.gui["inv" .. item:GetData("id", "")]
 
 		if (!IsValid(panel)) then
 			return
@@ -93,9 +93,9 @@ end
 
 -- Called when a new instance of this item has been made.
 function ITEM:OnInstanced(invID, x, y)
-	local inventory = ix.item.inventories[invID]
+	local inventory = ws.item.inventories[invID]
 
-	ix.inventory.New(inventory and inventory.owner or 0, self.uniqueID, function(inv)
+	ws.inventory.New(inventory and inventory.owner or 0, self.uniqueID, function(inv)
 		local client = inv:GetOwner()
 
 		inv.vars.isBag = self.uniqueID
@@ -111,7 +111,7 @@ function ITEM:GetInventory()
 	local index = self:GetData("id")
 
 	if (index) then
-		return ix.item.inventories[index]
+		return ws.item.inventories[index]
 	end
 end
 
@@ -122,7 +122,7 @@ function ITEM:OnSendData()
 	local index = self:GetData("id")
 
 	if (index) then
-		local inventory = ix.item.inventories[index]
+		local inventory = ws.item.inventories[index]
 
 		if (inventory) then
 			inventory.vars.isBag = self.uniqueID
@@ -131,7 +131,7 @@ function ITEM:OnSendData()
 		else
 			local owner = self.player:GetCharacter():GetID()
 
-			ix.inventory.Restore(self:GetData("id"), self.invWidth, self.invHeight, function(inv)
+			ws.inventory.Restore(self:GetData("id"), self.invWidth, self.invHeight, function(inv)
 				inv.vars.isBag = self.uniqueID
 				inv:SetOwner(owner, true)
 
@@ -139,7 +139,7 @@ function ITEM:OnSendData()
 					return
 				end
 
-				for client, character in ix.util.GetCharacters() do
+				for client, character in ws.util.GetCharacters() do
 					if (character:GetID() == inv.owner) then
 						inv:AddReceiver(client)
 						break
@@ -148,7 +148,7 @@ function ITEM:OnSendData()
 			end)
 		end
 	else
-		ix.inventory.New(self.player:GetCharacter():GetID(), self.uniqueID, function(inv)
+		ws.inventory.New(self.player:GetCharacter():GetID(), self.uniqueID, function(inv)
 			self:SetData("id", inv:GetID())
 		end)
 	end
@@ -162,15 +162,15 @@ ITEM.postHooks.drop = function(item, result)
 		query:Where("inventory_id", index)
 	query:Execute()
 
-	net.Start("ixBagDrop")
+	net.Start("wsBagDrop")
 		net.WriteUInt(index, 32)
 	net.Send(item.player)
 end
 
 if (CLIENT) then
-	net.Receive("ixBagDrop", function()
+	net.Receive("wsBagDrop", function()
 		local index = net.ReadUInt(32)
-		local panel = ix.gui["inv"..index]
+		local panel = ws.gui["inv"..index]
 
 		if (panel and panel:IsVisible()) then
 			panel:Close()
@@ -244,5 +244,5 @@ end
 
 -- Called after the item is registered into the item tables.
 function ITEM:OnRegistered()
-	ix.inventory.Register(self.uniqueID, self.invWidth, self.invHeight, true)
+	ws.inventory.Register(self.uniqueID, self.invWidth, self.invHeight, true)
 end

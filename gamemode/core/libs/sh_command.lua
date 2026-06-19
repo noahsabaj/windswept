@@ -5,9 +5,9 @@ Registration, parsing, and handling of commands.
 Commands can be ran through the chat with slash commands or they can be executed through the console. Commands can be manually
 restricted to certain usergroups using a [CAMI](https://github.com/glua/CAMI)-compliant admin mod.
 ]]
--- @module ix.command
+-- @module ws.command
 
---- When registering commands with `ix.command.Add`, you'll need to pass in a valid command structure. This is simply a table
+--- When registering commands with `ws.command.Add`, you'll need to pass in a valid command structure. This is simply a table
 -- with various fields defined to describe the functionality of the command.
 -- @realm shared
 -- @table CommandStructure
@@ -23,7 +23,7 @@ restricted to certain usergroups using a [CAMI](https://github.com/glua/CAMI)-co
 -- @field[type=table,opt=nil] argumentNames An array of strings corresponding to each argument of the command. This ignores the
 -- name that's specified in the `OnRun` function arguments and allows you to use any string to change the text that displays
 -- in the command's syntax help. When using this field, make sure that the amount is equal to the amount of arguments, as such:
--- 	COMMAND.arguments = {ix.type.character, ix.type.number}
+-- 	COMMAND.arguments = {ws.type.character, ws.type.number}
 -- 	COMMAND.argumentNames = {"target char", "cash (1-1000)"}
 -- @field[type=table,opt] arguments If this field is defined, then additional checks will be performed to ensure that the
 -- arguments given to the command are valid. This removes extra boilerplate code since all the passed arguments are guaranteed
@@ -45,8 +45,8 @@ restricted to certain usergroups using a [CAMI](https://github.com/glua/CAMI)-co
 --
 -- When using the `arguments` field in your command, you are specifying specific types that you expect to receive when the
 -- command is ran successfully. This means that before `OnRun` is called, the arguments passed to the command from a user will
--- be verified to be valid. Each argument is an `ix.type` entry that specifies the expected type for that argument. Optional
--- arguments can be specified by using a bitwise OR with the special `ix.type.optional` type. When specified as optional, the
+-- be verified to be valid. Each argument is an `ws.type` entry that specifies the expected type for that argument. Optional
+-- arguments can be specified by using a bitwise OR with the special `ws.type.optional` type. When specified as optional, the
 -- argument can be `nil` if the user has not entered anything for that argument - otherwise it will be valid.
 --
 -- Note that optional arguments must always be at the end of a list of arguments - or rather, they must not follow a required
@@ -54,12 +54,12 @@ restricted to certain usergroups using a [CAMI](https://github.com/glua/CAMI)-co
 -- the `syntax` field yourself. The arguments you specify will have the same names as the arguments in your OnRun function.
 --
 -- Consider this example command:
--- 	ix.command.Add("CharSlap", {
+-- 	ws.command.Add("CharSlap", {
 -- 		description = "Slaps a character with a large trout.",
 -- 		adminOnly = true,
 -- 		arguments = {
--- 			ix.type.character,
--- 			bit.bor(ix.type.number, ix.type.optional)
+-- 			ws.type.character,
+-- 			bit.bor(ws.type.number, ws.type.optional)
 -- 		},
 -- 		OnRun = function(self, client, target, damage)
 -- 			-- WHAM!
@@ -72,8 +72,8 @@ restricted to certain usergroups using a [CAMI](https://github.com/glua/CAMI)-co
 -- @realm shared
 -- @table CommandArgumentsStructure
 
-ix.command = ix.command or {}
-ix.command.list = ix.command.list or {}
+ws.command = ws.command or {}
+ws.command.list = ws.command.list or {}
 
 local COMMAND_PREFIX = "/"
 
@@ -82,24 +82,24 @@ local function ArgumentCheckStub(command, client, given)
 	local result = {}
 
 	for i = 1, #arguments do
-		local bOptional = bit.band(arguments[i], ix.type.optional) == ix.type.optional
-		local argType = bOptional and bit.bxor(arguments[i], ix.type.optional) or arguments[i]
+		local bOptional = bit.band(arguments[i], ws.type.optional) == ws.type.optional
+		local argType = bOptional and bit.bxor(arguments[i], ws.type.optional) or arguments[i]
 		local argument = given[i]
 
 		if (!argument and !bOptional) then
 			return L("invalidArg", client, i)
 		end
 
-		if (argType == ix.type.string) then
+		if (argType == ws.type.string) then
 			if (!argument and bOptional) then
 				result[#result + 1] = nil
 			else
 				result[#result + 1] = tostring(argument)
 			end
-		elseif (argType == ix.type.text) then
+		elseif (argType == ws.type.text) then
 			result[#result + 1] = table.concat(given, " ", i) or ""
 			break
-		elseif (argType == ix.type.number) then
+		elseif (argType == ws.type.number) then
 			local value = tonumber(argument)
 
 			if (!bOptional and !value) then
@@ -107,9 +107,9 @@ local function ArgumentCheckStub(command, client, given)
 			end
 
 			result[#result + 1] = value
-		elseif (argType == ix.type.player or argType == ix.type.character) then
-			local bPlayer = argType == ix.type.player
-			local value = ix.util.FindPlayer(argument or "") -- argument could be nil due to optional type
+		elseif (argType == ws.type.player or argType == ws.type.character) then
+			local bPlayer = argType == ws.type.player
+			local value = ws.util.FindPlayer(argument or "") -- argument could be nil due to optional type
 
 			-- FindPlayer emits feedback for us
 			if (!value and !bOptional) then
@@ -128,7 +128,7 @@ local function ArgumentCheckStub(command, client, given)
 			end
 
 			result[#result + 1] = value
-		elseif (argType == ix.type.steamid) then
+		elseif (argType == ws.type.steamid) then
 			local value = argument:match("STEAM_(%d+):(%d+):(%d+)")
 
 			if (!value and bOptional) then
@@ -136,7 +136,7 @@ local function ArgumentCheckStub(command, client, given)
 			end
 
 			result[#result + 1] = value
-		elseif (argType == ix.type.bool) then
+		elseif (argType == ws.type.bool) then
 			if (argument == nil and bOptional) then
 				result[#result + 1] = nil
 			else
@@ -154,7 +154,7 @@ end
 -- @tparam CommandStructure data Data describing the command
 -- @see CommandStructure
 -- @see CommandArgumentsStructure
-function ix.command.Add(command, data)
+function ws.command.Add(command, data)
 	data.name = string.gsub(command, "%s", "")
 	data.description = data.description or ""
 
@@ -230,7 +230,7 @@ function ix.command.Add(command, data)
 			local argument = data.arguments[i]
 			local argumentName = debug.getlocal(data.OnRun, 2 + i)
 
-			if (argument == ix.type.optional) then
+			if (argument == ws.type.optional) then
 				return ErrorNoHalt(string.format(
 					"Command '%s' tried to use an optional argument for #%d without specifying type\n", command, i
 				))
@@ -238,16 +238,16 @@ function ix.command.Add(command, data)
 				return ErrorNoHalt(string.format(
 					"Command '%s' tried to use an invalid type for argument #%d\n", command, i
 				))
-			elseif (argument == ix.type.array or bit.band(argument, ix.type.array) > 0) then
+			elseif (argument == ws.type.array or bit.band(argument, ws.type.array) > 0) then
 				return ErrorNoHalt(string.format(
 					"Command '%s' tried to use an unsupported type 'array' for argument #%d\n", command, i
 				))
 			end
 
-			local bOptional = bit.band(argument, ix.type.optional) > 0
-			argument = bOptional and bit.bxor(argument, ix.type.optional) or argument
+			local bOptional = bit.band(argument, ws.type.optional) > 0
+			argument = bOptional and bit.bxor(argument, ws.type.optional) or argument
 
-			if (!ix.type[argument]) then
+			if (!ws.type[argument]) then
 				return ErrorNoHalt(string.format(
 					"Command '%s' tried to use an invalid type for argument #%d\n", command, i
 				))
@@ -255,7 +255,7 @@ function ix.command.Add(command, data)
 				return ErrorNoHalt(string.format(
 					"Command '%s' is missing function argument for command argument #%d\n", command, i
 				))
-			elseif (argument == ix.type.text and i != #data.arguments) then
+			elseif (argument == ws.type.text and i != #data.arguments) then
 				return ErrorNoHalt(string.format(
 					"Command '%s' tried to use a text argument outside of the last argument\n", command
 				))
@@ -266,8 +266,8 @@ function ix.command.Add(command, data)
 			end
 
 			-- text is always optional and will return an empty string if nothing is specified, rather than nil
-			if (argument == ix.type.text) then
-				data.arguments[i] = bit.bor(ix.type.text, ix.type.optional)
+			if (argument == ws.type.text) then
+				data.arguments[i] = bit.bor(ws.type.text, ws.type.optional)
 				bOptional = true
 			end
 
@@ -276,7 +276,7 @@ function ix.command.Add(command, data)
 			end
 
 			data.syntax = data.syntax .. (bFirst and "" or " ") ..
-				string.format((bOptional and "[%s: %s]" or "<%s: %s>"), argumentName, ix.type[argument])
+				string.format((bOptional and "[%s: %s]" or "<%s: %s>"), argumentName, ws.type[argument])
 
 			bFirst = false
 			bLastOptional = bOptional
@@ -295,14 +295,14 @@ function ix.command.Add(command, data)
 	if (alias) then
 		if (istable(alias)) then
 			for _, v in ipairs(alias) do
-				ix.command.list[v:lower()] = data
+				ws.command.list[v:lower()] = data
 			end
 		elseif (isstring(alias)) then
-			ix.command.list[alias:lower()] = data
+			ws.command.list[alias:lower()] = data
 		end
 	end
 
-	ix.command.list[command] = data
+	ws.command.list[command] = data
 end
 
 --- Returns true if a player is allowed to run a certain command.
@@ -310,8 +310,8 @@ end
 -- @player client Player to check access for
 -- @string command Name of the command to check access for
 -- @treturn bool Whether or not the player is allowed to run the command
-function ix.command.HasAccess(client, command)
-	command = ix.command.list[command:lower()]
+function ws.command.HasAccess(client, command)
+	command = ws.command.list[command:lower()]
 
 	if (command) then
 		if (command.OnCheckAccess) then
@@ -330,11 +330,11 @@ end
 -- @realm shared
 -- @string text String to extract arguments from
 -- @treturn table Arguments extracted from string
--- @usage PrintTable(ix.command.ExtractArgs("these are \"some arguments\""))
+-- @usage PrintTable(ws.command.ExtractArgs("these are \"some arguments\""))
 -- > 1 = these
 -- > 2 = are
 -- > 3 = some arguments
-function ix.command.ExtractArgs(text)
+function ws.command.ExtractArgs(text)
 	local skip = 0
 	local arguments = {}
 	local curString = ""
@@ -382,7 +382,7 @@ end
 -- @bool[opt=false] bReorganize Whether or not any exact match will be moved to the top of the array
 -- @bool[opt=false] bRemoveDupes Whether or not to remove any commands that have the same name
 -- @treturn table Array of command tables whose name partially or completely matches the search query
-function ix.command.FindAll(identifier, bSorted, bReorganize, bRemoveDupes)
+function ws.command.FindAll(identifier, bSorted, bReorganize, bRemoveDupes)
 	local result = {}
 	local iterator = bSorted and SortedPairs or pairs
 	local fullMatch
@@ -391,7 +391,7 @@ function ix.command.FindAll(identifier, bSorted, bReorganize, bRemoveDupes)
 
 	if (identifier == "/") then
 		-- we don't simply copy because we need numeric indices
-		for _, v in iterator(ix.command.list) do
+		for _, v in iterator(ws.command.list) do
 			result[#result + 1] = v
 		end
 
@@ -400,7 +400,7 @@ function ix.command.FindAll(identifier, bSorted, bReorganize, bRemoveDupes)
 		identifier = identifier:utf8sub(2)
 	end
 
-	for k, v in iterator(ix.command.list) do
+	for k, v in iterator(ws.command.list) do
 		if (k:match(identifier)) then
 			local index = #result + 1
 			result[index] = v
@@ -432,18 +432,18 @@ function ix.command.FindAll(identifier, bSorted, bReorganize, bRemoveDupes)
 end
 
 if (SERVER) then
-	util.AddNetworkString("ixCommand")
+	util.AddNetworkString("wsCommand")
 
 	--- Attempts to find a player by an identifier. If unsuccessful, a notice will be displayed to the specified player. The
-	-- search criteria is derived from `ix.util.FindPlayer`.
+	-- search criteria is derived from `ws.util.FindPlayer`.
 	-- @realm server
 	-- @player client Player to give a notification to if the player could not be found
 	-- @string name Search query
 	-- @treturn[1] player Player that matches the given search query
 	-- @treturn[2] nil If a player could not be found
-	-- @see ix.util.FindPlayer
-	function ix.command.FindPlayer(client, name)
-		local target = isstring(name) and ix.util.FindPlayer(name) or NULL
+	-- @see ws.util.FindPlayer
+	function ws.command.FindPlayer(client, name)
+		local target = isstring(name) and ws.util.FindPlayer(name) or NULL
 
 		if (IsValid(target)) then
 			return target
@@ -458,13 +458,13 @@ if (SERVER) then
 	-- @string command Full name of the command to be executed. This string gets lowered, but it's good practice to stick with
 	-- the exact name of the command
 	-- @tab arguments Array of arguments to be passed to the command
-	-- @usage ix.command.Run(player.GetByID(1), "Roll", {10})
-	function ix.command.Run(client, command, arguments)
-		if ((client.ixCommandCooldown or 0) > RealTime()) then
+	-- @usage ws.command.Run(player.GetByID(1), "Roll", {10})
+	function ws.command.Run(client, command, arguments)
+		if ((client.wsCommandCooldown or 0) > RealTime()) then
 			return
 		end
 
-		command = ix.command.list[tostring(command):lower()]
+		command = ws.command.list[tostring(command):lower()]
 
 		if (!command) then
 			return
@@ -513,10 +513,10 @@ if (SERVER) then
 				end
 			end
 
-			client.ixCommandCooldown = RealTime() + 0.5
+			client.wsCommandCooldown = RealTime() + 0.5
 
 			if (IsValid(client)) then
-				ix.log.Add(client, "command", COMMAND_PREFIX .. command.name, argumentsTable and table.concat(argumentsTable, " "))
+				ws.log.Add(client, "command", COMMAND_PREFIX .. command.name, argumentsTable and table.concat(argumentsTable, " "))
 			end
 		else
 			client:Notify(feedback)
@@ -531,10 +531,10 @@ if (SERVER) then
 	-- @string[opt] realCommand Specific command to check for. If this is specified, it will not try to run any command that's
 	-- found at the beginning - only if it matches `realCommand`
 	-- @tab[opt] arguments Array of arguments to pass to the command. If not specified, it will try to extract it from the
-	-- string specified in `text` using `ix.command.ExtractArgs`
+	-- string specified in `text` using `ws.command.ExtractArgs`
 	-- @treturn bool Whether or not a command has been found
-	-- @usage ix.command.Parse(player.GetByID(1), "/roll 10")
-	function ix.command.Parse(client, text, realCommand, arguments)
+	-- @usage ws.command.Parse(player.GetByID(1), "/roll 10")
+	function ws.command.Parse(client, text, realCommand, arguments)
 		if (realCommand or text:utf8sub(1, 1) == COMMAND_PREFIX) then
 			-- See if the string contains a command.
 			local match = realCommand or text:utf8lower():match(COMMAND_PREFIX.."([_%w]+)")
@@ -549,16 +549,16 @@ if (SERVER) then
 
 			match = match:utf8lower()
 
-			local command = ix.command.list[match]
+			local command = ws.command.list[match]
 			-- We have a valid, registered command.
 			if (command) then
 				-- Get the arguments like a console command.
 				if (!arguments) then
-					arguments = ix.command.ExtractArgs(text:utf8sub(match:utf8len() + 3))
+					arguments = ws.command.ExtractArgs(text:utf8sub(match:utf8len() + 3))
 				end
 
 				-- Runs the actual command.
-				ix.command.Run(client, match, arguments)
+				ws.command.Run(client, match, arguments)
 			else
 				if (IsValid(client)) then
 					client:NotifyLocalized("cmdNoExist")
@@ -577,11 +577,11 @@ if (SERVER) then
 		local command = arguments[1]
 		table.remove(arguments, 1)
 
-		ix.command.Parse(client, nil, command or "", arguments)
+		ws.command.Parse(client, nil, command or "", arguments)
 	end)
 
-	net.Receive("ixCommand", function(length, client)
-		if ((client.ixNextCmd or 0) < CurTime()) then
+	net.Receive("wsCommand", function(length, client)
+		if ((client.wsNextCmd or 0) < CurTime()) then
 			local command = net.ReadString()
 			local indices = net.ReadUInt(4)
 			local arguments = {}
@@ -594,8 +594,8 @@ if (SERVER) then
 				end
 			end
 
-			ix.command.Parse(client, nil, command, arguments)
-			client.ixNextCmd = CurTime() + 0.2
+			ws.command.Parse(client, nil, command, arguments)
+			client.wsNextCmd = CurTime() + 0.2
 		end
 	end)
 else
@@ -603,11 +603,11 @@ else
 	-- @realm client
 	-- @string command Unique ID of the command
 	-- @param ... Arguments to pass to the command
-	-- @usage ix.command.Send("roll", 10)
-	function ix.command.Send(command, ...)
+	-- @usage ws.command.Send("roll", 10)
+	function ws.command.Send(command, ...)
 		local arguments =  {...}
 
-		net.Start("ixCommand")
+		net.Start("wsCommand")
 		net.WriteString(command)
 		net.WriteUInt(#arguments, 4)
 
@@ -619,14 +619,14 @@ else
 	end
 
 	concommand.Add("ix", function(client, _, arguments)
-		ix.command.Send(table.remove(arguments, 1), unpack(arguments))
+		ws.command.Send(table.remove(arguments, 1), unpack(arguments))
 	end, function(_, arguments)
 		arguments = arguments:TrimLeft()
 
 		local autocomplete = {}
 		local command = string.Explode(" ", arguments)[1]
 
-		for _, v in pairs(ix.command.FindAll(command, true, true)) do
+		for _, v in pairs(ws.command.FindAll(command, true, true)) do
 			if (v.OnCheckAccess and !v:OnCheckAccess(LocalPlayer())) then
 				continue
 			end

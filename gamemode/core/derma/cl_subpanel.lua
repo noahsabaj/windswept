@@ -23,9 +23,9 @@ function PANEL:SetTitle(text, bNoTranslation, bNoUpper)
 		return
 	elseif (!IsValid(self.title)) then
 		self.title = self:Add("DLabel")
-		self.title:SetFont("ixTitleFont")
+		self.title:SetFont("wsTitleFont")
 		self.title:SizeToContents()
-		self.title:SetTextColor(ix.config.Get("color"))
+		self.title:SetTextColor(ws.config.Get("color"))
 		self.title:Dock(TOP)
 	end
 
@@ -55,7 +55,7 @@ end
 function PANEL:OnSetActive()
 end
 
-vgui.Register("ixSubpanel", PANEL, "EditablePanel")
+vgui.Register("wsSubpanel", PANEL, "EditablePanel")
 
 -- subpanel parent
 DEFINE_BASECLASS("EditablePanel")
@@ -102,7 +102,7 @@ end
 
 function PANEL:AddSubpanel(name)
 	local id = #self.subpanels + 1
-	local panel = BaseClass.Add(self, "ixSubpanel")
+	local panel = BaseClass.Add(self, "wsSubpanel")
 	panel.subpanelName = name
 	panel.subpanelID = id
 	panel:SetTitle(name)
@@ -307,4 +307,4 @@ end
 -- ????
 PANEL.Remove = BaseClass.Remove
 
-vgui.Register("ixSubpanelParent", PANEL, "EditablePanel")
+vgui.Register("wsSubpanelParent", PANEL, "EditablePanel")

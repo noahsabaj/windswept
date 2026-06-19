@@ -30,7 +30,7 @@ end
 
 -- On item is dropped, Remove a weapon from the player and keep the ammo in the item.
 ITEM:Hook("drop", function(item)
-	local inventory = ix.item.inventories[item.invID]
+	local inventory = ws.item.inventories[item.invID]
 
 	if (!inventory) then
 		return
@@ -39,7 +39,7 @@ ITEM:Hook("drop", function(item)
 	-- the item could have been dropped by someone else (i.e someone searching this player), so we find the real owner
 	local owner
 
-	for client, character in ix.util.GetCharacters() do
+	for client, character in ws.util.GetCharacters() do
 		if (character:GetID() == inventory.owner) then
 			owner = client
 			break
@@ -108,13 +108,13 @@ ITEM.functions.Equip = {
 }
 
 function ITEM:WearPAC(client)
-	if (ix.pac and self.pacData) then
+	if (ws.pac and self.pacData) then
 		client:AddPart(self.uniqueID, self)
 	end
 end
 
 function ITEM:RemovePAC(client)
-	if (ix.pac and self.pacData) then
+	if (ws.pac and self.pacData) then
 		client:RemovePart(self.uniqueID)
 	end
 end
@@ -124,7 +124,7 @@ function ITEM:Equip(client, bNoSelect, bNoSound)
 
 	for k, _ in client:GetCharacter():GetInventory():Iter() do
 		if (k.id != self.id) then
-			local itemTable = ix.item.instances[k.id]
+			local itemTable = ws.item.instances[k.id]
 
 			if (!itemTable) then
 				client:NotifyLocalized("tellAdmin", "wid!xt")
@@ -179,7 +179,7 @@ function ITEM:Equip(client, bNoSelect, bNoSound)
 			weapon:SetClip1(self:GetData("ammo", 0))
 		end
 
-		weapon.ixItem = self
+		weapon.wsItem = self
 
 		if (self.OnEquipWeapon) then
 			self:OnEquipWeapon(client, weapon)
@@ -199,7 +199,7 @@ function ITEM:Unequip(client, bPlaySound, bRemoveItem)
 	end
 
 	if (IsValid(weapon)) then
-		weapon.ixItem = nil
+		weapon.wsItem = nil
 
 		self:SetData("ammo", weapon:Clip1())
 		client:StripWeapon(self.class)
@@ -255,7 +255,7 @@ function ITEM:OnLoadout()
 				client:RemoveAmmo(weapon:Clip1(), weapon:GetPrimaryAmmoType())
 				client.carryWeapons[item.weaponCategory] = weapon
 
-				weapon.ixItem = item
+				weapon.wsItem = item
 				weapon:SetClip1(item:GetData("ammo", 0))
 
 				if (item.OnEquipWeapon) then
@@ -284,13 +284,13 @@ end
 function ITEM:OnSave()
 	local weapon = self.player:GetWeapon(self.class)
 
-	if (IsValid(weapon) and weapon.ixItem == self and self:GetData("equipped")) then
+	if (IsValid(weapon) and weapon.wsItem == self and self:GetData("equipped")) then
 		self:SetData("ammo", weapon:Clip1())
 	end
 end
 
 function ITEM:OnRemoved()
-	local inventory = ix.item.inventories[self.invID]
+	local inventory = ws.item.inventories[self.invID]
 	local owner = inventory.GetOwner and inventory:GetOwner()
 
 	if (IsValid(owner) and owner:IsPlayer()) then
@@ -304,7 +304,7 @@ function ITEM:OnRemoved()
 	end
 end
 
-hook.Add("PlayerDeath", "ixStripClip", function(client)
+hook.Add("PlayerDeath", "wsStripClip", function(client)
 	client.carryWeapons = {}
 
 	for k, _ in client:GetCharacter():GetInventory():Iter() do
@@ -319,7 +319,7 @@ hook.Add("PlayerDeath", "ixStripClip", function(client)
 	end
 end)
 
-hook.Add("EntityRemoved", "ixRemoveGrenade", function(entity)
+hook.Add("EntityRemoved", "wsRemoveGrenade", function(entity)
 	-- hack to remove hl2 grenades after they've all been thrown
 	if (entity:GetClass() == "weapon_frag") then
 		local client = entity:GetOwner()
@@ -328,8 +328,8 @@ hook.Add("EntityRemoved", "ixRemoveGrenade", function(entity)
 			local ammoName = game.GetAmmoName(entity:GetPrimaryAmmoType())
 
 			if (isstring(ammoName) and ammoName:lower() == "grenade" and client:GetAmmoCount(ammoName) < 1
-			and entity.ixItem and entity.ixItem.Unequip) then
-				entity.ixItem:Unequip(client, false, true)
+			and entity.wsItem and entity.wsItem.Unequip) then
+				entity.wsItem:Unequip(client, false, true)
 			end
 		end
 	end

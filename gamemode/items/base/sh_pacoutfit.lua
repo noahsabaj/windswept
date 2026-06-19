@@ -115,7 +115,7 @@ ITEM.functions.Equip = {
 
 		for k, _ in char:GetInventory():Iter() do
 			if (k.id != item.id) then
-				local itemTable = ix.item.instances[k.id]
+				local itemTable = ws.item.instances[k.id]
 
 				if (itemTable.pacData and k.outfitCategory == item.outfitCategory and itemTable:GetData("equipped")) then
 					item.player:NotifyLocalized(item.equippedNotify or "outfitAlreadyEquipped")
@@ -154,7 +154,7 @@ function ITEM:CanTransfer(oldInventory, newInventory)
 end
 
 function ITEM:OnRemoved()
-	local inventory = ix.item.inventories[self.invID]
+	local inventory = ws.item.inventories[self.invID]
 	local owner = inventory.GetOwner and inventory:GetOwner()
 
 	if (IsValid(owner) and owner:IsPlayer()) then

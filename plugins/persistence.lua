@@ -38,7 +38,7 @@ properties.Add("persist", {
 
 		entity:SetNetVar("Persistent", true)
 
-		ix.log.Add(client, "persist", GetRealModel(entity), true)
+		ws.log.Add(client, "persist", GetRealModel(entity), true)
 	end
 })
 
@@ -76,7 +76,7 @@ properties.Add("persist_end", {
 
 		entity:SetNetVar("Persistent", false)
 
-		ix.log.Add(client, "persist", GetRealModel(entity), false)
+		ws.log.Add(client, "persist", GetRealModel(entity), false)
 	end
 })
 
@@ -188,7 +188,7 @@ if (SERVER) then
 		self:SetData(entities)
 	end
 
-	ix.log.AddType("persist", function(client, ...)
+	ws.log.AddType("persist", function(client, ...)
 		local arg = {...}
 		return string.format("%s has %s persistence for '%s'.", client:Name(), arg[2] and "enabled" or "disabled", arg[1])
 	end)

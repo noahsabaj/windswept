@@ -3,11 +3,11 @@ local PLUGIN = PLUGIN
 local PANEL = {}
 
 function PANEL:Init()
-	if (IsValid(ix.gui.areaEdit)) then
-		ix.gui.areaEdit:Remove()
+	if (IsValid(ws.gui.areaEdit)) then
+		ws.gui.areaEdit:Remove()
 	end
 
-	ix.gui.areaEdit = self
+	ws.gui.areaEdit = self
 	self.list = {}
 	self.properties = {}
 
@@ -20,11 +20,11 @@ function PANEL:Init()
 	self.canvas:Dock(FILL)
 
 	-- name entry
-	self.nameEntry = vgui.Create("ixTextEntry")
-	self.nameEntry:SetFont("ixMediumLightFont")
+	self.nameEntry = vgui.Create("wsTextEntry")
+	self.nameEntry:SetFont("wsMediumLightFont")
 	self.nameEntry:SetText(L("areaNew"))
 
-	local listRow = self.canvas:Add("ixListRow")
+	local listRow = self.canvas:Add("wsListRow")
 	listRow:SetList(self.list)
 	listRow:SetLabelText(L("name"))
 	listRow:SetRightPanel(self.nameEntry)
@@ -34,18 +34,18 @@ function PANEL:Init()
 	-- type entry
 	self.typeEntry = self.canvas:Add("DComboBox")
 	self.typeEntry:Dock(RIGHT)
-	self.typeEntry:SetFont("ixMediumLightFont")
+	self.typeEntry:SetFont("wsMediumLightFont")
 	self.typeEntry:SetTextColor(color_black)
 	self.typeEntry.OnSelect = function(panel)
 		panel:SizeToContents()
 		panel:SetWide(panel:GetWide() + 12) -- padding for arrow (nice)
 	end
 
-	for id, name in pairs(ix.area.types) do
+	for id, name in pairs(ws.area.types) do
 		self.typeEntry:AddChoice(L(name), id, id == "area")
 	end
 
-	listRow = self.canvas:Add("ixListRow")
+	listRow = self.canvas:Add("wsListRow")
 	listRow:SetList(self.list)
 	listRow:SetLabelText(L("type"))
 	listRow:SetRightPanel(self.typeEntry)
@@ -53,25 +53,25 @@ function PANEL:Init()
 	listRow:SizeToContents()
 
 	-- properties
-	for k, v in pairs(ix.area.properties) do
+	for k, v in pairs(ws.area.properties) do
 		local panel
 
-		if (v.type == ix.type.string or v.type == ix.type.number) then
-			panel = vgui.Create("ixTextEntry")
-			panel:SetFont("ixMenuButtonFont")
+		if (v.type == ws.type.string or v.type == ws.type.number) then
+			panel = vgui.Create("wsTextEntry")
+			panel:SetFont("wsMenuButtonFont")
 			panel:SetText(tostring(v.default))
 
-			if (v.type == ix.type.number) then
+			if (v.type == ws.type.number) then
 				panel.realGetValue = panel.GetValue
 				panel.GetValue = function()
 					return tonumber(panel:realGetValue()) or v.default
 				end
 			end
-		elseif (v.type == ix.type.bool) then
-			panel = vgui.Create("ixCheckBox")
+		elseif (v.type == ws.type.bool) then
+			panel = vgui.Create("wsCheckBox")
 			panel:SetChecked(v.default, true)
-			panel:SetFont("ixMediumLightFont")
-		elseif (v.type == ix.type.color) then
+			panel:SetFont("wsMediumLightFont")
+		elseif (v.type == ws.type.color) then
 			panel = vgui.Create("DButton")
 			panel.value = v.default
 			panel:SetText("")
@@ -115,7 +115,7 @@ function PANEL:Init()
 		end
 
 		if (IsValid(panel)) then
-			local row = self.canvas:Add("ixListRow")
+			local row = self.canvas:Add("wsListRow")
 			row:SetList(self.list)
 			row:SetLabelText(L(k))
 			row:SetRightPanel(panel)
@@ -158,8 +158,8 @@ end
 function PANEL:Submit()
 	local name = self.nameEntry:GetValue()
 
-	if (ix.area.stored[name]) then
-		ix.util.NotifyLocalized("areaAlreadyExists")
+	if (ws.area.stored[name]) then
+		ws.util.NotifyLocalized("areaAlreadyExists")
 		return
 	end
 
@@ -171,7 +171,7 @@ function PANEL:Submit()
 
 	local _, type = self.typeEntry:GetSelected()
 
-	net.Start("ixAreaAdd")
+	net.Start("wsAreaAdd")
 		net.WriteString(name)
 		net.WriteString(type)
 		net.WriteVector(PLUGIN.editStart)
@@ -187,8 +187,8 @@ function PANEL:OnRemove()
 	PLUGIN.editProperties = nil
 end
 
-vgui.Register("ixAreaEdit", PANEL, "DFrame")
+vgui.Register("wsAreaEdit", PANEL, "DFrame")
 
-if (IsValid(ix.gui.areaEdit)) then
-	ix.gui.areaEdit:Remove()
+if (IsValid(ws.gui.areaEdit)) then
+	ws.gui.areaEdit:Remove()
 end

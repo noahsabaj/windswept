@@ -1,5 +1,5 @@
 
-function ix.util.InstallAnimationMethods(meta)
+function ws.util.InstallAnimationMethods(meta)
 	local function TweenAnimationThink(object)
 		for k, v in pairs(object.tweenAnimations) do
 			if (!v.bShouldPlay) then
@@ -81,8 +81,8 @@ function ix.util.InstallAnimationMethods(meta)
 			end
 		end
 
-		local animation = ix.tween.new(
-			((length == 0 and 1 or length) or 1) * (bIgnoreConfig and 1 or ix.option.Get("animationScale", 1)),
+		local animation = ws.tween.new(
+			((length == 0 and 1 or length) or 1) * (bIgnoreConfig and 1 or ws.option.Get("animationScale", 1)),
 			data.subject or self,
 			data.target or {},
 			data.easing or "linear"
@@ -118,7 +118,7 @@ function ix.util.InstallAnimationMethods(meta)
 			return newAnimation
 		end
 
-		if (length == 0 or (!animation.bIgnoreConfig and ix.option.Get("disableAnimations", false))) then
+		if (length == 0 or (!animation.bIgnoreConfig and ws.option.Get("disableAnimations", false))) then
 			animation.Fire = function(anim)
 				anim:set(anim.duration)
 				anim.bShouldPlay = true
@@ -146,5 +146,5 @@ end
 
 if (CLIENT) then
 	local panelMeta = FindMetaTable("Panel")
-	ix.util.InstallAnimationMethods(panelMeta)
+	ws.util.InstallAnimationMethods(panelMeta)
 end

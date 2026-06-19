@@ -40,7 +40,7 @@ ITEM.functions.use = {
 
 -- Called after the item is registered into the item tables.
 function ITEM:OnRegistered()
-	if (ix.ammo) then
-		ix.ammo.Register(self.ammo)
+	if (ws.ammo) then
+		ws.ammo.Register(self.ammo)
 	end
 end

@@ -2,7 +2,7 @@
 local PANEL = {}
 
 local function DoorSetPermission(door, target, permission)
-	net.Start("ixDoorPermission")
+	net.Start("wsDoorPermission")
 		net.WriteEntity(door)
 		net.WriteEntity(target)
 		net.WriteUInt(permission, 4)
@@ -43,7 +43,7 @@ function PANEL:Init()
 end
 
 function PANEL:SetDoor(door, access, door2)
-	door.ixPanel = self
+	door.wsPanel = self
 
 	self.accessData = access
 	self.door = door
@@ -62,7 +62,7 @@ function PANEL:SetDoor(door, access, door2)
 		self.sell:DockMargin(0, 5, 0, 0)
 		self.sell.DoClick = function(this)
 			self:Remove()
-			ix.command.Send("doorsell")
+			ws.command.Send("doorsell")
 		end
 	end
 
@@ -78,7 +78,7 @@ function PANEL:SetDoor(door, access, door2)
 			end
 		end
 		self.name.OnEnter = function(this)
-			ix.command.Send("doorsettitle", this:GetText())
+			ws.command.Send("doorsettitle", this:GetText())
 		end
 	end
 end
@@ -99,4 +99,4 @@ function PANEL:Think()
 	end
 end
 
-vgui.Register("ixDoorMenu", PANEL, "DFrame")
+vgui.Register("wsDoorMenu", PANEL, "DFrame")

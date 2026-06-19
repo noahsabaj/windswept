@@ -1,6 +1,6 @@
 
-local gradient = ix.util.GetMaterial("vgui/gradient-u")
-local gradient2 = ix.util.GetMaterial("vgui/gradient-d")
+local gradient = ws.util.GetMaterial("vgui/gradient-u")
+local gradient2 = ws.util.GetMaterial("vgui/gradient-d")
 
 local PANEL = {}
 
@@ -64,7 +64,7 @@ function PANEL:Init()
 		local value = self.deltaValue / self.max
 
 		if (value > 0) then
-			local color = self.color and self.color or ix.config.Get("color")
+			local color = self.color and self.color or ws.config.Get("color")
 			local boostedValue = self.boostValue or 0
 			local add = 0
 
@@ -162,4 +162,4 @@ function PANEL:SetReadOnly()
 	self.add:Remove()
 end
 
-vgui.Register("ixAttributeBar", PANEL, "DPanel")
+vgui.Register("wsAttributeBar", PANEL, "DPanel")

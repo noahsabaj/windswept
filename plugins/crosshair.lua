@@ -74,7 +74,7 @@ if (CLIENT) then
 		end
 
 		if (bShouldDraw == false or g_ContextMenu:IsVisible() or
-			(IsValid(ix.gui.characterMenu) and !ix.gui.characterMenu:IsClosing())) then
+			(IsValid(ws.gui.characterMenu) and !ws.gui.characterMenu:IsClosing())) then
 			return
 		end
 

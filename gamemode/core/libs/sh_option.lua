@@ -3,31 +3,31 @@
 Client-side configuration management.
 
 The `option` library provides a cleaner way to manage any arbitrary data on the client without the hassle of managing CVars. It
-is analagous to the `ix.config` library, but it only deals with data that needs to be stored on the client.
+is analagous to the `ws.config` library, but it only deals with data that needs to be stored on the client.
 
 To get started, you'll need to define an option in a client realm so the framework can be aware of its existence. This can be
 done in the `cl_init.lua` file of your schema, or in an `if (CLIENT) then` statement in the `sh_plugin.lua` file of your plugin:
-	ix.option.Add("headbob", ix.type.bool, true)
+	ws.option.Add("headbob", ws.type.bool, true)
 
 If you need to get the value of an option on the server, you'll need to specify `true` for the `bNetworked` argument in
-`ix.option.Add`. *NOTE:* You also need to define your option in a *shared* realm, since the server now also needs to be aware
+`ws.option.Add`. *NOTE:* You also need to define your option in a *shared* realm, since the server now also needs to be aware
 of its existence. This makes it so that the client will send that option's value to the server whenever it changes, which then
 means that the server can now retrieve the value that the client has the option set to. For example, if you need to get what
 language a client is using, you can simply do the following:
-	ix.option.Get(player.GetByID(1), "language", "english")
+	ws.option.Get(player.GetByID(1), "language", "english")
 
 This will return the language of the player, or `"english"` if one isn't found. Note that `"language"` is a networked option
 that is already defined in the framework, so it will always be available. All options will show up in the options menu on the
-client, unless `hidden` returns `true` when using `ix.option.Add`.
+client, unless `hidden` returns `true` when using `ws.option.Add`.
 
 Note that the labels for each option in the menu will use a language phrase to show the name. For example, if your option is
 named `headbob`, then you'll need to define a language phrase called `optHeadbob` that will be used as the option title.
 ]]
--- @module ix.option
+-- @module ws.option
 
-ix.option = ix.option or {}
-ix.option.stored = ix.option.stored or {}
-ix.option.categories = ix.option.categories or {}
+ws.option = ws.option or {}
+ws.option.stored = ws.option.stored or {}
+ws.option.categories = ws.option.categories or {}
 
 --- Creates a client-side configuration option with the given information.
 -- @realm shared
@@ -35,19 +35,19 @@ ix.option.categories = ix.option.categories or {}
 -- @ixtype optionType Type of this option
 -- @param default Default value that this option will have - this can be nil if needed
 -- @tparam OptionStructure data Additional settings for this option
--- @usage ix.option.Add("animationScale", ix.type.number, 1, {
+-- @usage ws.option.Add("animationScale", ws.type.number, 1, {
 -- 	category = "appearance",
 -- 	min = 0.3,
 -- 	max = 2,
 -- 	decimals = 1
 -- })
-function ix.option.Add(key, optionType, default, data)
+function ws.option.Add(key, optionType, default, data)
 	assert(isstring(key) and key:find("%S"), "expected a non-empty string for the key")
 
 	data = data or {}
 
-	local oldOption = ix.option.stored[key]
-	local categories = ix.option.categories
+	local oldOption = ws.option.stored[key]
+	local categories = ws.option.categories
 	local category = data.category or "misc"
 	local upperName = key:sub(1, 1):upper() .. key:sub(2)
 
@@ -59,7 +59,7 @@ function ix.option.Add(key, optionType, default, data)
 		default = oldOption.default
 	end
 
-	--- You can specify additional optional arguments for `ix.option.Add` by passing in a table of specific fields as the fourth
+	--- You can specify additional optional arguments for `ws.option.Add` by passing in a table of specific fields as the fourth
 	-- argument.
 	-- @table OptionStructure
 	-- @realm shared
@@ -74,20 +74,20 @@ function ix.option.Add(key, optionType, default, data)
 	-- `L("category name")`. This means that you must create a language phrase for the category name - otherwise it will only
 	-- show as the exact string you've specified. If no category is set, it will default to `"misc"`.
 	-- @field[type=number,opt=0] min The minimum allowed amount when setting this option. This field is not
-	-- applicable to any type other than `ix.type.number`.
+	-- applicable to any type other than `ws.type.number`.
 	-- @field[type=number,opt=10] max The maximum allowed amount when setting this option. This field is not
-	-- applicable to any type other than `ix.type.number`.
+	-- applicable to any type other than `ws.type.number`.
 	-- @field[type=number,opt=0] decimals How many decimals to constrain to when using a number type. This field is not
-	-- applicable to any type other than `ix.type.number`.
+	-- applicable to any type other than `ws.type.number`.
 	-- @field[type=boolean,opt=false] bNetworked Whether or not the server should be aware of this option for each client.
 	-- @field[type=function,opt] OnChanged The function to run when this option is changed - this includes whether it was set
-	-- by the player, or through code using `ix.option.Set`.
+	-- by the player, or through code using `ws.option.Set`.
 	-- 	OnChanged = function(oldValue, value)
 	-- 		print("new value is", value)
 	-- 	end
 	-- @field[type=function,opt] hidden The function to check whether the option should be hidden from the options menu.
 	-- @field[type=function,opt] populate The function to run when the option needs to be added to the menu. This is a required
-	-- field for any array options. It should return a table of entries where the key is the value to set in `ix.option.Set`,
+	-- field for any array options. It should return a table of entries where the key is the value to set in `ws.option.Set`,
 	-- and the value is the display name for the entry. An example:
 	--
 	-- 	populate = function()
@@ -97,7 +97,7 @@ function ix.option.Add(key, optionType, default, data)
 	-- 			["spanish"] = "Spanish"
 	-- 		}
 	-- 	end
-	ix.option.stored[key] = {
+	ws.option.stored[key] = {
 		key = key,
 		phrase = data.phrase or "opt" .. upperName,
 		description = data.description or "optd" .. upperName,
@@ -118,14 +118,14 @@ end
 -- @realm shared
 -- @string key Unique ID of the option
 -- @param value Default value for the user option
-function ix.option.SetDefault(key, value)
-	local option = ix.option.stored[key]
+function ws.option.SetDefault(key, value)
+	local option = ws.option.stored[key]
 
 	if (option) then
 		option.default = value
 	else
 		-- set up dummy option if we're setting default of option that doesn't exist yet (i.e schema setting framework default)
-		ix.option.stored[key] = {
+		ws.option.stored[key] = {
 			default = value
 		}
 	end
@@ -134,33 +134,33 @@ end
 --- Loads all saved options from disk.
 -- @realm shared
 -- @internal
-function ix.option.Load()
-	ix.util.Include("helix/gamemode/config/sh_options.lua")
+function ws.option.Load()
+	ws.util.Include("windswept/gamemode/config/sh_options.lua")
 
 	if (CLIENT) then
-		local options = ix.data.Get("options", nil, true, true)
+		local options = ws.data.Get("options", nil, true, true)
 
 		if (options) then
 			for k, v in pairs(options) do
-				ix.option.client[k] = v
+				ws.option.client[k] = v
 			end
 		end
 
-		ix.option.Sync()
+		ws.option.Sync()
 	end
 end
 
 --- Returns all of the available options. Note that this does contain the actual values of the options, just their properties.
 -- @realm shared
 -- @treturn table Table of all options
--- @usage PrintTable(ix.option.GetAll())
+-- @usage PrintTable(ws.option.GetAll())
 -- > language:
 -- >	bNetworked = true
 -- >	default = english
 -- >	type = 512
 -- -- etc.
-function ix.option.GetAll()
-	return ix.option.stored
+function ws.option.GetAll()
+	return ws.option.stored
 end
 
 
@@ -169,7 +169,7 @@ end
 -- @realm shared
 -- @bool[opt=false] bRemoveHidden Remove entries that are marked as hidden
 -- @treturn table Table of all options
--- @usage PrintTable(ix.option.GetAllByCategories())
+-- @usage PrintTable(ws.option.GetAllByCategories())
 -- > general:
 -- >	1:
 -- >		key = language
@@ -177,12 +177,12 @@ end
 -- >		default = english
 -- >		type = 512
 -- -- etc.
-function ix.option.GetAllByCategories(bRemoveHidden)
+function ws.option.GetAllByCategories(bRemoveHidden)
 	local result = {}
 
-	for k, v in pairs(ix.option.categories) do
+	for k, v in pairs(ws.option.categories) do
 		for k2, _ in pairs(v) do
-			local option = ix.option.stored[k2]
+			local option = ws.option.stored[k2]
 
 			if (bRemoveHidden and isfunction(option.hidden) and option.hidden()) then
 				continue
@@ -198,7 +198,7 @@ function ix.option.GetAllByCategories(bRemoveHidden)
 end
 
 if (CLIENT) then
-	ix.option.client = ix.option.client or {}
+	ws.option.client = ws.option.client or {}
 
 	--- Sets an option value for the local player.
 	-- This function will error when an invalid key is passed.
@@ -206,25 +206,25 @@ if (CLIENT) then
 	-- @string key Unique ID of the option
 	-- @param value New value to assign to the option
 	-- @bool[opt=false] bNoSave Whether or not to avoid saving
-	function ix.option.Set(key, value, bNoSave)
-		local option = assert(ix.option.stored[key], "invalid option key \"" .. tostring(key) .. "\"")
+	function ws.option.Set(key, value, bNoSave)
+		local option = assert(ws.option.stored[key], "invalid option key \"" .. tostring(key) .. "\"")
 
-		if (option.type == ix.type.number) then
+		if (option.type == ws.type.number) then
 			value = math.Clamp(math.Round(value, option.decimals), option.min, option.max)
 		end
 
-		local oldValue = ix.option.client[key]
-		ix.option.client[key] = value
+		local oldValue = ws.option.client[key]
+		ws.option.client[key] = value
 
 		if (option.bNetworked) then
-			net.Start("ixOptionSet")
+			net.Start("wsOptionSet")
 				net.WriteString(key)
 				net.WriteType(value)
 			net.SendToServer()
 		end
 
 		if (!bNoSave) then
-			ix.option.Save()
+			ws.option.Save()
 		end
 
 		if (isfunction(option.OnChanged)) then
@@ -238,11 +238,11 @@ if (CLIENT) then
 	-- @param default Default value to return if the option is not set
 	-- @return[1] Value associated with the key
 	-- @return[2] The given default if the option is not set
-	function ix.option.Get(key, default)
-		local option = ix.option.stored[key]
+	function ws.option.Get(key, default)
+		local option = ws.option.stored[key]
 
 		if (option) then
-			local localValue = ix.option.client[key]
+			local localValue = ws.option.client[key]
 
 			if (localValue != nil) then
 				return localValue
@@ -257,23 +257,23 @@ if (CLIENT) then
 	--- Saves all options to disk.
 	-- @realm client
 	-- @internal
-	function ix.option.Save()
-		ix.data.Set("options", ix.option.client, true, true)
+	function ws.option.Save()
+		ws.data.Set("options", ws.option.client, true, true)
 	end
 
 	--- Syncs all networked options to the server.
 	-- @realm client
-	function ix.option.Sync()
+	function ws.option.Sync()
 		local options = {}
 
-		for k, v in pairs(ix.option.stored) do
+		for k, v in pairs(ws.option.stored) do
 			if (v.bNetworked) then
-				options[#options + 1] = {k, ix.option.client[k]}
+				options[#options + 1] = {k, ws.option.client[k]}
 			end
 		end
 
 		if (#options > 0) then
-			net.Start("ixOptionSync")
+			net.Start("wsOptionSync")
 			net.WriteUInt(#options, 8)
 
 			for _, v in ipairs(options) do
@@ -285,10 +285,10 @@ if (CLIENT) then
 		end
 	end
 else
-	util.AddNetworkString("ixOptionSet")
-	util.AddNetworkString("ixOptionSync")
+	util.AddNetworkString("wsOptionSet")
+	util.AddNetworkString("wsOptionSync")
 
-	ix.option.clients = ix.option.clients or {}
+	ws.option.clients = ws.option.clients or {}
 
 	--- Retrieves an option value from the specified player. If it is not set, it'll return the default that you've specified.
 	-- This function will error when an invalid player is passed.
@@ -298,13 +298,13 @@ else
 	-- @param default Default value to return if the option is not set
 	-- @return[1] Value associated with the key
 	-- @return[2] The given default if the option is not set
-	function ix.option.Get(client, key, default)
+	function ws.option.Get(client, key, default)
 		assert(IsValid(client) and client:IsPlayer(), "expected valid player for argument #1")
 
-		local option = ix.option.stored[key]
+		local option = ws.option.stored[key]
 
 		if (option) then
-			local clientOptions = ix.option.clients[client:SteamID64()]
+			local clientOptions = ws.option.clients[client:SteamID64()]
 
 			if (clientOptions) then
 				local clientOption = clientOptions[key]
@@ -321,16 +321,16 @@ else
 	end
 
 	-- sent whenever a client's networked option has changed
-	net.Receive("ixOptionSet", function(length, client)
+	net.Receive("wsOptionSet", function(length, client)
 		local key = net.ReadString()
 		local value = net.ReadType()
 
 		local steamID = client:SteamID64()
-		local option = ix.option.stored[key]
+		local option = ws.option.stored[key]
 
 		if (option) then
-			ix.option.clients[steamID] = ix.option.clients[steamID] or {}
-			ix.option.clients[steamID][key] = value
+			ws.option.clients[steamID] = ws.option.clients[steamID] or {}
+			ws.option.clients[steamID][key] = value
 		else
 			ErrorNoHalt(string.format(
 				"'%s' attempted to set option with invalid key '%s'\n", tostring(client) .. client:SteamID(), key
@@ -339,7 +339,7 @@ else
 	end)
 
 	-- sent on first load to sync all networked option values
-	net.Receive("ixOptionSync", function(length, client)
+	net.Receive("wsOptionSync", function(length, client)
 		local indices = net.ReadUInt(8)
 		local data = {}
 
@@ -348,13 +348,13 @@ else
 		end
 
 		local steamID = client:SteamID64()
-		ix.option.clients[steamID] = ix.option.clients[steamID] or {}
+		ws.option.clients[steamID] = ws.option.clients[steamID] or {}
 
 		for k, v in pairs(data) do
-			local option = ix.option.stored[k]
+			local option = ws.option.stored[k]
 
 			if (option) then
-				ix.option.clients[steamID][k] = v
+				ws.option.clients[steamID][k] = v
 			else
 				return ErrorNoHalt(string.format(
 					"'%s' attempted to sync option with invalid key '%s'\n", tostring(client) .. client:SteamID(), k

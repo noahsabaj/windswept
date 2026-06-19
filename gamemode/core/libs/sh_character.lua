@@ -5,9 +5,9 @@ Character creation and management.
 **NOTE:** For the most part you shouldn't use this library unless you know what you're doing. You can very easily corrupt
 character data using these functions!
 ]]
--- @module ix.char
+-- @module ws.char
 
-ix.char = ix.char or {}
+ws.char = ws.char or {}
 
 --- Characters that are currently loaded into memory. This is **not** a table of characters that players are currently using.
 -- Characters are automatically loaded when a player joins the server. Entries are not cleared once the player disconnects, as
@@ -16,25 +16,25 @@ ix.char = ix.char or {}
 --
 -- The keys in this table are the IDs of characters, and the values are the `Character` objects that the ID corresponds to.
 -- @realm shared
--- @table ix.char.loaded
--- @usage print(ix.char.loaded[1])
+-- @table ws.char.loaded
+-- @usage print(ws.char.loaded[1])
 -- > character[1]
-ix.char.loaded = ix.char.loaded or {}
+ws.char.loaded = ws.char.loaded or {}
 
---- Variables that are stored on characters. This table is populated automatically by `ix.char.RegisterVar`.
+--- Variables that are stored on characters. This table is populated automatically by `ws.char.RegisterVar`.
 -- @realm shared
--- @table ix.char.vars
--- @usage print(ix.char.vars["name"])
+-- @table ws.char.vars
+-- @usage print(ws.char.vars["name"])
 -- > table: 0xdeadbeef
-ix.char.vars = ix.char.vars or {}
+ws.char.vars = ws.char.vars or {}
 
---- Functions similar to `ix.char.loaded`, but is serverside only. This contains a table of all loaded characters grouped by
+--- Functions similar to `ws.char.loaded`, but is serverside only. This contains a table of all loaded characters grouped by
 -- the SteamID64 of the player that owns them.
 -- @realm server
--- @table ix.char.cache
-ix.char.cache = ix.char.cache or {}
+-- @table ws.char.cache
+ws.char.cache = ws.char.cache or {}
 
-ix.util.Include("helix/gamemode/core/meta/sh_character.lua")
+ws.util.Include("windswept/gamemode/core/meta/sh_character.lua")
 
 if (SERVER) then
 	--- Creates a character object with its assigned properties and saves it to the database.
@@ -42,10 +42,10 @@ if (SERVER) then
 	-- @tab data Properties to assign to this character. If fields are missing from the table, then it will use the default
 	-- value for that property
 	-- @func callback Function to call after the character saves
-	function ix.char.Create(data, callback)
+	function ws.char.Create(data, callback)
 		local timeStamp = math.floor(os.time())
 
-		data.money = data.money or ix.config.Get("defaultMoney", 0)
+		data.money = data.money or ws.config.Get("defaultMoney", 0)
 		data.schema = Schema and Schema.folder or "helix"
 		data.createTime = timeStamp
 		data.lastJoinTime = timeStamp
@@ -67,17 +67,17 @@ if (SERVER) then
 					invQuery:Callback(function(invResult, invStats, invLastID)
 						local client = player.GetBySteamID64(data.steamID)
 
-						ix.char.RestoreVars(data, data)
+						ws.char.RestoreVars(data, data)
 
-						local w, h = ix.config.Get("inventoryWidth"), ix.config.Get("inventoryHeight")
-						local character = ix.char.New(data, lastID, client, data.steamID)
-						local inventory = ix.inventory.Create(w, h, invLastID)
+						local w, h = ws.config.Get("inventoryWidth"), ws.config.Get("inventoryHeight")
+						local character = ws.char.New(data, lastID, client, data.steamID)
+						local inventory = ws.inventory.Create(w, h, invLastID)
 
 						character.vars.inv = {inventory}
 						inventory:SetOwner(lastID)
 
-						ix.char.loaded[lastID] = character
-						table.insert(ix.char.cache[data.steamID], lastID)
+						ws.char.loaded[lastID] = character
+						table.insert(ws.char.cache[data.steamID], lastID)
 
 						if (callback) then
 							callback(lastID)
@@ -95,13 +95,13 @@ if (SERVER) then
 	-- @bool[opt=false] bNoCache Whether or not to skip the cache; players that leave and join again later will already have
 	-- their characters loaded which will skip the database query and load quicker
 	-- @number[opt=nil] id The ID of a specific character to load instead of all of the player's characters
-	function ix.char.Restore(client, callback, bNoCache, id)
+	function ws.char.Restore(client, callback, bNoCache, id)
 		local steamID64 = client:SteamID64()
-		local cache = ix.char.cache[steamID64]
+		local cache = ws.char.cache[steamID64]
 
 		if (cache and !bNoCache) then
 			for _, v in ipairs(cache) do
-				local character = ix.char.loaded[v]
+				local character = ws.char.loaded[v]
 
 				if (character and !IsValid(character.client)) then
 					character.player = client
@@ -118,7 +118,7 @@ if (SERVER) then
 		local query = mysql:Select("ix_characters")
 			query:Select("id")
 
-			ix.char.RestoreVars(query)
+			ws.char.RestoreVars(query)
 
 			query:Where("schema", Schema.folder)
 			query:Where("steamid", steamID64)
@@ -138,10 +138,10 @@ if (SERVER) then
 							steamID = steamID64
 						}
 
-						ix.char.RestoreVars(data, v)
+						ws.char.RestoreVars(data, v)
 
 						characters[#characters + 1] = charID
-						local character = ix.char.New(data, charID, client)
+						local character = ws.char.New(data, charID, client)
 
 						hook.Run("CharacterRestored", character)
 						character.vars.inv = {
@@ -162,11 +162,11 @@ if (SERVER) then
 										end
 
 										if (hook.Run("ShouldRestoreInventory", charID, v2.inventory_id, v2.inventory_type) != false) then
-											local w, h = ix.config.Get("inventoryWidth"), ix.config.Get("inventoryHeight")
+											local w, h = ws.config.Get("inventoryWidth"), ws.config.Get("inventoryHeight")
 											local invType
 
 											if (v2.inventory_type) then
-												invType = ix.item.inventoryTypes[v2.inventory_type]
+												invType = ws.item.inventoryTypes[v2.inventory_type]
 
 												if (invType) then
 													w, h = invType.w, invType.h
@@ -177,7 +177,7 @@ if (SERVER) then
 										end
 									end
 
-									ix.inventory.Restore(inventories, nil, nil, function(inventory)
+									ws.inventory.Restore(inventories, nil, nil, function(inventory)
 										local inventoryType = inventories[inventory:GetID()][3]
 
 										if (inventoryType) then
@@ -193,8 +193,8 @@ if (SERVER) then
 									local insertQuery = mysql:Insert("ix_inventories")
 										insertQuery:Insert("character_id", charID)
 										insertQuery:Callback(function(_, status, lastID)
-											local w, h = ix.config.Get("inventoryWidth"), ix.config.Get("inventoryHeight")
-											local inventory = ix.inventory.Create(w, h, lastID)
+											local w, h = ws.config.Get("inventoryWidth"), ws.config.Get("inventoryHeight")
+											local inventory = ws.inventory.Create(w, h, lastID)
 											inventory:SetOwner(charID)
 
 											character.vars.inv = {
@@ -206,7 +206,7 @@ if (SERVER) then
 							end)
 						invQuery:Execute()
 
-						ix.char.loaded[charID] = character
+						ws.char.loaded[charID] = character
 					else
 						ErrorNoHalt("[Helix] Attempt to load character with invalid ID '" .. tostring(id) .. "'!")
 					end
@@ -216,22 +216,22 @@ if (SERVER) then
 					callback(characters)
 				end
 
-				ix.char.cache[steamID64] = characters
+				ws.char.cache[steamID64] = characters
 			end)
 		query:Execute()
 	end
 
-	--- Adds character properties to a table. This is done automatically by `ix.char.Restore`, so that should be used instead if
+	--- Adds character properties to a table. This is done automatically by `ws.char.Restore`, so that should be used instead if
 	-- you are loading characters.
 	-- @realm server
 	-- @internal
 	-- @tab data Table of fields to apply to the table. If this is an SQL query object, it will instead populate the query with
-	-- `SELECT` statements for each applicable character var in `ix.char.vars`.
+	-- `SELECT` statements for each applicable character var in `ws.char.vars`.
 	-- @tab characterInfo Table to apply the properties to. This can be left as `nil` if an SQL query object is passed in `data`
-	function ix.char.RestoreVars(data, characterInfo)
+	function ws.char.RestoreVars(data, characterInfo)
 		if (data.queryType) then
 			-- populate query
-			for _, v in pairs(ix.char.vars) do
+			for _, v in pairs(ws.char.vars) do
 				if (v.field and v.fieldType and !v.bSaveLoadInitialOnly) then
 					data:Select(v.field)
 
@@ -244,7 +244,7 @@ if (SERVER) then
 			end
 		else
 			-- populate character data
-			for k, v in pairs(ix.char.vars) do
+			for k, v in pairs(ws.char.vars) do
 				if (v.field and characterInfo[v.field] and !v.bSaveLoadInitialOnly) then
 					local value = characterInfo[v.field]
 
@@ -269,14 +269,14 @@ if (SERVER) then
 	end
 end
 
---- Creates a new empty `Character` object. If you are looking to create a usable character, see `ix.char.Create`.
+--- Creates a new empty `Character` object. If you are looking to create a usable character, see `ws.char.Create`.
 -- @realm shared
 -- @internal
 -- @tab data Character vars to assign
 -- @number id Unique ID of the character
 -- @player client Player that will own the character
 -- @string[opt=client:SteamID64()] steamID SteamID64 of the player that will own the character
-function ix.char.New(data, id, client, steamID)
+function ws.char.New(data, id, client, steamID)
 	if (data.name) then
 		data.name = data.name:gsub("#", "#​")
 	end
@@ -285,7 +285,7 @@ function ix.char.New(data, id, client, steamID)
 		data.description = data.description:gsub("#", "#​")
 	end
 
-	local character = setmetatable({vars = {}}, ix.meta.character)
+	local character = setmetatable({vars = {}}, ws.meta.character)
 		for k, v in pairs(data) do
 			if (v != nil) then
 				character.vars[k] = v
@@ -301,11 +301,11 @@ function ix.char.New(data, id, client, steamID)
 	return character
 end
 
-ix.char.varHooks = ix.char.varHooks or {}
-function ix.char.HookVar(varName, hookName, func)
-	ix.char.varHooks[varName] = ix.char.varHooks[varName] or {}
+ws.char.varHooks = ws.char.varHooks or {}
+function ws.char.HookVar(varName, hookName, func)
+	ws.char.varHooks[varName] = ws.char.varHooks[varName] or {}
 
-	ix.char.varHooks[varName][hookName] = func
+	ws.char.varHooks[varName][hookName] = func
 end
 
 do
@@ -321,9 +321,9 @@ do
 	-- @realm shared
 	-- @treturn string This character's current name
 	-- @function GetName
-	ix.char.RegisterVar("name", {
+	ws.char.RegisterVar("name", {
 		field = "name",
-		fieldType = ix.type.string,
+		fieldType = ws.type.string,
 		default = "John Doe",
 		index = 1,
 		OnValidate = function(self, value, payload, client)
@@ -334,8 +334,8 @@ do
 			value = tostring(value):gsub("\r\n", ""):gsub("\n", "")
 			value = string.Trim(value)
 
-			local minLength = ix.config.Get("minNameLength", 4)
-			local maxLength = ix.config.Get("maxNameLength", 32)
+			local minLength = ws.config.Get("minNameLength", 4)
+			local maxLength = ws.config.Get("maxNameLength", 32)
 
 			if (value:utf8len() < minLength) then
 				return false, "nameMinLen", minLength
@@ -348,7 +348,7 @@ do
 			return hook.Run("GetDefaultCharacterName", client, payload.faction) or value:utf8sub(1, 70)
 		end,
 		OnPostSetup = function(self, panel, payload)
-			local faction = ix.faction.indices[payload.faction]
+			local faction = ws.faction.indices[payload.faction]
 			local name, disabled = hook.Run("GetDefaultCharacterName", LocalPlayer(), payload.faction)
 
 			if (name) then
@@ -372,14 +372,14 @@ do
 	-- @realm shared
 	-- @treturn string This character's current description
 	-- @function GetDescription
-	ix.char.RegisterVar("description", {
+	ws.char.RegisterVar("description", {
 		field = "description",
-		fieldType = ix.type.text,
+		fieldType = ws.type.text,
 		default = "",
 		index = 2,
 		OnValidate = function(self, value, payload)
 			value = string.Trim((tostring(value):gsub("\r\n", ""):gsub("\n", "")))
-			local minLength = ix.config.Get("minDescriptionLength", 16)
+			local minLength = ws.config.Get("minDescriptionLength", 16)
 
 			if (value:utf8len() < minLength) then
 				return false, "descMinLen", minLength
@@ -391,7 +391,7 @@ do
 		end,
 		OnPostSetup = function(self, panel, payload)
 			panel:SetMultiline(true)
-			panel:SetFont("ixMenuButtonFont")
+			panel:SetFont("wsMenuButtonFont")
 			panel:SetTall(panel:GetTall() * 2 + 6) -- add another line
 			panel.AllowInput = function(_, character)
 				if (character == "\n" or character == "\r") then
@@ -412,9 +412,9 @@ do
 	-- @realm shared
 	-- @treturn string This character's current model
 	-- @function GetModel
-	ix.char.RegisterVar("model", {
+	ws.char.RegisterVar("model", {
 		field = "model",
-		fieldType = ix.type.string,
+		fieldType = ws.type.string,
 		default = "models/error.mdl",
 		index = 3,
 		OnSet = function(character, value)
@@ -443,13 +443,13 @@ do
 			layout:SetSpaceX(1)
 			layout:SetSpaceY(1)
 
-			local faction = payload.faction and ix.faction.indices[payload.faction]
+			local faction = payload.faction and ws.faction.indices[payload.faction]
 			local models
 
 			if (faction) then
 				models = faction:GetModels(LocalPlayer())
 			else
-				models = ix.config.Get("factionlessModels") or {}
+				models = ws.config.Get("factionlessModels") or {}
 			end
 
 			for k, v in SortedPairs(models) do
@@ -461,7 +461,7 @@ do
 				end
 				icon.PaintOver = function(this, w, h)
 					if (payload.model == k) then
-						local color = ix.config.Get("color", color_white)
+						local color = ws.config.Get("color", color_white)
 
 						surface.SetDrawColor(color.r, color.g, color.b, 200)
 
@@ -482,13 +482,13 @@ do
 			return scroll
 		end,
 		OnValidate = function(self, value, payload, client)
-			local faction = payload.faction and ix.faction.indices[payload.faction]
+			local faction = payload.faction and ws.faction.indices[payload.faction]
 			local models
 
 			if (faction) then
 				models = faction:GetModels(client)
 			else
-				models = ix.config.Get("factionlessModels") or {}
+				models = ws.config.Get("factionlessModels") or {}
 			end
 
 			if (!payload.model or !models[payload.model]) then
@@ -496,13 +496,13 @@ do
 			end
 		end,
 		OnAdjust = function(self, client, data, value, newData)
-			local faction = data.faction and ix.faction.indices[data.faction]
+			local faction = data.faction and ws.faction.indices[data.faction]
 			local models
 
 			if (faction) then
 				models = faction:GetModels(client)
 			else
-				models = ix.config.Get("factionlessModels") or {}
+				models = ws.config.Get("factionlessModels") or {}
 			end
 
 			local model = models[value]
@@ -525,13 +525,13 @@ do
 			end
 		end,
 		ShouldDisplay = function(self, container, payload)
-			local faction = payload.faction and ix.faction.indices[payload.faction]
+			local faction = payload.faction and ws.faction.indices[payload.faction]
 			local models
 
 			if (faction) then
 				models = faction:GetModels(LocalPlayer())
 			else
-				models = ix.config.Get("factionlessModels") or {}
+				models = ws.config.Get("factionlessModels") or {}
 			end
 
 			return models and #models > 1 or false
@@ -544,9 +544,9 @@ do
 	-- @realm shared
 	-- @treturn number Index of the class this character is in
 	-- @function GetClass
-	ix.char.RegisterVar("class", {
+	ws.char.RegisterVar("class", {
 		field = "class_id",
-		fieldType = ix.type.number,
+		fieldType = ws.type.number,
 		bNoDisplay = true,
 		OnSet = function(character, value)
 			-- Update in-memory
@@ -555,7 +555,7 @@ do
 			-- Network to clients
 			local client = character:GetPlayer()
 			if IsValid(client) and SERVER then
-				net.Start("ixCharacterVarChanged")
+				net.Start("wsCharacterVarChanged")
 					net.WriteUInt(character:GetID(), 32)
 					net.WriteString("class")
 					net.WriteType(value)
@@ -574,9 +574,9 @@ do
 	-- @realm shared
 	-- @treturn number Index of the faction this character is currently in
 	-- @function GetFaction
-	ix.char.RegisterVar("faction", {
+	ws.char.RegisterVar("faction", {
 		field = "faction",
-		fieldType = ix.type.string,
+		fieldType = ws.type.string,
 		default = nil,
 		bNoDisplay = true,
 		-- NOTE: FilterValues removed to allow factionless (NULL) characters to load
@@ -589,12 +589,12 @@ do
 					self.vars.faction = nil
 					client:SetTeam(TEAM_UNASSIGNED)
 				else
-					self.vars.faction = ix.faction.indices[value] and ix.faction.indices[value].uniqueID
+					self.vars.faction = ws.faction.indices[value] and ws.faction.indices[value].uniqueID
 					client:SetTeam(value)
 				end
 
 				-- @todo refactor networking of character vars so this doesn't need to be repeated on every OnSet override
-				net.Start("ixCharacterVarChanged")
+				net.Start("wsCharacterVarChanged")
 					net.WriteUInt(self:GetID(), 32)
 					net.WriteString("faction")
 					net.WriteType(self.vars.faction)
@@ -605,7 +605,7 @@ do
 			if (self.vars.faction == nil) then
 				return nil
 			end
-			local faction = ix.faction.teams[self.vars.faction]
+			local faction = ws.faction.teams[self.vars.faction]
 			return faction and faction.index or nil
 		end,
 		OnValidate = function(self, index, data, client)
@@ -622,15 +622,15 @@ do
 			if (value == nil) then
 				newData.faction = nil
 			else
-				newData.faction = ix.faction.indices[value].uniqueID
+				newData.faction = ws.faction.indices[value].uniqueID
 			end
 		end
 	})
 
-	-- attribute manipulation should be done with methods from the ix.attributes library
-	ix.char.RegisterVar("attributes", {
+	-- attribute manipulation should be done with methods from the ws.attributes library
+	ws.char.RegisterVar("attributes", {
 		field = "attributes",
-		fieldType = ix.type.text,
+		fieldType = ws.type.text,
 		default = {},
 		index = 4,
 		category = "attributes",
@@ -651,7 +651,7 @@ do
 			payload.attributes = {}
 
 			-- total spendable attribute points
-			local totalBar = attributes:Add("ixAttributeBar")
+			local totalBar = attributes:Add("wsAttributeBar")
 			totalBar:SetMax(maximum)
 			totalBar:SetValue(maximum)
 			totalBar:Dock(TOP)
@@ -662,10 +662,10 @@ do
 
 			y = totalBar:GetTall() + 4
 
-			for k, v in SortedPairsByMemberValue(ix.attributes.list, "name") do
+			for k, v in SortedPairsByMemberValue(ws.attributes.list, "name") do
 				payload.attributes[k] = 0
 
-				local bar = attributes:Add("ixAttributeBar")
+				local bar = attributes:Add("wsAttributeBar")
 				bar:SetMax(v.maxValue or maximum)
 				bar:Dock(TOP)
 				bar:DockMargin(2, 2, 2, 2)
@@ -709,7 +709,7 @@ do
 			end
 		end,
 		ShouldDisplay = function(self, container, payload)
-			return !table.IsEmpty(ix.attributes.list)
+			return !table.IsEmpty(ws.attributes.list)
 		end
 	})
 
@@ -722,9 +722,9 @@ do
 	-- @realm shared
 	-- @treturn number Current money of this character
 	-- @function GetMoney
-	ix.char.RegisterVar("money", {
+	ws.char.RegisterVar("money", {
 		field = "money",
-		fieldType = ix.type.number,
+		fieldType = ws.type.number,
 		default = 0,
 		isLocal = true,
 		bNoDisplay = true
@@ -732,7 +732,7 @@ do
 
 	--- Sets a data field on this character. This is useful for storing small bits of data that you need persisted on this
 	-- character. This is networked only to the owning client. If you are going to be accessing this data field frequently with
-	-- a getter/setter, consider using `ix.char.RegisterVar` instead.
+	-- a getter/setter, consider using `ws.char.RegisterVar` instead.
 	-- @realm server
 	-- @string key Name of the field that holds the data
 	-- @param value Any value to store in the field, as long as it's supported by GMod's JSON parser
@@ -746,12 +746,12 @@ do
 	-- @return[1] Data stored in the field
 	-- @treturn[2] nil If the data doesn't exist, or is `nil`
 	-- @function GetData
-	ix.char.RegisterVar("data", {
+	ws.char.RegisterVar("data", {
 		default = {},
 		isLocal = true,
 		bNoDisplay = true,
 		field = "data",
-		fieldType = ix.type.text,
+		fieldType = ws.type.text,
 		OnSet = function(character, key, value, noReplication, receiver)
 			local data = character:GetData()
 			local client = character:GetPlayer()
@@ -759,7 +759,7 @@ do
 			data[key] = value
 
 			if (!noReplication and IsValid(client)) then
-				net.Start("ixCharacterData")
+				net.Start("wsCharacterData")
 					net.WriteUInt(character:GetID(), 32)
 					net.WriteString(key)
 					net.WriteType(value)
@@ -785,7 +785,7 @@ do
 		end
 	})
 
-	ix.char.RegisterVar("var", {
+	ws.char.RegisterVar("var", {
 		default = {},
 		bNoDisplay = true,
 		OnSet = function(character, key, value, noReplication, receiver)
@@ -803,7 +803,7 @@ do
 					id = character:GetID()
 				end
 
-				net.Start("ixCharacterVar")
+				net.Start("wsCharacterVar")
 					net.WriteUInt(id, 32)
 					net.WriteString(key)
 					net.WriteType(value)
@@ -834,9 +834,9 @@ do
 	-- @realm server
 	-- @treturn number Unix timestamp of when this character was created
 	-- @function GetCreateTime
-	ix.char.RegisterVar("createTime", {
+	ws.char.RegisterVar("createTime", {
 		field = "create_time",
-		fieldType = ix.type.number,
+		fieldType = ws.type.number,
 		bNoDisplay = true,
 		bNoNetworking = true,
 		bNotModifiable = true
@@ -846,9 +846,9 @@ do
 	-- @realm server
 	-- @treturn number Unix timestamp of when this character was last used
 	-- @function GetLastJoinTime
-	ix.char.RegisterVar("lastJoinTime", {
+	ws.char.RegisterVar("lastJoinTime", {
 		field = "last_join_time",
-		fieldType = ix.type.number,
+		fieldType = ws.type.number,
 		bNoDisplay = true,
 		bNoNetworking = true,
 		bNotModifiable = true,
@@ -860,9 +860,9 @@ do
 	-- @realm server
 	-- @treturn string Schema this character belongs to
 	-- @function GetSchema
-	ix.char.RegisterVar("schema", {
+	ws.char.RegisterVar("schema", {
 		field = "schema",
-		fieldType = ix.type.string,
+		fieldType = ws.type.string,
 		bNoDisplay = true,
 		bNoNetworking = true,
 		bNotModifiable = true,
@@ -873,9 +873,9 @@ do
 	-- @realm server
 	-- @treturn string Owning player's Steam ID
 	-- @function GetSteamID
-	ix.char.RegisterVar("steamID", {
+	ws.char.RegisterVar("steamID", {
 		field = "steamid",
-		fieldType = ix.type.steamid,
+		fieldType = ws.type.steamid,
 		bNoDisplay = true,
 		bNoNetworking = true,
 		bNotModifiable = true,
@@ -886,40 +886,40 @@ end
 -- Networking information here.
 do
 	if (SERVER) then
-		util.AddNetworkString("ixCharacterMenu")
-		util.AddNetworkString("ixCharacterChoose")
-		util.AddNetworkString("ixCharacterCreate")
-		util.AddNetworkString("ixCharacterDelete")
-		util.AddNetworkString("ixCharacterLoaded")
-		util.AddNetworkString("ixCharacterLoadFailure")
+		util.AddNetworkString("wsCharacterMenu")
+		util.AddNetworkString("wsCharacterChoose")
+		util.AddNetworkString("wsCharacterCreate")
+		util.AddNetworkString("wsCharacterDelete")
+		util.AddNetworkString("wsCharacterLoaded")
+		util.AddNetworkString("wsCharacterLoadFailure")
 
-		util.AddNetworkString("ixCharacterAuthed")
-		util.AddNetworkString("ixCharacterAuthFailed")
+		util.AddNetworkString("wsCharacterAuthed")
+		util.AddNetworkString("wsCharacterAuthFailed")
 
-		util.AddNetworkString("ixCharacterInfo")
-		util.AddNetworkString("ixCharacterData")
-		util.AddNetworkString("ixCharacterKick")
-		util.AddNetworkString("ixCharacterSet")
-		util.AddNetworkString("ixCharacterVar")
-		util.AddNetworkString("ixCharacterVarChanged")
+		util.AddNetworkString("wsCharacterInfo")
+		util.AddNetworkString("wsCharacterData")
+		util.AddNetworkString("wsCharacterKick")
+		util.AddNetworkString("wsCharacterSet")
+		util.AddNetworkString("wsCharacterVar")
+		util.AddNetworkString("wsCharacterVarChanged")
 
-		net.Receive("ixCharacterChoose", function(length, client)
+		net.Receive("wsCharacterChoose", function(length, client)
 			local id = net.ReadUInt(32)
 
 			if (client:GetCharacter() and client:GetCharacter():GetID() == id) then
-				net.Start("ixCharacterLoadFailure")
+				net.Start("wsCharacterLoadFailure")
 					net.WriteString("@usingChar")
 				net.Send(client)
 				return
 			end
 
-			local character = ix.char.loaded[id]
+			local character = ws.char.loaded[id]
 
 			if (character and character:GetPlayer() == client) then
 				local status, result = hook.Run("CanPlayerUseCharacter", client, character)
 
 				if (status == false) then
-					net.Start("ixCharacterLoadFailure")
+					net.Start("wsCharacterLoadFailure")
 						net.WriteString(result or "")
 					net.Send(client)
 					return
@@ -943,7 +943,7 @@ do
 
 				hook.Run("PlayerLoadedCharacter", client, character, currentChar)
 			else
-				net.Start("ixCharacterLoadFailure")
+				net.Start("wsCharacterLoadFailure")
 					net.WriteString("@unknownError")
 				net.Send(client)
 
@@ -951,17 +951,17 @@ do
 			end
 		end)
 
-		net.Receive("ixCharacterCreate", function(length, client)
-			if ((client.ixNextCharacterCreate or 0) > RealTime()) then
+		net.Receive("wsCharacterCreate", function(length, client)
+			if ((client.wsNextCharacterCreate or 0) > RealTime()) then
 				return
 			end
 
-			local maxChars = hook.Run("GetMaxPlayerCharacter", client) or ix.config.Get("maxCharacters", 5)
-			local charList = client.ixCharList
+			local maxChars = hook.Run("GetMaxPlayerCharacter", client) or ws.config.Get("maxCharacters", 5)
+			local charList = client.wsCharList
 			local charCount = table.Count(charList)
 
 			if (charCount >= maxChars) then
-				net.Start("ixCharacterAuthFailed")
+				net.Start("wsCharacterAuthFailed")
 					net.WriteString("maxCharacters")
 					net.WriteTable({})
 				net.Send(client)
@@ -969,7 +969,7 @@ do
 				return
 			end
 
-			client.ixNextCharacterCreate = RealTime() + 1
+			client.wsNextCharacterCreate = RealTime() + 1
 
 			local indicies = net.ReadUInt(8)
 			local payload = {}
@@ -982,7 +982,7 @@ do
 			local results = {hook.Run("CanPlayerCreateCharacter", client, payload)}
 
 			if (table.remove(results, 1) == false) then
-				net.Start("ixCharacterAuthFailed")
+				net.Start("wsCharacterAuthFailed")
 					net.WriteString(table.remove(results, 1) or "unknownError")
 					net.WriteTable(results)
 				net.Send(client)
@@ -991,14 +991,14 @@ do
 			end
 
 			for k, _ in pairs(payload) do
-				local info = ix.char.vars[k]
+				local info = ws.char.vars[k]
 
 				if (!info or (!info.OnValidate and info.bNoDisplay)) then
 					payload[k] = nil
 				end
 			end
 
-			for k, v in SortedPairsByMemberValue(ix.char.vars, "index") do
+			for k, v in SortedPairsByMemberValue(ws.char.vars, "index") do
 				local value = payload[k]
 
 				if (v.OnValidate) then
@@ -1010,7 +1010,7 @@ do
 						table.remove(result, 2)
 						table.remove(result, 1)
 
-						net.Start("ixCharacterAuthFailed")
+						net.Start("wsCharacterAuthFailed")
 							net.WriteString(fault)
 							net.WriteTable(result)
 						net.Send(client)
@@ -1032,43 +1032,43 @@ do
 				hook.Run("AdjustCreationPayload", client, payload, newPayload)
 			payload = table.Merge(payload, newPayload)
 
-			ix.char.Create(payload, function(id)
+			ws.char.Create(payload, function(id)
 				if (IsValid(client)) then
-					ix.char.loaded[id]:Sync(client)
+					ws.char.loaded[id]:Sync(client)
 
-					net.Start("ixCharacterAuthed")
+					net.Start("wsCharacterAuthed")
 					net.WriteUInt(id, 32)
-					net.WriteUInt(#client.ixCharList, 6)
+					net.WriteUInt(#client.wsCharList, 6)
 
-					for _, v in ipairs(client.ixCharList) do
+					for _, v in ipairs(client.wsCharList) do
 						net.WriteUInt(v, 32)
 					end
 
 					net.Send(client)
 
 					MsgN("Created character '" .. id .. "' for " .. client:SteamName() .. ".")
-					hook.Run("OnCharacterCreated", client, ix.char.loaded[id])
+					hook.Run("OnCharacterCreated", client, ws.char.loaded[id])
 				end
 			end)
 		end)
 
-		net.Receive("ixCharacterDelete", function(length, client)
+		net.Receive("wsCharacterDelete", function(length, client)
 			local id = net.ReadUInt(32)
-			local character = ix.char.loaded[id]
+			local character = ws.char.loaded[id]
 			local steamID = client:SteamID64()
 			local isCurrentChar = client:GetCharacter() and client:GetCharacter():GetID() == id
 
 			if (character and character.steamID == steamID) then
-				for k, v in ipairs(client.ixCharList or {}) do
+				for k, v in ipairs(client.wsCharList or {}) do
 					if (v == id) then
-						table.remove(client.ixCharList, k)
+						table.remove(client.wsCharList, k)
 					end
 				end
 
 				hook.Run("PreCharacterDeleted", client, character)
-				ix.char.loaded[id] = nil
+				ws.char.loaded[id] = nil
 
-				net.Start("ixCharacterDelete")
+				net.Start("wsCharacterDelete")
 					net.WriteUInt(id, 32)
 				net.Broadcast()
 
@@ -1091,7 +1091,7 @@ do
 									itemQuery:Where("inventory_id", v.inventory_id)
 								itemQuery:Execute()
 
-								ix.item.inventories[tonumber(v.inventory_id)] = nil
+								ws.item.inventories[tonumber(v.inventory_id)] = nil
 							end
 						end
 
@@ -1112,17 +1112,17 @@ do
 			end
 		end)
 	else
-		net.Receive("ixCharacterInfo", function()
+		net.Receive("wsCharacterInfo", function()
 			local data = net.ReadTable()
 			local id = net.ReadUInt(32)
 			local client = net.ReadUInt(8)
 
-			ix.char.loaded[id] = ix.char.New(data, id, client)
+			ws.char.loaded[id] = ws.char.New(data, id, client)
 		end)
 
-		net.Receive("ixCharacterVarChanged", function()
+		net.Receive("wsCharacterVarChanged", function()
 			local id = net.ReadUInt(32)
-			local character = ix.char.loaded[id]
+			local character = ws.char.loaded[id]
 
 			if (character) then
 				local key = net.ReadString()
@@ -1134,9 +1134,9 @@ do
 
 		-- Used for setting random access vars on the "var" character var (really stupid).
 		-- Clean this up someday.
-		net.Receive("ixCharacterVar", function()
+		net.Receive("wsCharacterVar", function()
 			local id = net.ReadUInt(32)
-			local character = ix.char.loaded[id]
+			local character = ws.char.loaded[id]
 
 			if (character) then
 				local key = net.ReadString()
@@ -1148,7 +1148,7 @@ do
 			end
 		end)
 
-		net.Receive("ixCharacterMenu", function()
+		net.Receive("wsCharacterMenu", function()
 			local indices = net.ReadUInt(6)
 			local charList = {}
 
@@ -1157,13 +1157,13 @@ do
 			end
 
 			if (charList) then
-				ix.characters = charList
+				ws.characters = charList
 			end
 
-			vgui.Create("ixCharMenu")
+			vgui.Create("wsCharMenu")
 		end)
 
-		net.Receive("ixCharacterLoadFailure", function()
+		net.Receive("wsCharacterLoadFailure", function()
 			local message = net.ReadString()
 
 			if (isstring(message) and message:sub(1, 1) == "@") then
@@ -1172,18 +1172,18 @@ do
 
 			message = message != "" and message or L("unknownError")
 
-			if (IsValid(ix.gui.characterMenu)) then
-				ix.gui.characterMenu:OnCharacterLoadFailed(message)
+			if (IsValid(ws.gui.characterMenu)) then
+				ws.gui.characterMenu:OnCharacterLoadFailed(message)
 			else
-				ix.util.Notify(message)
+				ws.util.Notify(message)
 			end
 		end)
 
-		net.Receive("ixCharacterData", function()
+		net.Receive("wsCharacterData", function()
 			local id = net.ReadUInt(32)
 			local key = net.ReadString()
 			local value = net.ReadType()
-			local character = ix.char.loaded[id]
+			local character = ws.char.loaded[id]
 
 			if (character) then
 				character.vars.data = character.vars.data or {}
@@ -1191,49 +1191,49 @@ do
 			end
 		end)
 
-		net.Receive("ixCharacterDelete", function()
+		net.Receive("wsCharacterDelete", function()
 			local id = net.ReadUInt(32)
 			local isCurrentChar = LocalPlayer():GetCharacter() and LocalPlayer():GetCharacter():GetID() == id
-			local character = ix.char.loaded[id]
+			local character = ws.char.loaded[id]
 
-			ix.char.loaded[id] = nil
+			ws.char.loaded[id] = nil
 
-			for k, v in ipairs(ix.characters) do
+			for k, v in ipairs(ws.characters) do
 				if (v == id) then
-					table.remove(ix.characters, k)
+					table.remove(ws.characters, k)
 
-					if (IsValid(ix.gui.characterMenu)) then
-						ix.gui.characterMenu:OnCharacterDeleted(character)
+					if (IsValid(ws.gui.characterMenu)) then
+						ws.gui.characterMenu:OnCharacterDeleted(character)
 					end
 				end
 			end
 
-			if (isCurrentChar and !IsValid(ix.gui.characterMenu)) then
-				vgui.Create("ixCharMenu")
+			if (isCurrentChar and !IsValid(ws.gui.characterMenu)) then
+				vgui.Create("wsCharMenu")
 			end
 		end)
 
-		net.Receive("ixCharacterKick", function()
+		net.Receive("wsCharacterKick", function()
 			local isCurrentChar = net.ReadBool()
 
-			if (ix.gui.menu and ix.gui.menu:IsVisible()) then
-				ix.gui.menu:Remove()
+			if (ws.gui.menu and ws.gui.menu:IsVisible()) then
+				ws.gui.menu:Remove()
 			end
 
-			if (!IsValid(ix.gui.characterMenu)) then
-				vgui.Create("ixCharMenu")
-			elseif (ix.gui.characterMenu:IsClosing()) then
-				ix.gui.characterMenu:Remove()
-				vgui.Create("ixCharMenu")
+			if (!IsValid(ws.gui.characterMenu)) then
+				vgui.Create("wsCharMenu")
+			elseif (ws.gui.characterMenu:IsClosing()) then
+				ws.gui.characterMenu:Remove()
+				vgui.Create("wsCharMenu")
 			end
 
 			if (isCurrentChar) then
-				ix.gui.characterMenu.mainPanel:UpdateReturnButton(false)
+				ws.gui.characterMenu.mainPanel:UpdateReturnButton(false)
 			end
 		end)
 
-		net.Receive("ixCharacterLoaded", function()
-			hook.Run("CharacterLoaded", ix.char.loaded[net.ReadUInt(32)])
+		net.Receive("wsCharacterLoaded", function()
+			hook.Run("CharacterLoaded", ws.char.loaded[net.ReadUInt(32)])
 		end)
 	end
 end
@@ -1250,7 +1250,7 @@ do
 	-- @treturn[1] Character Currently loaded character
 	-- @treturn[2] nil If this player has no character loaded
 	function playerMeta:GetCharacter()
-		return ix.char.loaded[self:GetNetVar("char")]
+		return ws.char.loaded[self:GetNetVar("char")]
 	end
 
 	playerMeta.GetChar = playerMeta.GetCharacter

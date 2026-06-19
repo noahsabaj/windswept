@@ -4,7 +4,7 @@ PLUGIN.author = "Chessnut"
 PLUGIN.description = "Adds the ability to recognize people."
 
 do
-	local character = ix.meta.character
+	local character = ws.meta.character
 
 	if (SERVER) then
 		function character:Recognize(id)
@@ -37,10 +37,10 @@ do
 			return true
 		end
 
-		local other = ix.char.loaded[id]
+		local other = ws.char.loaded[id]
 
 		if (other) then
-			local faction = ix.faction.indices[other:GetFaction()]
+			local faction = ws.faction.indices[other:GetFaction()]
 
 			if (faction and faction.isGloballyRecognized) then
 				return true
@@ -76,7 +76,7 @@ if (CLIENT) then
 	end
 
 	function PLUGIN:ShouldAllowScoreboardOverride(client)
-		if (ix.config.Get("scoreboardRecognition")) then
+		if (ws.config.Get("scoreboardRecognition")) then
 			return true
 		end
 	end
@@ -103,12 +103,12 @@ if (CLIENT) then
 	end
 
 	local function Recognize(level)
-		net.Start("ixRecognize")
+		net.Start("wsRecognize")
 			net.WriteUInt(level, 2)
 		net.SendToServer()
 	end
 
-	net.Receive("ixRecognizeMenu", function(length)
+	net.Receive("wsRecognizeMenu", function(length)
 		local menu = DermaMenu()
 			menu:AddOption(L"rgnLookingAt", function()
 				Recognize(0)
@@ -127,7 +127,7 @@ if (CLIENT) then
 		menu:Center()
 	end)
 
-	net.Receive("ixRecognizeDone", function(length)
+	net.Receive("wsRecognizeDone", function(length)
 		hook.Run("CharacterRecognized")
 	end)
 
@@ -135,18 +135,18 @@ if (CLIENT) then
 		surface.PlaySound("buttons/button17.wav")
 	end
 else
-	util.AddNetworkString("ixRecognize")
-	util.AddNetworkString("ixRecognizeMenu")
-	util.AddNetworkString("ixRecognizeDone")
+	util.AddNetworkString("wsRecognize")
+	util.AddNetworkString("wsRecognizeMenu")
+	util.AddNetworkString("wsRecognizeDone")
 
 	function PLUGIN:ShowSpare1(client)
 		if (client:GetCharacter()) then
-			net.Start("ixRecognizeMenu")
+			net.Start("wsRecognizeMenu")
 			net.Send(client)
 		end
 	end
 
-	net.Receive("ixRecognize", function(length, client)
+	net.Receive("wsRecognize", function(length, client)
 		local level = net.ReadUInt(2)
 
 		if (isnumber(level)) then
@@ -156,7 +156,7 @@ else
 				local entity = client:GetEyeTraceNoCursor().Entity
 
 				if (IsValid(entity) and entity:IsPlayer() and entity:GetCharacter()
-				and ix.chat.classes.ic:CanHear(client, entity)) then
+				and ws.chat.classes.ic:CanHear(client, entity)) then
 					targets[1] = entity
 				end
 			else
@@ -168,7 +168,7 @@ else
 					class = "y"
 				end
 
-				class = ix.chat.classes[class]
+				class = ws.chat.classes[class]
 
 				for _, v in player.Iterator() do
 					if (client != v and v:GetCharacter() and class:CanHear(client, v)) then
@@ -188,7 +188,7 @@ else
 				end
 
 				if (i > 0) then
-					net.Start("ixRecognizeDone")
+					net.Start("wsRecognizeDone")
 					net.Send(client)
 
 					hook.Run("CharacterRecognized", client, id)

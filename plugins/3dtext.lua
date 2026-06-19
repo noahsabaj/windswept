@@ -9,11 +9,11 @@ PLUGIN.description = "Adds text that can be placed on the map."
 PLUGIN.list = PLUGIN.list or {}
 
 if (SERVER) then
-	util.AddNetworkString("ixTextList")
-	util.AddNetworkString("ixTextAdd")
-	util.AddNetworkString("ixTextRemove")
+	util.AddNetworkString("wsTextList")
+	util.AddNetworkString("wsTextAdd")
+	util.AddNetworkString("wsTextRemove")
 
-	ix.log.AddType("undo3dText", function(client)
+	ws.log.AddType("undo3dText", function(client)
 		return string.format("%s has removed their last 3D text.", client:GetName())
 	end)
 
@@ -25,7 +25,7 @@ if (SERVER) then
 				local compressed = util.Compress(json)
 				local length = compressed:len()
 
-				net.Start("ixTextList")
+				net.Start("wsTextList")
 					net.WriteUInt(length, 32)
 					net.WriteData(compressed, length)
 				net.Send(client)
@@ -40,7 +40,7 @@ if (SERVER) then
 
 		self.list[index] = {position, angles, text, scale}
 
-		net.Start("ixTextAdd")
+		net.Start("wsTextAdd")
 			net.WriteUInt(index, 32)
 			net.WriteVector(position)
 			net.WriteAngle(angles)
@@ -75,7 +75,7 @@ if (SERVER) then
 			for _, v in ipairs(textDeleted) do
 				table.remove(self.list, v)
 
-				net.Start("ixTextRemove")
+				net.Start("wsTextRemove")
 					net.WriteUInt(v, 32)
 				net.Broadcast()
 			end
@@ -93,7 +93,7 @@ if (SERVER) then
 			return false
 		end
 
-		net.Start("ixTextRemove")
+		net.Start("wsTextRemove")
 			net.WriteUInt(id, 32)
 		net.Broadcast()
 
@@ -120,7 +120,7 @@ else
 	language.Add("Undone_ix3dText", "Removed 3D Text")
 
 	function PLUGIN:GenerateMarkup(text)
-		local object = ix.markup.Parse("<font=ix3D2DFont>"..text:gsub("\\n", "\n"))
+		local object = ws.markup.Parse("<font=ix3D2DFont>"..text:gsub("\\n", "\n"))
 
 		object.onDrawText = function(surfaceText, font, x, y, color, alignX, alignY, alpha)
 			-- shadow
@@ -139,7 +139,7 @@ else
 	end
 
 	-- Receives new text objects that need to be drawn.
-	net.Receive("ixTextAdd", function()
+	net.Receive("wsTextAdd", function()
 		local index = net.ReadUInt(32)
 		local position = net.ReadVector()
 		local angles = net.ReadAngle()
@@ -158,7 +158,7 @@ else
 		end
 	end)
 
-	net.Receive("ixTextRemove", function()
+	net.Receive("wsTextRemove", function()
 		local index = net.ReadUInt(32)
 
 		table.remove(PLUGIN.list, index)
@@ -167,7 +167,7 @@ else
 	end)
 
 	-- Receives a full update on ALL texts.
-	net.Receive("ixTextList", function()
+	net.Receive("wsTextList", function()
 		local length = net.ReadUInt(32)
 		local data = net.ReadData(length)
 		local uncompressed = util.Decompress(data)
@@ -187,7 +187,7 @@ else
 				continue
 			end
 
-			local object = ix.markup.Parse("<font=ix3D2DFont>"..v[3]:gsub("\\n", "\n"))
+			local object = ws.markup.Parse("<font=ix3D2DFont>"..v[3]:gsub("\\n", "\n"))
 
 			object.onDrawText = function(text, font, x, y, color, alignX, alignY, alpha)
 				draw.TextShadow({
@@ -213,15 +213,15 @@ else
 	end
 
 	function PLUGIN:HUDPaint()
-		if (ix.chat.currentCommand != "textremove") then
+		if (ws.chat.currentCommand != "textremove") then
 			return
 		end
 
-		local radius = tonumber(ix.chat.currentArguments[1]) or 100
+		local radius = tonumber(ws.chat.currentArguments[1]) or 100
 
 		surface.SetDrawColor(200, 30, 30)
 		surface.SetTextColor(200, 30, 30)
-		surface.SetFont("ixMenuButtonFont")
+		surface.SetFont("wsMenuButtonFont")
 
 		local i = 0
 
@@ -256,8 +256,8 @@ else
 		end
 
 		-- preview for textadd command
-		if (ix.chat.currentCommand == "textadd") then
-			local arguments = ix.chat.currentArguments
+		if (ws.chat.currentCommand == "textadd") then
+			local arguments = ws.chat.currentArguments
 			local text = tostring(arguments[1] or "")
 			local scale = math.Clamp((tonumber(arguments[2]) or 1) * 0.1, 0.001, 5)
 			local trace = LocalPlayer():GetEyeTraceNoCursor()
@@ -298,12 +298,12 @@ else
 	end
 end
 
-ix.command.Add("TextAdd", {
+ws.command.Add("TextAdd", {
 	description = "@cmdTextAdd",
 	adminOnly = true,
 	arguments = {
-		ix.type.string,
-		bit.bor(ix.type.number, ix.type.optional)
+		ws.type.string,
+		bit.bor(ws.type.number, ws.type.optional)
 	},
 	OnRun = function(self, client, text, scale)
 		local trace = client:GetEyeTrace()
@@ -318,7 +318,7 @@ ix.command.Add("TextAdd", {
 			undo.SetPlayer(client)
 			undo.AddFunction(function()
 				if (PLUGIN:RemoveTextByID(index)) then
-					ix.log.Add(client, "undo3dText")
+					ws.log.Add(client, "undo3dText")
 				end
 			end)
 		undo.Finish()
@@ -327,10 +327,10 @@ ix.command.Add("TextAdd", {
 	end
 })
 
-ix.command.Add("TextRemove", {
+ws.command.Add("TextRemove", {
 	description = "@cmdTextRemove",
 	adminOnly = true,
-	arguments = bit.bor(ix.type.number, ix.type.optional),
+	arguments = bit.bor(ws.type.number, ws.type.optional),
 	OnRun = function(self, client, radius)
 		local trace = client:GetEyeTrace()
 		local position = trace.HitPos + trace.HitNormal * 2

@@ -20,7 +20,7 @@ function PANEL:Init()
 	self.hidden = true
 
 	self.text = self:Add("DLabel")
-	self.text:SetFont("ixNoticeFont")
+	self.text:SetFont("wsNoticeFont")
 	self.text:SetContentAlignment(5)
 	self.text:SetTextColor(color_white)
 	self.text:SizeToContents()
@@ -44,7 +44,7 @@ function PANEL:Slide(direction, length)
 	direction = direction or "up"
 	length = length or 0.5
 
-	timer.Remove("ixNoticeBarAnimation")
+	timer.Remove("wsNoticeBarAnimation")
 
 	local x, _ = self:GetPos()
 	local baseY = direction == "up" and self.padding * 2 or (-self:GetTall() - self.padding)
@@ -69,7 +69,7 @@ end
 function PANEL:Show(bRemove)
 	self:Slide("down")
 
-	timer.Create("ixNoticeBarAnimation", self.length - 0.5, 1, function()
+	timer.Create("wsNoticeBarAnimation", self.length - 0.5, 1, function()
 		if (!IsValid(self)) then
 			return
 		end
@@ -85,4 +85,4 @@ function PANEL:Paint(width, height)
 	surface.DrawRect(0, 0, width, height)
 end
 
-vgui.Register("ixNoticeBar", PANEL, "Panel")
+vgui.Register("wsNoticeBar", PANEL, "Panel")

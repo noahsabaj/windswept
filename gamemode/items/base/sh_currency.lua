@@ -69,7 +69,7 @@ ITEM.functions.Split = {
 		end
 
 		local currencyType = item.currencyValue == 100 and "cash" or "coins"
-		net.Start("ixCurrencySplit")
+		net.Start("wsCurrencySplit")
 			net.WriteUInt(item:GetID(), 32)
 			net.WriteUInt(quantity, 16)
 			net.WriteString(currencyType)
@@ -95,7 +95,7 @@ ITEM.functions.MergeAll = {
 		if not inventory then return false end
 
 		local currentQuantity = item:GetQuantity()
-		local maxStack = ix.currency.MAX_STACK
+		local maxStack = ws.currency.MAX_STACK
 		local canAdd = maxStack - currentQuantity
 
 		if canAdd <= 0 then
@@ -141,7 +141,7 @@ ITEM.functions.MergeAll = {
 		return false
 	end,
 	OnCanRun = function(item)
-		if item:GetQuantity() >= ix.currency.MAX_STACK then
+		if item:GetQuantity() >= ws.currency.MAX_STACK then
 			return false
 		end
 
@@ -161,11 +161,11 @@ ITEM.functions.MergeWith = {
 	name = "Merge With...",
 	icon = "icon16/arrow_in.png",
 	OnRun = function(item)
-		ix.currency.SendMergeSelectList(item.player, item)
+		ws.currency.SendMergeSelectList(item.player, item)
 		return false
 	end,
 	OnCanRun = function(item)
-		if item:GetQuantity() >= ix.currency.MAX_STACK then
+		if item:GetQuantity() >= ws.currency.MAX_STACK then
 			return false
 		end
 
@@ -190,7 +190,7 @@ ITEM.functions.Give = {
 	end,
 	OnClick = function(item)
 		local client = LocalPlayer()
-		local target = ix.util.GetLookAtPlayer(client, 100)
+		local target = ws.util.GetLookAtPlayer(client, 100)
 
 		if not IsValid(target) then
 			return false
@@ -206,7 +206,7 @@ ITEM.functions.Give = {
 				local amount = tonumber(text)
 				if not amount or amount <= 0 then return end
 
-				net.Start("ixMoneyGive")
+				net.Start("wsMoneyGive")
 					net.WriteUInt(item:GetID(), 32)
 					net.WriteUInt(math.floor(amount), 32)
 					net.WriteEntity(target)
@@ -247,7 +247,7 @@ ITEM.functions.Destroy = {
 				local amount = tonumber(text)
 				if not amount or amount <= 0 then return end
 
-				net.Start("ixMoneyDestroy")
+				net.Start("wsMoneyDestroy")
 					net.WriteUInt(item:GetID(), 32)
 					net.WriteUInt(math.floor(amount), 32)
 				net.SendToServer()

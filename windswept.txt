@@ -1,0 +1,6 @@
+"windswept"
+{
+	"base"		"sandbox"
+	"title"		"Windswept Framework"
+	"author"	"Noah Sabaj"
+}

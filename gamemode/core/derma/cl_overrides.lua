@@ -62,9 +62,9 @@ OverridePanel("DMenu", function()
 
 	Override("Init")
 	function PANEL:Init(...)
-		self:ixInit(...)
+		self:wsInit(...)
 
-		self.ixAnimation = 0
+		self.wsAnimation = 0
 	end
 
 	function PANEL:SetFont(font)
@@ -75,22 +75,22 @@ OverridePanel("DMenu", function()
 
 		-- reposition for the new font
 		self:InvalidateLayout(true)
-		self:Open(self.ixX, self.ixY, false, self.ixOwnerPanel)
+		self:Open(self.wsX, self.wsY, false, self.wsOwnerPanel)
 	end
 
 	Override("SetSize")
 	function PANEL:SetSize(width, height)
-		self:ixSetSize(width, height)
-		self.ixTargetHeight = height
+		self:wsSetSize(width, height)
+		self.wsTargetHeight = height
 	end
 
 	Override("PerformLayout")
 	function PANEL:PerformLayout(...)
-		self:ixPerformLayout(...)
+		self:wsPerformLayout(...)
 
-		if (self.ixAnimating) then
+		if (self.wsAnimating) then
 			self.VBar:SetAlpha(0) -- setvisible doesn't seem to work here
-			self:SetTall(self.ixAnimation * self.ixTargetHeight)
+			self:SetTall(self.wsAnimation * self.wsTargetHeight)
 		else
 			self.VBar:SetAlpha(255)
 		end
@@ -98,7 +98,7 @@ OverridePanel("DMenu", function()
 
 	Override("OnMouseWheeled")
 	function PANEL:OnMouseWheeled(delta)
-		self:ixOnMouseWheeled(delta)
+		self:wsOnMouseWheeled(delta)
 
 		-- don't allow the input event to fall through
 		return true
@@ -106,7 +106,7 @@ OverridePanel("DMenu", function()
 
 	Override("AddOption")
 	function PANEL:AddOption(...)
-		local panel = self:ixAddOption(...)
+		local panel = self:wsAddOption(...)
 
 		panel:SetTextColor(derma.GetColor("MenuLabel", self, color_black))
 		panel:SetTextInset(6, 0) -- there is no icon functionality in DComboBoxes
@@ -116,7 +116,7 @@ OverridePanel("DMenu", function()
 
 	Override("AddSubMenu")
 	function PANEL:AddSubMenu(...)
-		local menu, panel = self:ixAddSubMenu(...)
+		local menu, panel = self:wsAddSubMenu(...)
 
 		panel:SetTextColor(derma.GetColor("MenuLabel", self, color_black))
 		panel:SetTextInset(6, 0) -- there is no icon functionality in DComboBoxes
@@ -126,10 +126,10 @@ OverridePanel("DMenu", function()
 
 	Override("Open")
 	function PANEL:Open(x, y, bSkipAnimation, ownerPanel)
-		self.ixX, self.ixY, self.ixOwnerPanel = x, y, ownerPanel
-		self:ixOpen(x, y, bSkipAnimation, ownerPanel)
+		self.wsX, self.wsY, self.wsOwnerPanel = x, y, ownerPanel
+		self:wsOpen(x, y, bSkipAnimation, ownerPanel)
 
-		if (ix.option.Get("disableAnimations")) then
+		if (ws.option.Get("disableAnimations")) then
 			return
 		end
 
@@ -137,10 +137,10 @@ OverridePanel("DMenu", function()
 		hook.Remove("CloseDermaMenus", self)
 		hook.Remove("Think", self)
 
-		self.ixAnimating = true
+		self.wsAnimating = true
 		self:CreateAnimation(animationTime, {
 			index = 1,
-			target = {ixAnimation = 1},
+			target = {wsAnimation = 1},
 			easing = "outQuint",
 
 			Think = function(animation, panel)
@@ -148,23 +148,23 @@ OverridePanel("DMenu", function()
 			end,
 
 			OnComplete = function(animation, panel)
-				panel.ixAnimating = nil
+				panel.wsAnimating = nil
 			end
 		})
 	end
 
 	Override("Hide")
 	function PANEL:Hide()
-		if (ix.option.Get("disableAnimations")) then
-			self:ixHide()
+		if (ws.option.Get("disableAnimations")) then
+			self:wsHide()
 			return
 		end
 
-		self.ixAnimating = true
+		self.wsAnimating = true
 		self:SetVisible(true)
 		self:CreateAnimation(animationTime * 0.5, {
 			index = 1,
-			target = {ixAnimation = 0},
+			target = {wsAnimation = 0},
 			easing = "outQuint",
 
 			Think = function(animation, panel)
@@ -172,30 +172,30 @@ OverridePanel("DMenu", function()
 			end,
 
 			OnComplete = function(animation, panel)
-				panel.ixAnimating = false
-				panel:ixHide()
+				panel.wsAnimating = false
+				panel:wsHide()
 			end
 		})
 	end
 
 	Override("Remove")
 	function PANEL:Remove()
-		if (self.ixRemoving) then
+		if (self.wsRemoving) then
 			return
 		end
 
-		if (ix.option.Get("disableAnimations")) then
-			self:ixRemove()
+		if (ws.option.Get("disableAnimations")) then
+			self:wsRemove()
 			return
 		end
 
-		self.ixAnimating = true
-		self.ixRemoving = true
+		self.wsAnimating = true
+		self.wsRemoving = true
 		self:SetVisible(true)
 
 		self:CreateAnimation(animationTime * 0.5, {
 			index = 1,
-			target = {ixAnimation = 0},
+			target = {wsAnimation = 0},
 			easing = "outQuint",
 
 			Think = function(animation, panel)
@@ -203,7 +203,7 @@ OverridePanel("DMenu", function()
 			end,
 
 			OnComplete = function(animation, panel)
-				panel:ixRemove()
+				panel:wsRemove()
 			end
 		})
 	end
@@ -212,7 +212,7 @@ end)
 OverridePanel("DComboBox", function()
 	Override("OpenMenu")
 	function PANEL:OpenMenu()
-		self:ixOpenMenu()
+		self:wsOpenMenu()
 
 		if (IsValid(self.Menu)) then
 			local _, y = self.Menu:LocalToScreen(self.Menu:GetPos())

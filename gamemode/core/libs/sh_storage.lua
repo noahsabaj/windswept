@@ -3,11 +3,11 @@
 Player manipulation of inventories.
 
 This library provides an easy way for players to manipulate other inventories. The only functions that you should need are
-`ix.storage.Open` and `ix.storage.Close`. When opening an inventory as a storage item, it will display both the given inventory
+`ws.storage.Open` and `ws.storage.Close`. When opening an inventory as a storage item, it will display both the given inventory
 and the player's inventory in the player's UI, which allows them to drag items to and from the given inventory.
 
 Example usage:
-	ix.storage.Open(client, inventory, {
+	ws.storage.Open(client, inventory, {
 		name = "Filing Cabinet",
 		entity = ents.GetByIndex(3),
 		bMultipleUsers = true,
@@ -15,14 +15,14 @@ Example usage:
 		searchTime = 4
 	})
 ]]
--- @module ix.storage
+-- @module ws.storage
 
---- There are some parameters you can customize when opening an inventory as a storage object with `ix.storage.Open`.
+--- There are some parameters you can customize when opening an inventory as a storage object with `ws.storage.Open`.
 -- @realm server
 -- @table StorageInfoStructure
 -- @field[type=entity] entity Entity to "attach" the inventory to. This is used to provide a location for the inventory for
 -- things like making sure the player doesn't move too far away from the inventory, etc. This can also be a `player` object.
--- @field[type=number,opt=inventory id] id The ID of the nventory. This defaults to the inventory passed into `ix.Storage.Open`.
+-- @field[type=number,opt=inventory id] id The ID of the nventory. This defaults to the inventory passed into `ws.Storage.Open`.
 -- @field[type=string,opt="Storage"] name Title to display in the UI when the inventory is open.
 -- @field[type=boolean,opt=false] bMultipleUsers Whether or not multiple players are allowed to view this inventory at the
 -- same time.
@@ -33,22 +33,22 @@ Example usage:
 -- argument passed to the callback is the player who closed it.
 -- @field[type=table,opt={}] data Table of arbitrary data to send to the client when the inventory has been opened.
 
-ix.storage = ix.storage or {}
+ws.storage = ws.storage or {}
 
 if (SERVER) then
-	util.AddNetworkString("ixStorageOpen")
-	util.AddNetworkString("ixStorageClose")
-	util.AddNetworkString("ixStorageExpired")
+	util.AddNetworkString("wsStorageOpen")
+	util.AddNetworkString("wsStorageClose")
+	util.AddNetworkString("wsStorageExpired")
 	-- REMOVED: Physical currency system - money is now inventory items (cash/coins)
-	-- util.AddNetworkString("ixStorageMoneyTake")
-	-- util.AddNetworkString("ixStorageMoneyGive")
-	-- util.AddNetworkString("ixStorageMoneyUpdate")
+	-- util.AddNetworkString("wsStorageMoneyTake")
+	-- util.AddNetworkString("wsStorageMoneyGive")
+	-- util.AddNetworkString("wsStorageMoneyUpdate")
 
 	--- Returns whether or not the given inventory has a storage context and is being looked at by other players.
 	-- @realm server
 	-- @inventory inventory Inventory to check
 	-- @treturn bool Whether or not `inventory` is in use
-	function ix.storage.InUse(inventory)
+	function ws.storage.InUse(inventory)
 		if (inventory.storageInfo) then
 			for _, v in pairs(inventory:GetReceivers()) do
 				if (IsValid(v) and v:IsPlayer() and v != inventory.storageInfo.entity) then
@@ -65,7 +65,7 @@ if (SERVER) then
 	-- @inventory inventory Inventory to check
 	-- @player client Player to check
 	-- @treturn bool Whether or not the player is using the given `inventory`
-	function ix.storage.InUseBy(inventory, client)
+	function ws.storage.InUseBy(inventory, client)
 		if (inventory.storageInfo) then
 			for _, v in pairs(inventory:GetReceivers()) do
 				if (IsValid(v) and v:IsPlayer() and v == client) then
@@ -82,7 +82,7 @@ if (SERVER) then
 	-- @internal
 	-- @inventory inventory Inventory to create a storage context for
 	-- @tab info Information to store on the context
-	function ix.storage.CreateContext(inventory, info)
+	function ws.storage.CreateContext(inventory, info)
 		info = info or {}
 
 		info.id = inventory:GetID()
@@ -98,7 +98,7 @@ if (SERVER) then
 		-- remove context from any bags this inventory might have
 		for k, _ in inventory:Iter() do
 			if (k.isBag and k:GetInventory()) then
-				ix.storage.CreateContext(k:GetInventory(), table.Copy(info))
+				ws.storage.CreateContext(k:GetInventory(), table.Copy(info))
 			end
 		end
 	end
@@ -107,13 +107,13 @@ if (SERVER) then
 	-- @realm server
 	-- @internal
 	-- @inventory inventory Inventory to remove a storage context from
-	function ix.storage.RemoveContext(inventory)
+	function ws.storage.RemoveContext(inventory)
 		inventory.storageInfo = nil
 
 		-- remove context from any bags this inventory might have
 		for k, _ in inventory:Iter() do
 			if (k.isBag and k:GetInventory()) then
-				ix.storage.RemoveContext(k:GetInventory())
+				ws.storage.RemoveContext(k:GetInventory())
 			end
 		end
 	end
@@ -123,7 +123,7 @@ if (SERVER) then
 	-- @internal
 	-- @player client Player to sync storage for
 	-- @inventory inventory Inventory to sync storage for
-	function ix.storage.Sync(client, inventory)
+	function ws.storage.Sync(client, inventory)
 		local info = inventory.storageInfo
 
 		-- REMOVED: Physical currency system - money is now inventory items (cash/coins)
@@ -132,7 +132,7 @@ if (SERVER) then
 		-- bags are automatically sync'd when the owning inventory is sync'd
 		inventory:Sync(client)
 
-		net.Start("ixStorageOpen")
+		net.Start("wsStorageOpen")
 			net.WriteUInt(info.id, 32)
 			net.WriteEntity(info.entity)
 			net.WriteString(info.name)
@@ -147,12 +147,12 @@ if (SERVER) then
 	-- @inventory inventory Inventory to sync storage for
 	-- @bool bDontSync Whether or not to skip syncing the storage to the client. If this is `true`, the storage panel will not
 	-- show up for the player
-	function ix.storage.AddReceiver(client, inventory, bDontSync)
+	function ws.storage.AddReceiver(client, inventory, bDontSync)
 		local info = inventory.storageInfo
 
 		if (info) then
 			inventory:AddReceiver(client)
-			client.ixOpenStorage = inventory
+			client.wsOpenStorage = inventory
 
 			-- update receivers for any bags this inventory might have
 			for k, _ in inventory:Iter() do
@@ -166,7 +166,7 @@ if (SERVER) then
 			end
 
 			if (!bDontSync) then
-				ix.storage.Sync(client, inventory)
+				ws.storage.Sync(client, inventory)
 			end
 
 			return true
@@ -181,7 +181,7 @@ if (SERVER) then
 	-- @player client Player to remove from receivers
 	-- @inventory inventory Inventory with storage context to remove receiver from
 	-- @bool bDontRemove Whether or not to skip removing the storage context if there are no more receivers
-	function ix.storage.RemoveReceiver(client, inventory, bDontRemove)
+	function ws.storage.RemoveReceiver(client, inventory, bDontRemove)
 		local info = inventory.storageInfo
 
 		if (info) then
@@ -198,11 +198,11 @@ if (SERVER) then
 				info.OnPlayerClose(client)
 			end
 
-			if (!bDontRemove and !ix.storage.InUse(inventory)) then
-				ix.storage.RemoveContext(inventory)
+			if (!bDontRemove and !ws.storage.InUse(inventory)) then
+				ws.storage.RemoveContext(inventory)
 			end
 
-			client.ixOpenStorage = nil
+			client.wsOpenStorage = nil
 			return true
 		end
 
@@ -215,22 +215,22 @@ if (SERVER) then
 	-- @player client Player to open the inventory for
 	-- @inventory inventory Inventory to open
 	-- @tab info `StorageInfoStructure` describing the storage properties
-	function ix.storage.Open(client, inventory, info)
+	function ws.storage.Open(client, inventory, info)
 		assert(IsValid(client) and client:IsPlayer(), "expected valid player")
-		assert(type(inventory) == "table" and inventory:IsInstanceOf(ix.meta.inventory), "expected valid inventory")
+		assert(type(inventory) == "table" and inventory:IsInstanceOf(ws.meta.inventory), "expected valid inventory")
 
 		-- create storage context if one isn't already created
 		if (!inventory.storageInfo) then
 			info = info or {}
-			ix.storage.CreateContext(inventory, info)
+			ws.storage.CreateContext(inventory, info)
 		end
 
 		local storageInfo = inventory.storageInfo
 
 		-- add the client to the list of receivers if we're allowed to have multiple users
 		-- or if nobody else is occupying this inventory, otherwise nag the player
-		if (storageInfo.bMultipleUsers or !ix.storage.InUse(inventory)) then
-			ix.storage.AddReceiver(client, inventory, true)
+		if (storageInfo.bMultipleUsers or !ws.storage.InUse(inventory)) then
+			ws.storage.AddReceiver(client, inventory, true)
 		else
 			client:NotifyLocalized("storageInUse")
 			return
@@ -240,50 +240,50 @@ if (SERVER) then
 			client:SetAction(storageInfo.searchText, storageInfo.searchTime)
 			client:DoStaredAction(storageInfo.entity, function()
 				if (IsValid(client) and IsValid(storageInfo.entity) and inventory.storageInfo) then
-					ix.storage.Sync(client, inventory)
+					ws.storage.Sync(client, inventory)
 				end
 			end, storageInfo.searchTime, function()
 				if (IsValid(client)) then
-					ix.storage.RemoveReceiver(client, inventory)
+					ws.storage.RemoveReceiver(client, inventory)
 					client:SetAction()
 				end
 			end)
 		else
-			ix.storage.Sync(client, inventory)
+			ws.storage.Sync(client, inventory)
 		end
 	end
 
 	--- Forcefully makes clients close this inventory if they have it open.
 	-- @realm server
 	-- @inventory inventory Inventory to close
-	function ix.storage.Close(inventory)
+	function ws.storage.Close(inventory)
 		local receivers = inventory:GetReceivers()
 
 		if (#receivers > 0) then
-			net.Start("ixStorageExpired")
+			net.Start("wsStorageExpired")
 				net.WriteUInt(inventory.storageInfo.id, 32)
 			net.Send(receivers)
 		end
 
-		ix.storage.RemoveContext(inventory)
+		ws.storage.RemoveContext(inventory)
 	end
 
-	net.Receive("ixStorageClose", function(length, client)
-		local inventory = client.ixOpenStorage
+	net.Receive("wsStorageClose", function(length, client)
+		local inventory = client.wsOpenStorage
 
 		if (inventory) then
-			ix.storage.RemoveReceiver(client, inventory)
+			ws.storage.RemoveReceiver(client, inventory)
 		end
 	end)
 
 	-- REMOVED: Physical currency system - money transfer UI disabled
 	-- Cash and coins are now inventory items that can be dragged like any other item
-	-- net.Receive("ixStorageMoneyTake", ...) removed
-	-- net.Receive("ixStorageMoneyGive", ...) removed
+	-- net.Receive("wsStorageMoneyTake", ...) removed
+	-- net.Receive("wsStorageMoneyGive", ...) removed
 else
-	net.Receive("ixStorageOpen", function()
-		if (IsValid(ix.gui.menu)) then
-			net.Start("ixStorageClose")
+	net.Receive("wsStorageOpen", function()
+		if (IsValid(ws.gui.menu)) then
+			net.Start("wsStorageClose")
 			net.SendToServer()
 			return
 		end
@@ -293,11 +293,11 @@ else
 		local name = net.ReadString()
 		local data = net.ReadTable()
 
-		local inventory = ix.item.inventories[id]
+		local inventory = ws.item.inventories[id]
 
 		if (IsValid(entity) and inventory and inventory.slots) then
 			local localInventory = LocalPlayer():GetCharacter():GetInventory()
-			local panel = vgui.Create("ixStorageView")
+			local panel = vgui.Create("wsStorageView")
 
 			if (localInventory) then
 				panel:SetLocalInventory(localInventory)
@@ -312,18 +312,18 @@ else
 		end
 	end)
 
-	net.Receive("ixStorageExpired", function()
-		if (IsValid(ix.gui.openedStorage)) then
-			ix.gui.openedStorage:Remove()
+	net.Receive("wsStorageExpired", function()
+		if (IsValid(ws.gui.openedStorage)) then
+			ws.gui.openedStorage:Remove()
 		end
 
 		local id = net.ReadUInt(32)
 
 		if (id != 0) then
-			ix.item.inventories[id] = nil
+			ws.item.inventories[id] = nil
 		end
 	end)
 
 	-- REMOVED: Physical currency system - money update net message disabled
-	-- net.Receive("ixStorageMoneyUpdate", ...) removed
+	-- net.Receive("wsStorageMoneyUpdate", ...) removed
 end

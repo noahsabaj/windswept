@@ -9,9 +9,9 @@ PLUGIN.description = "Adds web panels that can be placed on the map."
 PLUGIN.list = PLUGIN.list or {}
 
 if (SERVER) then
-	util.AddNetworkString("ixPanelList")
-	util.AddNetworkString("ixPanelAdd")
-	util.AddNetworkString("ixPanelRemove")
+	util.AddNetworkString("wsPanelList")
+	util.AddNetworkString("wsPanelAdd")
+	util.AddNetworkString("wsPanelRemove")
 
 	-- Called when the player is sending client info.
 	function PLUGIN:PlayerInitialSpawn(client)
@@ -22,7 +22,7 @@ if (SERVER) then
 				local compressed = util.Compress(json)
 				local length = compressed:len()
 
-				net.Start("ixPanelList")
+				net.Start("wsPanelList")
 					net.WriteUInt(length, 32)
 					net.WriteData(compressed, length)
 				net.Send(client)
@@ -42,7 +42,7 @@ if (SERVER) then
 		self.list[index] = {position, angles, nil, nil, scale, url, nil, brightness}
 
 		-- Send the panel information to the players.
-		net.Start("ixPanelAdd")
+		net.Start("wsPanelAdd")
 			net.WriteUInt(index, 32)
 			net.WriteVector(position)
 			net.WriteAngle(angles)
@@ -84,7 +84,7 @@ if (SERVER) then
 				table.remove(self.list, v)
 
 				-- Tell the players to stop showing the panel.
-				net.Start("ixPanelRemove")
+				net.Start("wsPanelRemove")
 					net.WriteUInt(v, 32)
 				net.Broadcast()
 			end
@@ -189,7 +189,7 @@ else
 	end
 
 	-- Receives new panel objects that need to be drawn.
-	net.Receive("ixPanelAdd", function()
+	net.Receive("wsPanelAdd", function()
 		local index = net.ReadUInt(32)
 		local position = net.ReadVector()
 		local angles = net.ReadAngle()
@@ -206,7 +206,7 @@ else
 		end
 	end)
 
-	net.Receive("ixPanelRemove", function()
+	net.Receive("wsPanelRemove", function()
 		local index = net.ReadUInt(32)
 
 		table.remove(PLUGIN.list, index)
@@ -215,7 +215,7 @@ else
 	end)
 
 	-- Receives a full update on ALL panels.
-	net.Receive("ixPanelList", function()
+	net.Receive("wsPanelList", function()
 		local length = net.ReadUInt(32)
 		local data = net.ReadData(length)
 		local uncompressed = util.Decompress(data)
@@ -246,13 +246,13 @@ else
 			return
 		end
 
-		timer.Create("ixCache3DPanels", 1, #CacheQueue, function()
+		timer.Create("wsCache3DPanels", 1, #CacheQueue, function()
 			if (#CacheQueue > 0) then
 				CacheMaterial(CacheQueue[1])
 
 				table.remove(CacheQueue, 1)
 			else
-				timer.Remove("ixCache3DPanels")
+				timer.Remove("wsCache3DPanels")
 			end
 		end)
 	end)
@@ -264,7 +264,7 @@ else
 		end
 
 		-- Panel preview
-		if (ix.chat.currentCommand == "paneladd") then
+		if (ws.chat.currentCommand == "paneladd") then
 			self:PreviewPanel()
 		end
 
@@ -295,10 +295,10 @@ else
 	end
 
 	function PLUGIN:ChatTextChanged(text)
-		if (ix.chat.currentCommand == "paneladd") then
-			-- Allow time for ix.chat.currentArguments to update
+		if (ws.chat.currentCommand == "paneladd") then
+			-- Allow time for ws.chat.currentArguments to update
 			timer.Simple(0, function()
-				local arguments = ix.chat.currentArguments
+				local arguments = ws.chat.currentArguments
 
 				if (!arguments[1]) then
 					return
@@ -310,7 +310,7 @@ else
 	end
 
 	function PLUGIN:PreviewPanel()
-		local arguments = ix.chat.currentArguments
+		local arguments = ws.chat.currentArguments
 
 		-- if there's no URL, then no preview.
 		if (!arguments[1]) then
@@ -348,14 +348,14 @@ else
 	end
 end
 
-ix.command.Add("PanelAdd", {
+ws.command.Add("PanelAdd", {
 	description = "@cmdPanelAdd",
 	privilege = "Manage Panels",
 	adminOnly = true,
 	arguments = {
-		ix.type.string,
-		bit.bor(ix.type.number, ix.type.optional),
-		bit.bor(ix.type.number, ix.type.optional)
+		ws.type.string,
+		bit.bor(ws.type.number, ws.type.optional),
+		bit.bor(ws.type.number, ws.type.optional)
 	},
 	OnRun = function(self, client, url, scale, brightness)
 		-- Get the position and angles of the panel.
@@ -371,11 +371,11 @@ ix.command.Add("PanelAdd", {
 	end
 })
 
-ix.command.Add("PanelRemove", {
+ws.command.Add("PanelRemove", {
 	description = "@cmdPanelRemove",
 	privilege = "Manage Panels",
 	adminOnly = true,
-	arguments = bit.bor(ix.type.number, ix.type.optional),
+	arguments = bit.bor(ws.type.number, ws.type.optional),
 	OnRun = function(self, client, radius)
 		-- Get the origin to remove panel.
 		local trace = client:GetEyeTrace()

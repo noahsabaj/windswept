@@ -11,9 +11,9 @@ DOOR_TENANT = 2
 DOOR_GUEST = 1
 DOOR_NONE = 0
 
-ix.util.Include("sv_plugin.lua")
-ix.util.Include("cl_plugin.lua")
-ix.util.Include("sh_commands.lua")
+ws.util.Include("sv_plugin.lua")
+ws.util.Include("cl_plugin.lua")
+ws.util.Include("sh_commands.lua")
 
 do
 	local entityMeta = FindMetaTable("Entity")
@@ -25,7 +25,7 @@ do
 
 		access = access or DOOR_GUEST
 
-		local parent = self.ixParent
+		local parent = self.wsParent
 
 		if (IsValid(parent)) then
 			return parent:CheckDoorAccess(client, access)
@@ -35,7 +35,7 @@ do
 			return true
 		end
 
-		if (self.ixAccess and (self.ixAccess[client] or 0) >= access) then
+		if (self.wsAccess and (self.wsAccess[client] or 0) >= access) then
 			return true
 		end
 
@@ -46,18 +46,18 @@ do
 		function entityMeta:RemoveDoorAccessData()
 			local receivers = {}
 
-			for k, _ in pairs(self.ixAccess or {}) do
+			for k, _ in pairs(self.wsAccess or {}) do
 				receivers[#receivers + 1] = k
 			end
 
 			if (#receivers > 0) then
-				net.Start("ixDoorMenu")
+				net.Start("wsDoorMenu")
 					net.WriteEntity(self)
 					net.WriteTable({})
 				net.Send(receivers)
 			end
 
-			self.ixAccess = {}
+			self.wsAccess = {}
 			self:SetDTEntity(0, nil)
 
 			-- Remove door information on child doors
@@ -69,15 +69,15 @@ do
 end
 
 -- Configurations for door prices.
-ix.config.Add("doorCost", 10, "The price to purchase a door.", nil, {
+ws.config.Add("doorCost", 10, "The price to purchase a door.", nil, {
 	data = {min = 0, max = 500},
 	category = "dConfigName"
 })
-ix.config.Add("doorSellRatio", 0.5, "How much of the door price is returned when selling a door.", nil, {
+ws.config.Add("doorSellRatio", 0.5, "How much of the door price is returned when selling a door.", nil, {
 	data = {min = 0, max = 1.0, decimals = 1},
 	category = "dConfigName"
 })
-ix.config.Add("doorLockTime", 1, "How long it takes to (un)lock a door.", nil, {
+ws.config.Add("doorLockTime", 1, "How long it takes to (un)lock a door.", nil, {
 	data = {min = 0, max = 10.0, decimals = 1},
 	category = "dConfigName"
 })

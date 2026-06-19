@@ -12,10 +12,10 @@ function PANEL:SetItem(itemTable)
 
 	self.price = self:Add("DLabel")
 	self.price:Dock(BOTTOM)
-	self.price:SetText(itemTable.price and ix.currency.Get(itemTable.price) or L"free":utf8upper())
+	self.price:SetText(itemTable.price and ws.currency.Get(itemTable.price) or L"free":utf8upper())
 	self.price:SetContentAlignment(5)
 	self.price:SetTextColor(color_white)
-	self.price:SetFont("ixSmallFont")
+	self.price:SetFont("wsSmallFont")
 	self.price:SetExpensiveShadow(1, Color(0, 0, 0, 200))
 
 	self.name = self:Add("DLabel")
@@ -23,7 +23,7 @@ function PANEL:SetItem(itemTable)
 	self.name:SetText(itemTable.GetName and itemTable:GetName() or L(itemTable.name))
 	self.name:SetContentAlignment(5)
 	self.name:SetTextColor(color_white)
-	self.name:SetFont("ixSmallFont")
+	self.name:SetFont("wsSmallFont")
 	self.name:SetExpensiveShadow(1, Color(0, 0, 0, 200))
 	self.name.Paint = function(this, w, h)
 		surface.SetDrawColor(0, 0, 0, 75)
@@ -38,15 +38,15 @@ function PANEL:SetItem(itemTable)
 	self.icon:InvalidateLayout(true)
 	self.icon:SetModel(itemTable:GetModel(), itemTable:GetSkin())
 	self.icon:SetHelixTooltip(function(tooltip)
-		ix.hud.PopulateItemTooltip(tooltip, itemTable)
+		ws.hud.PopulateItemTooltip(tooltip, itemTable)
 	end)
 	self.icon.itemTable = itemTable
 	self.icon.DoClick = function(this)
-		if (IsValid(ix.gui.checkout)) then
+		if (IsValid(ws.gui.checkout)) then
 			return
 		end
 
-		local parent = ix.gui.business
+		local parent = ws.gui.business
 		local bAdded = parent:BuyItem(itemTable.uniqueID)
 
 		if (bAdded) then
@@ -76,12 +76,12 @@ function PANEL:SetItem(itemTable)
 	end
 end
 
-vgui.Register("ixBusinessItem", PANEL, "DPanel")
+vgui.Register("wsBusinessItem", PANEL, "DPanel")
 
 PANEL = {}
 
 function PANEL:Init()
-	ix.gui.business = self
+	ws.gui.business = self
 
 	self:SetSize(self:GetParent():GetSize())
 
@@ -102,7 +102,7 @@ function PANEL:Init()
 	self.search = self:Add("DTextEntry")
 	self.search:Dock(TOP)
 	self.search:SetTall(36)
-	self.search:SetFont("ixMediumFont")
+	self.search:SetFont("wsMediumFont")
 	self.search:DockMargin(10 + self:GetWide() * 0.35, 0, 5, 5)
 	self.search.OnTextChanged = function(this)
 		local text = self.search:GetText():lower()
@@ -114,7 +114,7 @@ function PANEL:Init()
 	end
 	self.search.PaintOver = function(this, cw, ch)
 		if (self.search:GetValue() == "" and !self.search:HasFocus()) then
-			ix.util.DrawText("V", 10, ch/2 - 1, color_black, 3, 1, "ixIconsSmall")
+			ws.util.DrawText("V", 10, ch/2 - 1, color_black, 3, 1, "wsIconsSmall")
 		end
 	end
 
@@ -129,13 +129,13 @@ function PANEL:Init()
 	self.checkout:Dock(BOTTOM)
 	self.checkout:SetTextColor(color_white)
 	self.checkout:SetTall(36)
-	self.checkout:SetFont("ixMediumFont")
+	self.checkout:SetFont("wsMediumFont")
 	self.checkout:DockMargin(10, 10, 0, 0)
 	self.checkout:SetExpensiveShadow(1, Color(0, 0, 0, 150))
 	self.checkout:SetText(L("checkout", 0))
 	self.checkout.DoClick = function()
-		if (!IsValid(ix.gui.checkout) and self:GetCartCount() > 0) then
-			vgui.Create("ixBusinessCheckout"):SetCart(self.cart)
+		if (!IsValid(ws.gui.checkout) and self:GetCartCount() > 0) then
+			vgui.Create("wsBusinessCheckout"):SetCart(self.cart)
 		end
 	end
 
@@ -144,7 +144,7 @@ function PANEL:Init()
 	local dark = Color(0, 0, 0, 50)
 	local first = true
 
-	for k, v in pairs(ix.item.list) do
+	for k, v in pairs(ws.item.list) do
 		if (hook.Run("CanPlayerUseBusiness", LocalPlayer(), k) == false) then
 			continue
 		end
@@ -161,10 +161,10 @@ function PANEL:Init()
 		button:Dock(TOP)
 		button:SetTextColor(color_white)
 		button:DockMargin(5, 5, 5, 0)
-		button:SetFont("ixMediumFont")
+		button:SetFont("wsMediumFont")
 		button:SetExpensiveShadow(1, Color(0, 0, 0, 150))
 		button.Paint = function(this, w, h)
-			surface.SetDrawColor(self.selected == this and ix.config.Get("color") or dark)
+			surface.SetDrawColor(self.selected == this and ws.config.Get("color") or dark)
 			surface.DrawRect(0, 0, w, h)
 
 			surface.SetDrawColor(0, 0, 0, 50)
@@ -219,7 +219,7 @@ end
 
 function PANEL:LoadItems(category, search)
 	category = category	or "misc"
-	local items = ix.item.list
+	local items = ws.item.list
 
 	self.itemList:Clear()
 	self.itemList:InvalidateLayout(true)
@@ -234,7 +234,7 @@ function PANEL:LoadItems(category, search)
 				continue
 			end
 
-			self.itemList:Add("ixBusinessItem"):SetItem(itemTable)
+			self.itemList:Add("wsBusinessItem"):SetItem(itemTable)
 		end
 	end
 end
@@ -245,17 +245,17 @@ end
 function PANEL:GetPageItems()
 end
 
-vgui.Register("ixBusiness", PANEL, "EditablePanel")
+vgui.Register("wsBusiness", PANEL, "EditablePanel")
 
 DEFINE_BASECLASS("DFrame")
 PANEL = {}
 
 function PANEL:Init()
-	if (IsValid(ix.gui.checkout)) then
-		ix.gui.checkout:Remove()
+	if (IsValid(ws.gui.checkout)) then
+		ws.gui.checkout:Remove()
 	end
 
-	ix.gui.checkout = self
+	ws.gui.checkout = self
 
 	self:SetTitle(L("checkout", 0))
 	self:SetSize(ScrW() / 4 > 200 and ScrW() / 4 or ScrW() / 2, ScrH() / 2 > 300 and ScrH() / 2 or ScrH())
@@ -291,7 +291,7 @@ function PANEL:Init()
 			return surface.PlaySound("buttons/button11.wav")
 		end
 
-		net.Start("ixBusinessBuy")
+		net.Start("wsBusinessBuy")
 		net.WriteUInt(table.Count(self.itemData), 8)
 
 		for k, v in pairs(self.itemData) do
@@ -307,9 +307,9 @@ function PANEL:Init()
 		self.buy:Remove()
 		self:ShowCloseButton(false)
 
-		if (IsValid(ix.gui.business)) then
-			ix.gui.business.cart = {}
-			ix.gui.business.checkout:SetText(L("checkout", 0))
+		if (IsValid(ws.gui.business)) then
+			ws.gui.business.cart = {}
+			ws.gui.business.checkout:SetText(L("checkout", 0))
 		end
 
 		self.text = self:Add("DLabel")
@@ -317,9 +317,9 @@ function PANEL:Init()
 		self.text:SetContentAlignment(5)
 		self.text:SetTextColor(color_white)
 		self.text:SetText(L"purchasing")
-		self.text:SetFont("ixMediumFont")
+		self.text:SetFont("wsMediumFont")
 
-		net.Receive("ixBusinessResponse", function()
+		net.Receive("wsBusinessResponse", function()
 			if (IsValid(self)) then
 				self.text:SetText(L"buyGood")
 				self.done = true
@@ -345,14 +345,14 @@ function PANEL:Init()
 	self.data:DockMargin(0, 0, 0, 4)
 
 	self.current = self.data:Add("DLabel")
-	self.current:SetFont("ixSmallFont")
+	self.current:SetFont("wsSmallFont")
 	self.current:SetContentAlignment(6)
 	self.current:SetTextColor(color_white)
 	self.current:Dock(TOP)
 	self.current:SetTextInset(4, 0)
 
 	self.total = self.data:Add("DLabel")
-	self.total:SetFont("ixSmallFont")
+	self.total:SetFont("wsSmallFont")
 	self.total:SetContentAlignment(6)
 	self.total:SetTextColor(color_white)
 	self.total:Dock(TOP)
@@ -368,7 +368,7 @@ function PANEL:Init()
 	end
 
 	self.final = self.data:Add("DLabel")
-	self.final:SetFont("ixSmallFont")
+	self.final:SetFont("wsSmallFont")
 	self.final:SetContentAlignment(6)
 	self.final:SetTextColor(color_white)
 	self.final:Dock(TOP)
@@ -376,7 +376,7 @@ function PANEL:Init()
 
 	self.finalGlow = self.final:Add("DLabel")
 	self.finalGlow:Dock(FILL)
-	self.finalGlow:SetFont("ixSmallFont")
+	self.finalGlow:SetFont("wsSmallFont")
 	self.finalGlow:SetTextColor(color_white)
 	self.finalGlow:SetContentAlignment(6)
 	self.finalGlow:SetAlpha(0)
@@ -393,7 +393,7 @@ function PANEL:OnQuantityChanged()
 	local valid = 0
 
 	for k, v in pairs(self.itemData) do
-		local itemTable = ix.item.list[k]
+		local itemTable = ws.item.list[k]
 
 		if (itemTable and v > 0) then
 			valid = valid + 1
@@ -401,15 +401,15 @@ function PANEL:OnQuantityChanged()
 		end
 	end
 
-	self.current:SetText(L"currentMoney" .. ix.currency.Get(money))
-	self.total:SetText("- " .. ix.currency.Get(price))
-	self.final:SetText(L"moneyLeft" .. ix.currency.Get(money - price))
+	self.current:SetText(L"currentMoney" .. ws.currency.Get(money))
+	self.total:SetText("- " .. ws.currency.Get(price))
+	self.final:SetText(L"moneyLeft" .. ws.currency.Get(money - price))
 	self.final:SetTextColor((money - price) >= 0 and Color(46, 204, 113) or Color(217, 30, 24))
 
 	self.preventBuy = (money - price) < 0 or valid == 0
 
-	if (IsValid(ix.gui.business)) then
-		ix.gui.business.checkout:SetText(L("checkout", ix.gui.business:GetCartCount()))
+	if (IsValid(ws.gui.business)) then
+		ws.gui.business.checkout:SetText(L("checkout", ws.gui.business:GetCartCount()))
 	end
 end
 
@@ -417,7 +417,7 @@ function PANEL:SetCart(items)
 	self.itemData = items
 
 	for k, v in SortedPairs(items) do
-		local itemTable = ix.item.list[k]
+		local itemTable = ws.item.list[k]
 
 		if (itemTable) then
 			local slot = self.items:Add("DPanel")
@@ -433,11 +433,11 @@ function PANEL:SetCart(items)
 
 			slot.name = slot:Add("DLabel")
 			slot.name:SetPos(40, 2)
-			slot.name:SetFont("ixChatFont")
+			slot.name:SetFont("wsChatFont")
 			slot.name:SetText(string.format(
 				"%s (%s)",
 				L(itemTable.GetName and itemTable:GetName() or L(itemTable.name)),
-				itemTable.price and ix.currency.Get(itemTable.price) or L"free":utf8upper()
+				itemTable.price and ws.currency.Get(itemTable.price) or L"free":utf8upper()
 			))
 			slot.name:SetTextColor(color_white)
 			slot.name:SizeToContents()
@@ -451,7 +451,7 @@ function PANEL:SetCart(items)
 			slot.quantity:SetContentAlignment(5)
 			slot.quantity:SetNumeric(true)
 			slot.quantity:SetText(v)
-			slot.quantity:SetFont("ixChatFont")
+			slot.quantity:SetFont("wsChatFont")
 			slot.quantity.OnTextChanged = function(this)
 				local value = tonumber(this:GetValue())
 
@@ -492,12 +492,12 @@ function PANEL:Think()
 	BaseClass.Think(self)
 end
 
-vgui.Register("ixBusinessCheckout", PANEL, "DFrame")
+vgui.Register("wsBusinessCheckout", PANEL, "DFrame")
 
-hook.Add("CreateMenuButtons", "ixBusiness", function(tabs)
+hook.Add("CreateMenuButtons", "wsBusiness", function(tabs)
 	if (hook.Run("BuildBusinessMenu") != false) then
 		tabs["business"] = function(container)
-			container:Add("ixBusiness")
+			container:Add("wsBusiness")
 		end
 	end
 end)

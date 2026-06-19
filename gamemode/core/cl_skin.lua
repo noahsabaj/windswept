@@ -8,9 +8,9 @@ local defaultBackgroundColor = Color(30, 30, 30, 200)
 local SKIN = {}
 derma.DefineSkin("helix", "The base skin for the Helix framework.", SKIN)
 
-SKIN.fontCategory = "ixMediumLightFont"
-SKIN.fontCategoryBlur = "ixMediumLightBlurFont"
-SKIN.fontSegmentedProgress = "ixMediumLightFont"
+SKIN.fontCategory = "wsMediumLightFont"
+SKIN.fontCategoryBlur = "wsMediumLightBlurFont"
+SKIN.fontSegmentedProgress = "wsMediumLightFont"
 
 SKIN.Colours = table.Copy(derma.SkinList.Default.Colours)
 
@@ -41,14 +41,14 @@ function SKIN.tex.Menu_Strip(x, y, width, height, color)
 	surface.SetDrawColor(0, 0, 0, 200)
 	surface.DrawRect(x, y, width, height)
 
-	surface.SetDrawColor(ColorAlpha(color or ix.config.Get("color"), 175))
+	surface.SetDrawColor(ColorAlpha(color or ws.config.Get("color"), 175))
 	surface.SetTexture(gradient)
 	surface.DrawTexturedRect(x, y, width, height)
 
 	surface.SetTextColor(color_white)
 end
 
-hook.Add("ColorSchemeChanged", "ixSkin", function(color)
+hook.Add("ColorSchemeChanged", "wsSkin", function(color)
 	SKIN.Colours.Area.Background = color
 end)
 
@@ -56,7 +56,7 @@ function SKIN:DrawHelixCurved(x, y, radius, segments, barHeight, fraction, color
 	radius = radius or math.min(ScreenScale(72), 128) * 2
 	segments = segments or 76
 	barHeight = barHeight or 64
-	color = color or ix.config.Get("color")
+	color = color or ws.config.Get("color")
 	altColor = altColor or Color(color.r * 0.5, color.g * 0.5, color.b * 0.5, color.a)
 	fraction = fraction or 1
 
@@ -80,7 +80,7 @@ end
 
 function SKIN:DrawHelix(x, y, width, height, segments, color, fraction, speed)
 	segments = segments or width * 0.05
-	color = color or ix.config.Get("color")
+	color = color or ws.config.Get("color")
 	fraction = fraction or 0.25
 	speed = speed or 1
 
@@ -102,14 +102,14 @@ end
 
 function SKIN:PaintFrame(panel)
 	if (!panel.bNoBackgroundBlur) then
-		ix.util.DrawBlur(panel, 10)
+		ws.util.DrawBlur(panel, 10)
 	end
 
 	surface.SetDrawColor(30, 30, 30, 150)
 	surface.DrawRect(0, 0, panel:GetWide(), panel:GetTall())
 
 	if (panel:GetTitle() != "" or panel.btnClose:IsVisible()) then
-		surface.SetDrawColor(ix.config.Get("color"))
+		surface.SetDrawColor(ws.config.Get("color"))
 		surface.DrawRect(0, 0, panel:GetWide(), 24)
 
 		if (panel.bHighlighted) then
@@ -117,19 +117,19 @@ function SKIN:PaintFrame(panel)
 		end
 	end
 
-	surface.SetDrawColor(ix.config.Get("color"))
+	surface.SetDrawColor(ws.config.Get("color"))
 	surface.DrawOutlinedRect(0, 0, panel:GetWide(), panel:GetTall())
 end
 
 function SKIN:PaintBaseFrame(panel, width, height)
 	if (!panel.bNoBackgroundBlur) then
-		ix.util.DrawBlur(panel, 10)
+		ws.util.DrawBlur(panel, 10)
 	end
 
 	surface.SetDrawColor(30, 30, 30, 150)
 	surface.DrawRect(0, 0, width, height)
 
-	surface.SetDrawColor(ix.config.Get("color"))
+	surface.SetDrawColor(ws.config.Get("color"))
 	surface.DrawOutlinedRect(0, 0, width, height)
 end
 
@@ -144,7 +144,7 @@ end
 function SKIN:DrawCharacterStatusBackground(panel, fraction)
 	surface.SetDrawColor(0, 0, 0, fraction * 100)
 	surface.DrawRect(0, 0, ScrW(), ScrH())
-	ix.util.DrawBlurAt(0, 0, ScrW(), ScrH(), 5, nil, fraction * 255)
+	ws.util.DrawBlurAt(0, 0, ScrW(), ScrH(), 5, nil, fraction * 255)
 end
 
 function SKIN:PaintPanel(panel)
@@ -168,7 +168,7 @@ function SKIN:PaintMenuBackground(panel, width, height, alphaFraction)
 	surface.SetTexture(gradient)
 	surface.DrawTexturedRect(0, 0, width, height)
 
-	ix.util.DrawBlur(panel, alphaFraction * 15, nil, 200)
+	ws.util.DrawBlur(panel, alphaFraction * 15, nil, 200)
 end
 
 function SKIN:PaintPlaceholderPanel(panel, width, height, barWidth, padding)
@@ -186,7 +186,7 @@ end
 
 function SKIN:PaintCategoryPanel(panel, text, color)
 	text = text or ""
-	color = color or ix.config.Get("color")
+	color = color or ws.config.Get("color")
 
 	surface.SetFont(self.fontCategoryBlur)
 
@@ -243,14 +243,14 @@ function SKIN:PaintButton(panel)
 end
 
 function SKIN:PaintEntityInfoBackground(panel, width, height)
-	ix.util.DrawBlur(panel, 1)
+	ws.util.DrawBlur(panel, 1)
 
 	surface.SetDrawColor(self.Colours.DarkerBackground)
 	surface.DrawRect(0, 0, width, height)
 end
 
 function SKIN:PaintTooltipBackground(panel, width, height)
-	ix.util.DrawBlur(panel, 1)
+	ws.util.DrawBlur(panel, 1)
 
 	surface.SetDrawColor(self.Colours.DarkerBackground)
 	surface.DrawRect(0, 0, width, height)
@@ -297,7 +297,7 @@ function SKIN:PaintCharacterLoadBackground(panel, width, height)
 end
 
 function SKIN:PaintCharacterTransitionOverlay(panel, x, y, width, height, color)
-	color = color or ix.config.Get("color")
+	color = color or ws.config.Get("color")
 
 	surface.SetDrawColor(color)
 	surface.DrawRect(x, y, width, height)
@@ -375,18 +375,18 @@ function SKIN:PaintComboBox(panel, width, height)
 end
 
 function SKIN:PaintComboDownArrow(panel, width, height)
-	surface.SetFont("ixIconsSmall")
+	surface.SetFont("wsIconsSmall")
 
 	local textWidth, textHeight = surface.GetTextSize("r")
 	local alpha = (panel.ComboBox:IsMenuOpen() or panel.ComboBox.Hovered) and 200 or 100
 
-	surface.SetTextColor(ColorAlpha(ix.config.Get("color"), alpha))
+	surface.SetTextColor(ColorAlpha(ws.config.Get("color"), alpha))
 	surface.SetTextPos(width * 0.5 - textWidth * 0.5, height * 0.5 - textHeight * 0.5)
 	surface.DrawText("r")
 end
 
 function SKIN:PaintMenu(panel, width, height)
-	ix.util.DrawBlur(panel)
+	ws.util.DrawBlur(panel)
 
 	surface.SetDrawColor(30, 30, 30, 150)
 	surface.DrawRect(0, 0, width, height)
@@ -394,7 +394,7 @@ end
 
 function SKIN:PaintMenuOption(panel, width, height)
 	if (panel.m_bBackground and (panel.Hovered or panel.Highlight)) then
-		self:DrawImportantBackground(0, 0, width, height, ix.config.Get("color"))
+		self:DrawImportantBackground(0, 0, width, height, ws.config.Get("color"))
 	end
 end
 
@@ -408,7 +408,7 @@ end
 
 function SKIN:PaintChatboxTabButton(panel, width, height)
 	if (panel:GetActive()) then
-		surface.SetDrawColor(ix.config.Get("color", Color(75, 119, 190, 255)))
+		surface.SetDrawColor(ws.config.Get("color", Color(75, 119, 190, 255)))
 		surface.DrawRect(0, 0, width, height)
 	else
 		surface.SetDrawColor(0, 0, 0, 100)
@@ -448,10 +448,10 @@ function SKIN:PaintChatboxTabs(panel, width, height, alpha)
 end
 
 function SKIN:PaintChatboxBackground(panel, width, height)
-	ix.util.DrawBlur(panel, 10)
+	ws.util.DrawBlur(panel, 10)
 
 	if (panel:GetActive()) then
-		surface.SetDrawColor(ColorAlpha(ix.config.Get("color"), 120))
+		surface.SetDrawColor(ColorAlpha(ws.config.Get("color"), 120))
 		surface.SetTexture(gradientUp)
 		surface.DrawTexturedRect(0, panel.tabs.buttons:GetTall(), width, height * 0.25)
 	end
@@ -464,14 +464,14 @@ function SKIN:PaintChatboxEntry(panel, width, height)
 	surface.SetDrawColor(0, 0, 0, 66)
 	surface.DrawRect(0, 0, width, height)
 
-	panel:DrawTextEntryText(color_white, ix.config.Get("color"), color_white)
+	panel:DrawTextEntryText(color_white, ws.config.Get("color"), color_white)
 
 	surface.SetDrawColor(color_black)
 	surface.DrawOutlinedRect(0, 0, width, height)
 end
 
 function SKIN:DrawChatboxPreviewBox(x, y, text, color)
-	color = color or ix.config.Get("color")
+	color = color or ws.config.Get("color")
 
 	local textWidth, textHeight = surface.GetTextSize(text)
 	local width, height = textWidth + 8, textHeight + 8
@@ -508,7 +508,7 @@ end
 function SKIN:PaintChatboxAutocompleteEntry(panel, width, height)
 	-- selected background
 	if (panel.highlightAlpha > 0) then
-		self:DrawImportantBackground(0, 0, width, height, ColorAlpha(ix.config.Get("color"), panel.highlightAlpha * 66))
+		self:DrawImportantBackground(0, 0, width, height, ColorAlpha(ws.config.Get("color"), panel.highlightAlpha * 66))
 	end
 
 	-- lower border
@@ -559,7 +559,7 @@ function SKIN:PaintDeathScreenBackground(panel, width, height, progress)
 end
 
 function SKIN:PaintDeathScreen(panel, width, height, progress)
-	ix.bar.DrawAction()
+	ws.bar.DrawAction()
 end
 
 do

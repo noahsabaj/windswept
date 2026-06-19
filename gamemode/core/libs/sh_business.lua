@@ -1,24 +1,24 @@
 -- DISABLED: Physical currency system
 -- Business menu spawns items from thin air - not compatible with physical economy
 -- Items should come from vendors, crafting, or other players
-ix.business = ix.business or {}
-ix.business.disabled = true
+ws.business = ws.business or {}
+ws.business.disabled = true
 
 if (SERVER) then
-	util.AddNetworkString("ixBusinessBuy")
-	util.AddNetworkString("ixBusinessResponse")
-	util.AddNetworkString("ixShipmentUse")
-	util.AddNetworkString("ixShipmentOpen")
-	util.AddNetworkString("ixShipmentClose")
+	util.AddNetworkString("wsBusinessBuy")
+	util.AddNetworkString("wsBusinessResponse")
+	util.AddNetworkString("wsShipmentUse")
+	util.AddNetworkString("wsShipmentOpen")
+	util.AddNetworkString("wsShipmentClose")
 
-	net.Receive("ixBusinessBuy", function(length, client)
+	net.Receive("wsBusinessBuy", function(length, client)
 		-- Physical currency system: business menu disabled
-		if (ix.business.disabled) then
+		if (ws.business.disabled) then
 			client:NotifyLocalized("businessDisabled")
 			return
 		end
 
-		if (client.ixNextBusiness and client.ixNextBusiness > CurTime()) then
+		if (client.wsNextBusiness and client.wsNextBusiness > CurTime()) then
 			client:NotifyLocalized("businessTooFast")
 			return
 		end
@@ -43,7 +43,7 @@ if (SERVER) then
 		local cost = 0
 
 		for k, v in pairs(items) do
-			local itemTable = ix.item.list[k]
+			local itemTable = ws.item.list[k]
 
 			if (itemTable and hook.Run("CanPlayerUseBusiness", client, k) != false) then
 				local amount = math.Clamp(tonumber(v) or 0, 0, 10)
@@ -76,25 +76,25 @@ if (SERVER) then
 			table.insert(shipments, entity)
 			char:SetVar("charEnts", shipments, true)
 
-			net.Start("ixBusinessResponse")
+			net.Start("wsBusinessResponse")
 			net.Send(client)
 
 			hook.Run("CreateShipment", client, entity)
 
-			client.ixNextBusiness = CurTime() + 0.5
+			client.wsNextBusiness = CurTime() + 0.5
 		end
 	end)
 
-	net.Receive("ixShipmentUse", function(length, client)
+	net.Receive("wsShipmentUse", function(length, client)
 		local uniqueID = net.ReadString()
 		local drop = net.ReadBool()
 
-		local entity = client.ixShipment
-		local itemTable = ix.item.list[uniqueID]
+		local entity = client.wsShipment
+		local itemTable = ws.item.list[uniqueID]
 
 		if (itemTable and IsValid(entity)) then
 			if (entity:GetPos():Distance(client:GetPos()) > 128) then
-				client.ixShipment = nil
+				client.wsShipment = nil
 
 				return
 			end
@@ -107,10 +107,10 @@ if (SERVER) then
 				end
 
 				if (drop) then
-					ix.item.Spawn(uniqueID, entity:GetPos() + Vector(0, 0, 16), function(item, itemEntity)
+					ws.item.Spawn(uniqueID, entity:GetPos() + Vector(0, 0, 16), function(item, itemEntity)
 						if (IsValid(client)) then
-							itemEntity.ixSteamID = client:SteamID()
-							itemEntity.ixCharID = client:GetCharacter():GetID()
+							itemEntity.wsSteamID = client:SteamID()
+							itemEntity.wsCharID = client:GetCharacter():GetID()
 						end
 					end)
 				else
@@ -133,20 +133,20 @@ if (SERVER) then
 		end
 	end)
 
-	net.Receive("ixShipmentClose", function(length, client)
-		local entity = client.ixShipment
+	net.Receive("wsShipmentClose", function(length, client)
+		local entity = client.wsShipment
 
 		if (IsValid(entity)) then
-			entity.ixInteractionDirty = false
-			client.ixShipment = nil
+			entity.wsInteractionDirty = false
+			client.wsShipment = nil
 		end
 	end)
 else
-	net.Receive("ixShipmentOpen", function()
+	net.Receive("wsShipmentOpen", function()
 		local entity = net.ReadEntity()
 		local items = net.ReadTable()
 
-		ix.gui.shipment = vgui.Create("ixShipment")
-		ix.gui.shipment:SetItems(entity, items)
+		ws.gui.shipment = vgui.Create("wsShipment")
+		ws.gui.shipment:SetItems(entity, items)
 	end)
 end

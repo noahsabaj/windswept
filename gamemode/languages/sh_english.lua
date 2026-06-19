@@ -168,6 +168,7 @@ LANGUAGE = {
 	belowMinMoneyDrop = "You cannot drop less than %s.",
 	businessPurchase = "You purchased %s for %s.",
 	businessSell = "You sold %s for %s.",
+	businessSellNoRoom = "You don't have room to carry the payment.",
 	businessTooFast = "Please wait before purchasing another item!",
 	cChangeModel = "%s changed %s's model to %s.",
 	cChangeName = "%s changed %s's name to %s.",

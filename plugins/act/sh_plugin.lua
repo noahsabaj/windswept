@@ -3,7 +3,7 @@
 Provides players the ability to perform animations.
 
 ]]
--- @module ix.act
+-- @module ws.act
 
 local PLUGIN = PLUGIN
 
@@ -11,8 +11,8 @@ PLUGIN.name = "Player Acts"
 PLUGIN.description = "Adds animations that can be performed by certain models."
 PLUGIN.author = "`impulse"
 
-ix.act = ix.act or {}
-ix.act.stored = ix.act.stored or {}
+ws.act = ws.act or {}
+ws.act.stored = ws.act.stored or {}
 
 CAMI.RegisterPrivilege({
 	Name = "Helix - Player Acts",
@@ -24,8 +24,8 @@ CAMI.RegisterPrivilege({
 -- @string name Name of the animation (in CamelCase)
 -- @string modelClass Model class to add this animation to
 -- @tab data An `ActInfoStructure` table describing the animation
-function ix.act.Register(name, modelClass, data)
-	ix.act.stored[name] = ix.act.stored[name] or {} -- might be adding onto an existing act
+function ws.act.Register(name, modelClass, data)
+	ws.act.stored[name] = ws.act.stored[name] or {} -- might be adding onto an existing act
 
 	if (!data.sequence) then
 		return ErrorNoHalt(string.format(
@@ -51,24 +51,24 @@ function ix.act.Register(name, modelClass, data)
 
 	if (istable(modelClass)) then
 		for _, v in ipairs(modelClass) do
-			ix.act.stored[name][v] = data
+			ws.act.stored[name][v] = data
 		end
 	else
-		ix.act.stored[name][modelClass] = data
+		ws.act.stored[name][modelClass] = data
 	end
 end
 
 --- Removes a sequence from being performable if it has been previously registered.
 -- @realm shared
 -- @string name Name of the animation
-function ix.act.Remove(name)
-	ix.act.stored[name] = nil
-	ix.command.list["Act" .. name] = nil
+function ws.act.Remove(name)
+	ws.act.stored[name] = nil
+	ws.command.list["Act" .. name] = nil
 end
 
-ix.util.Include("sh_definitions.lua")
-ix.util.Include("sv_hooks.lua")
-ix.util.Include("cl_hooks.lua")
+ws.util.Include("sh_definitions.lua")
+ws.util.Include("sv_hooks.lua")
+ws.util.Include("cl_hooks.lua")
 
 function PLUGIN:InitializedPlugins()
 	hook.Run("SetupActs")
@@ -76,16 +76,16 @@ function PLUGIN:InitializedPlugins()
 end
 
 function PLUGIN:ExitAct(client)
-	client.ixUntimedSequence = nil
+	client.wsUntimedSequence = nil
 	client:SetNetVar("actEnterAngle")
 
-	net.Start("ixActLeave")
+	net.Start("wsActLeave")
 	net.Send(client)
 end
 
 function PLUGIN:PostSetupActs()
 	-- create chat commands for all stored acts
-	for act, classes in pairs(ix.act.stored) do
+	for act, classes in pairs(ws.act.stored) do
 		local variants = 1
 		local COMMAND = {
 			privilege = "Player Acts"
@@ -100,7 +100,7 @@ function PLUGIN:PostSetupActs()
 
 		-- setup command arguments if there are variants for this act
 		if (variants > 1) then
-			COMMAND.arguments = bit.bor(ix.type.number, ix.type.optional)
+			COMMAND.arguments = bit.bor(ws.type.number, ws.type.optional)
 			COMMAND.argumentNames = {"variant (1-" .. variants .. ")"}
 		end
 
@@ -118,7 +118,7 @@ function PLUGIN:PostSetupActs()
 				return false
 			end
 
-			local modelClass = ix.anim.GetModelClass(client:GetModel())
+			local modelClass = ws.anim.GetModelClass(client:GetModel())
 
 			if (!classes[modelClass]) then
 				return false, "modelNoSeq"
@@ -134,7 +134,7 @@ function PLUGIN:PostSetupActs()
 				return "@notNow"
 			end
 
-			local modelClass = ix.anim.GetModelClass(client:GetModel())
+			local modelClass = ws.anim.GetModelClass(client:GetModel())
 			local bCanEnter, error = PLUGIN:CanPlayerEnterAct(client, modelClass, variant, classes)
 
 			if (!bCanEnter) then
@@ -158,7 +158,7 @@ function PLUGIN:PostSetupActs()
 
 				-- position offset
 				if (mainSequence.offset) then
-					client.ixOldPosition = client:GetPos()
+					client.wsOldPosition = client:GetPos()
 					client:SetPos(client:GetPos() + mainSequence.offset(client))
 				end
 
@@ -178,7 +178,7 @@ function PLUGIN:PostSetupActs()
 
 			client:ForceSequence(startSequence, function()
 				-- we've finished the start sequence
-				client.ixUntimedSequence = data.untimed -- client can exit after the start sequence finishes playing
+				client.wsUntimedSequence = data.untimed -- client can exit after the start sequence finishes playing
 
 				local duration = client:ForceSequence(mainSequence, function()
 					-- we've stopped playing the main sequence (either duration expired or user cancelled the act)
@@ -210,21 +210,21 @@ function PLUGIN:PostSetupActs()
 				end
 			end, startDuration, nil)
 
-			net.Start("ixActEnter")
+			net.Start("wsActEnter")
 				net.WriteBool(data.idle or false)
 			net.Send(client)
 
-			client.ixNextAct = CurTime() + 4
+			client.wsNextAct = CurTime() + 4
 		end
 
-		ix.command.Add("Act" .. act, COMMAND)
+		ws.command.Add("Act" .. act, COMMAND)
 	end
 
 	-- setup exit act command
 	local COMMAND = {
 		privilege = "Player Acts",
 		OnRun = function(command, client)
-			if (client.ixUntimedSequence) then
+			if (client.wsUntimedSequence) then
 				client:LeaveSequence()
 			end
 		end
@@ -237,7 +237,7 @@ function PLUGIN:PostSetupActs()
 		end
 	end
 
-	ix.command.Add("ExitAct", COMMAND)
+	ws.command.Add("ExitAct", COMMAND)
 end
 
 function PLUGIN:UpdateAnimation(client, moveData)

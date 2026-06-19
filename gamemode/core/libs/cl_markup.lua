@@ -1,6 +1,6 @@
 
 -- luacheck: ignore
-ix.markup = ix.markup or {}
+ws.markup = ws.markup or {}
 
 -- Temporary information used when building text frames.
 local colour_stack = { {r=255,g=255,b=255,a=255} }
@@ -260,7 +260,7 @@ end
           width.
    Usage: markup.Parse("<font=Default>changed font</font>\n<colour=255,0,255,255>changed colour</colour>")
 ]]
-function ix.markup.Parse(ml, maxwidth)
+function ws.markup.Parse(ml, maxwidth)
 
 	ml = utf8.force(ml)
 

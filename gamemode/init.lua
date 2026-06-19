@@ -4,8 +4,11 @@ resource.AddWorkshop("1267236756")
 
 -- Include features from the Sandbox gamemode.
 DeriveGamemode("sandbox")
--- Define a global shared table to store Helix information.
-ix = ix or {util = {}, meta = {}}
+-- Define the global shared table. The Windswept framework uses `ws`; `ix` is a
+-- temporary backwards-compat alias kept during the ix->ws transition (removed in
+-- the final phase). Both names point at the SAME table.
+ws = ws or {util = {}, meta = {}}
+ix = ws
 
 -- Send the following files to players.
 AddCSLuaFile("cl_init.lua")

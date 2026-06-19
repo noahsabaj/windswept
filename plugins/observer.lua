@@ -8,7 +8,7 @@ CAMI.RegisterPrivilege({
 	MinAccess = "admin"
 })
 
-ix.option.Add("observerTeleportBack", ix.type.bool, true, {
+ws.option.Add("observerTeleportBack", ws.type.bool, true, {
 	bNetworked = true,
 	category = "observer",
 	hidden = function()
@@ -17,7 +17,7 @@ ix.option.Add("observerTeleportBack", ix.type.bool, true, {
 })
 
 if (CLIENT) then
-	ix.option.Add("observerESP", ix.type.bool, true, {
+	ws.option.Add("observerESP", ws.type.bool, true, {
 		category = "observer",
 		hidden = function()
 			return !CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Observer", nil)
@@ -31,7 +31,7 @@ if (CLIENT) then
 	function PLUGIN:HUDPaint()
 		local client = LocalPlayer()
 
-		if (ix.option.Get("observerESP", true) and client:GetMoveType() == MOVETYPE_NOCLIP and
+		if (ws.option.Get("observerESP", true) and client:GetMoveType() == MOVETYPE_NOCLIP and
 			!client:InVehicle() and CAMI.PlayerHasAccess(client, "Helix - Observer", nil)) then
 			local scrW, scrH = ScrW(), ScrH()
 
@@ -55,7 +55,7 @@ if (CLIENT) then
 				local aimAlpha = (1 - factor * 1.5) * 80
 
 				surface.SetDrawColor(teamColor.r, teamColor.g, teamColor.b, alpha)
-				surface.SetFont("ixGenericFont")
+				surface.SetFont("wsGenericFont")
 
 				local text = v:Name()
 				local textWidth, textHeight = surface.GetTextSize(text)
@@ -64,7 +64,7 @@ if (CLIENT) then
 				surface.DrawRect(x - size / 2, y - size / 2, size, size)
 
 				-- we can assume that if we're using cheap blur, we'd want to save some fps here
-				if (!ix.option.Get("cheapBlur", false)) then
+				if (!ws.option.Get("cheapBlur", false)) then
 					local data = {}
 					data.start = client:EyePos()
 					data.endpos = v:EyePos()
@@ -86,7 +86,7 @@ if (CLIENT) then
 				surface.SetDrawColor(teamColor.r * 1.6, teamColor.g * 1.6, teamColor.b * 1.6, alpha)
 				surface.DrawRect(x - barWidth / 2, y - size - textHeight / 2, barWidth, barHeight)
 
-				ix.util.DrawText(text, x, y - size, ColorAlpha(teamColor, alpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, nil, alpha)
+				ws.util.DrawText(text, x, y - size, ColorAlpha(teamColor, alpha), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, nil, alpha)
 			end
 		end
 	end
@@ -111,12 +111,12 @@ if (CLIENT) then
 		end
 	end
 else
-	ix.log.AddType("observerEnter", function(client, ...)
+	ws.log.AddType("observerEnter", function(client, ...)
 		return string.format("%s entered observer.", client:Name())
 	end)
 
-	ix.log.AddType("observerExit", function(client, ...)
-		if (ix.option.Get(client, "observerTeleportBack", true)) then
+	ws.log.AddType("observerExit", function(client, ...)
+		if (ws.option.Get(client, "observerTeleportBack", true)) then
 			return string.format("%s exited observer.", client:Name())
 		else
 			return string.format("%s exited observer at their location.", client:Name())
@@ -138,7 +138,7 @@ else
 	function PLUGIN:PlayerNoClip(client, state)
 		if (hook.Run("CanPlayerEnterObserver", client)) then
 			if (state) then
-				client.ixObsData = {client:GetPos(), client:EyeAngles()}
+				client.wsObsData = {client:GetPos(), client:EyeAngles()}
 
 				-- Hide them so they are not visible.
 				client:SetNoDraw(true)
@@ -150,10 +150,10 @@ else
 
 				hook.Run("OnPlayerObserve", client, state)
 			else
-				if (client.ixObsData) then
+				if (client.wsObsData) then
 					-- Move they player back if they want.
-					if (ix.option.Get(client, "observerTeleportBack", true)) then
-						local position, angles = client.ixObsData[1], client.ixObsData[2]
+					if (ws.option.Get(client, "observerTeleportBack", true)) then
+						local position, angles = client.wsObsData[1], client.wsObsData[2]
 
 						-- Do it the next frame since the player can not be moved right now.
 						timer.Simple(0, function()
@@ -163,7 +163,7 @@ else
 						end)
 					end
 
-					client.ixObsData = nil
+					client.wsObsData = nil
 				end
 
 				-- Make the player visible again.
@@ -183,9 +183,9 @@ else
 
 	function PLUGIN:OnPlayerObserve(client, state)
 		if (state) then
-			ix.log.Add(client, "observerEnter")
+			ws.log.Add(client, "observerEnter")
 		else
-			ix.log.Add(client, "observerExit")
+			ws.log.Add(client, "observerExit")
 		end
 	end
 end

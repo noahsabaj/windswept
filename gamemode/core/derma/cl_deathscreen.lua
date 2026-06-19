@@ -9,19 +9,19 @@ function PANEL:Init()
 
 	local text = string.utf8upper(L("youreDead"))
 
-	surface.SetFont("ixMenuButtonHugeFont")
+	surface.SetFont("wsMenuButtonHugeFont")
 	local textW, textH = surface.GetTextSize(text)
 
 	self.label = self:Add("DLabel")
 	self.label:SetPaintedManually(true)
 	self.label:SetPos(scrW * 0.5 - textW * 0.5, scrH * 0.5 - textH * 0.5)
-	self.label:SetFont("ixMenuButtonHugeFont")
+	self.label:SetFont("wsMenuButtonHugeFont")
 	self.label:SetText(text)
 	self.label:SizeToContents()
 
 	self.progress = 0
 
-	self:CreateAnimation(ix.config.Get("spawnTime", 5), {
+	self:CreateAnimation(ws.config.Get("spawnTime", 5), {
 		bIgnoreConfig = true,
 		target = {progress = 1},
 
@@ -61,4 +61,4 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintDeathScreen", self, width, height, self.progress)
 end
 
-vgui.Register("ixDeathScreen", PANEL, "Panel")
+vgui.Register("wsDeathScreen", PANEL, "Panel")

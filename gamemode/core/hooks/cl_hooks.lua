@@ -5,7 +5,7 @@ end
 
 function GM:ScoreboardShow()
 	if (LocalPlayer():GetCharacter()) then
-		vgui.Create("ixMenu")
+		vgui.Create("wsMenu")
 	end
 end
 
@@ -34,76 +34,76 @@ function GM:LoadFonts(font, genericFont)
 		weight = 400
 	})
 
-	surface.CreateFont("ixTitleFont", {
+	surface.CreateFont("wsTitleFont", {
 		font = font,
 		size = ScreenScale(30),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixSubTitleFont", {
+	surface.CreateFont("wsSubTitleFont", {
 		font = font,
 		size = ScreenScale(16),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixMenuMiniFont", {
+	surface.CreateFont("wsMenuMiniFont", {
 		font = "Roboto",
 		size = math.max(ScreenScale(4), 18),
 		weight = 300,
 	})
 
-	surface.CreateFont("ixMenuButtonFont", {
+	surface.CreateFont("wsMenuButtonFont", {
 		font = "Roboto Th",
 		size = ScreenScale(14),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixMenuButtonFontSmall", {
+	surface.CreateFont("wsMenuButtonFontSmall", {
 		font = "Roboto Th",
 		size = ScreenScale(10),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixMenuButtonFontThick", {
+	surface.CreateFont("wsMenuButtonFontThick", {
 		font = "Roboto",
 		size = ScreenScale(14),
 		extended = true,
 		weight = 300
 	})
 
-	surface.CreateFont("ixMenuButtonLabelFont", {
+	surface.CreateFont("wsMenuButtonLabelFont", {
 		font = "Roboto Th",
 		size = 28,
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixMenuButtonHugeFont", {
+	surface.CreateFont("wsMenuButtonHugeFont", {
 		font = "Roboto Th",
 		size = ScreenScale(24),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixToolTipText", {
+	surface.CreateFont("wsToolTipText", {
 		font = font,
 		size = 20,
 		extended = true,
 		weight = 500
 	})
 
-	surface.CreateFont("ixMonoSmallFont", {
+	surface.CreateFont("wsMonoSmallFont", {
 		font = "Consolas",
 		size = 12,
 		extended = true,
 		weight = 800
 	})
 
-	surface.CreateFont("ixMonoMediumFont", {
+	surface.CreateFont("wsMonoMediumFont", {
 		font = "Consolas",
 		size = 22,
 		extended = true,
@@ -113,21 +113,21 @@ function GM:LoadFonts(font, genericFont)
 	-- The more readable font.
 	font = genericFont
 
-	surface.CreateFont("ixBigFont", {
+	surface.CreateFont("wsBigFont", {
 		font = font,
 		size = 36,
 		extended = true,
 		weight = 1000
 	})
 
-	surface.CreateFont("ixMediumFont", {
+	surface.CreateFont("wsMediumFont", {
 		font = font,
 		size = 25,
 		extended = true,
 		weight = 1000
 	})
 
-	surface.CreateFont("ixNoticeFont", {
+	surface.CreateFont("wsNoticeFont", {
 		font = font,
 		size = math.max(ScreenScale(8), 18),
 		weight = 100,
@@ -135,14 +135,14 @@ function GM:LoadFonts(font, genericFont)
 		antialias = true
 	})
 
-	surface.CreateFont("ixMediumLightFont", {
+	surface.CreateFont("wsMediumLightFont", {
 		font = font,
 		size = 25,
 		extended = true,
 		weight = 200
 	})
 
-	surface.CreateFont("ixMediumLightBlurFont", {
+	surface.CreateFont("wsMediumLightBlurFont", {
 		font = font,
 		size = 25,
 		extended = true,
@@ -150,52 +150,52 @@ function GM:LoadFonts(font, genericFont)
 		blursize = 4
 	})
 
-	surface.CreateFont("ixGenericFont", {
+	surface.CreateFont("wsGenericFont", {
 		font = font,
 		size = 20,
 		extended = true,
 		weight = 1000
 	})
 
-	surface.CreateFont("ixChatFont", {
+	surface.CreateFont("wsChatFont", {
 		font = font,
-		size = math.max(ScreenScale(7), 17) * ix.option.Get("chatFontScale", 1),
+		size = math.max(ScreenScale(7), 17) * ws.option.Get("chatFontScale", 1),
 		extended = true,
 		weight = 600,
 		antialias = true
 	})
 
-	surface.CreateFont("ixChatFontItalics", {
+	surface.CreateFont("wsChatFontItalics", {
 		font = font,
-		size = math.max(ScreenScale(7), 17) * ix.option.Get("chatFontScale", 1),
+		size = math.max(ScreenScale(7), 17) * ws.option.Get("chatFontScale", 1),
 		extended = true,
 		weight = 600,
 		antialias = true,
 		italic = true
 	})
 
-	surface.CreateFont("ixSmallTitleFont", {
+	surface.CreateFont("wsSmallTitleFont", {
 		font = "Roboto Th",
 		size = math.max(ScreenScale(12), 24),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixMinimalTitleFont", {
+	surface.CreateFont("wsMinimalTitleFont", {
 		font = "Roboto",
 		size = math.max(ScreenScale(8), 22),
 		extended = true,
 		weight = 800
 	})
 
-	surface.CreateFont("ixSmallFont", {
+	surface.CreateFont("wsSmallFont", {
 		font = font,
 		size = math.max(ScreenScale(6), 17),
 		extended = true,
 		weight = 500
 	})
 
-	surface.CreateFont("ixItemDescFont", {
+	surface.CreateFont("wsItemDescFont", {
 		font = font,
 		size = math.max(ScreenScale(6), 17),
 		extended = true,
@@ -203,14 +203,14 @@ function GM:LoadFonts(font, genericFont)
 		weight = 500
 	})
 
-	surface.CreateFont("ixSmallBoldFont", {
+	surface.CreateFont("wsSmallBoldFont", {
 		font = font,
 		size = math.max(ScreenScale(8), 20),
 		extended = true,
 		weight = 800
 	})
 
-	surface.CreateFont("ixItemBoldFont", {
+	surface.CreateFont("wsItemBoldFont", {
 		font = font,
 		shadow = true,
 		size = math.max(ScreenScale(8), 20),
@@ -221,14 +221,14 @@ function GM:LoadFonts(font, genericFont)
 	-- Introduction fancy font.
 	font = "Roboto Th"
 
-	surface.CreateFont("ixIntroTitleFont", {
+	surface.CreateFont("wsIntroTitleFont", {
 		font = font,
 		size = math.min(ScreenScale(128), 128),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixIntroTitleBlurFont", {
+	surface.CreateFont("wsIntroTitleBlurFont", {
 		font = font,
 		size = math.min(ScreenScale(128), 128),
 		extended = true,
@@ -236,49 +236,49 @@ function GM:LoadFonts(font, genericFont)
 		blursize = 4
 	})
 
-	surface.CreateFont("ixIntroSubtitleFont", {
+	surface.CreateFont("wsIntroSubtitleFont", {
 		font = font,
 		size = ScreenScale(24),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixIntroSmallFont", {
+	surface.CreateFont("wsIntroSmallFont", {
 		font = font,
 		size = ScreenScale(14),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixIconsSmall", {
+	surface.CreateFont("wsIconsSmall", {
 		font = "fontello",
 		size = 22,
 		extended = true,
 		weight = 500
 	})
 
-	surface.CreateFont("ixSmallTitleIcons", {
+	surface.CreateFont("wsSmallTitleIcons", {
 		font = "fontello",
 		size = math.max(ScreenScale(11), 23),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixIconsMedium", {
+	surface.CreateFont("wsIconsMedium", {
 		font = "fontello",
 		extended = true,
 		size = 28,
 		weight = 500
 	})
 
-	surface.CreateFont("ixIconsMenuButton", {
+	surface.CreateFont("wsIconsMenuButton", {
 		font = "fontello",
 		size = ScreenScale(14),
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ixIconsBig", {
+	surface.CreateFont("wsIconsBig", {
 		font = "fontello",
 		extended = true,
 		size = 48,
@@ -287,8 +287,8 @@ function GM:LoadFonts(font, genericFont)
 end
 
 function GM:OnCharacterMenuCreated(panel)
-	if (IsValid(ix.gui.notices)) then
-		ix.gui.notices:Clear()
+	if (IsValid(ws.gui.notices)) then
+		ws.gui.notices:Clear()
 	end
 end
 
@@ -303,21 +303,21 @@ function GM:CalcViewModelView(weapon, viewModel, oldEyePos, oldEyeAngles, eyePos
 	local bWepRaised = client:IsWepRaised()
 
 	-- update tween if the raised state is out of date
-	if (client.ixWasWeaponRaised != bWepRaised) then
+	if (client.wsWasWeaponRaised != bWepRaised) then
 		local fraction = bWepRaised and 0 or 1
 
-		client.ixRaisedFraction = 1 - fraction
-		client.ixRaisedTween = ix.tween.new(0.75, client, {
-			ixRaisedFraction = fraction
+		client.wsRaisedFraction = 1 - fraction
+		client.wsRaisedTween = ws.tween.new(0.75, client, {
+			wsRaisedFraction = fraction
 		}, "outQuint")
 
-		client.ixWasWeaponRaised = bWepRaised
+		client.wsWasWeaponRaised = bWepRaised
 	end
 
-	local fraction = client.ixRaisedFraction
+	local fraction = client.wsRaisedFraction
 	local rotation = weapon.LowerAngles or LOWERED_ANGLES
 
-	if (ix.option.Get("altLower", true) and weapon.LowerAngles2) then
+	if (ws.option.Get("altLower", true) and weapon.LowerAngles2) then
 		rotation = weapon.LowerAngles2
 	end
 
@@ -330,13 +330,13 @@ function GM:CalcViewModelView(weapon, viewModel, oldEyePos, oldEyeAngles, eyePos
 end
 
 function GM:LoadIntro()
-	if (!IsValid(ix.gui.intro)) then
-		vgui.Create("ixIntro")
+	if (!IsValid(ws.gui.intro)) then
+		vgui.Create("wsIntro")
 	end
 end
 
 function GM:CharacterLoaded()
-	local menu = ix.gui.characterMenu
+	local menu = ws.gui.characterMenu
 
 	if (IsValid(menu)) then
 		menu:Close((LocalPlayer().GetCharacter and LocalPlayer():GetCharacter()) and true or nil)
@@ -344,12 +344,12 @@ function GM:CharacterLoaded()
 end
 
 function GM:InitializedConfig()
-	local color = ix.config.Get("color")
+	local color = ws.config.Get("color")
 
-	hook.Run("LoadFonts", ix.config.Get("font"), ix.config.Get("genericFont"))
+	hook.Run("LoadFonts", ws.config.Get("font"), ws.config.Get("genericFont"))
 	hook.Run("ColorSchemeChanged", color)
 
-	if (!ix.config.loaded and !IsValid(ix.gui.loading)) then
+	if (!ws.config.loaded and !IsValid(ws.gui.loading)) then
 		local loader = vgui.Create("EditablePanel")
 		loader:ParentToHUD()
 		loader:Dock(FILL)
@@ -361,12 +361,12 @@ function GM:InitializedConfig()
 		local statusLabel = loader:Add("DLabel")
 		statusLabel:Dock(FILL)
 		statusLabel:SetText(L"loading")
-		statusLabel:SetFont("ixTitleFont")
+		statusLabel:SetFont("wsTitleFont")
 		statusLabel:SetContentAlignment(5)
 		statusLabel:SetTextColor(color_white)
 
 		timer.Simple(5, function()
-			if (IsValid(ix.gui.loading)) then
+			if (IsValid(ws.gui.loading)) then
 				local fault = GetNetVar("dbError")
 
 				if (fault) then
@@ -375,7 +375,7 @@ function GM:InitializedConfig()
 					local label = loader:Add("DLabel")
 					label:DockMargin(0, 64, 0, 0)
 					label:Dock(TOP)
-					label:SetFont("ixSubTitleFont")
+					label:SetFont("wsSubTitleFont")
 					label:SetText(fault)
 					label:SetContentAlignment(5)
 					label:SizeToContentsY()
@@ -384,20 +384,20 @@ function GM:InitializedConfig()
 			end
 		end)
 
-		ix.gui.loading = loader
-		ix.config.loaded = true
+		ws.gui.loading = loader
+		ws.config.loaded = true
 
-		if (ix.config.Get("intro", true) and ix.option.Get("showIntro", true)) then
+		if (ws.config.Get("intro", true) and ws.option.Get("showIntro", true)) then
 			hook.Run("LoadIntro")
 		end
 	end
 end
 
 function GM:InitPostEntity()
-	ix.joinTime = RealTime() - 0.9716
-	ix.option.Sync()
+	ws.joinTime = RealTime() - 0.9716
+	ws.option.Sync()
 
-	ix.gui.bars = vgui.Create("ixInfoBarManager")
+	ws.gui.bars = vgui.Create("wsInfoBarManager")
 end
 
 function GM:NetworkEntityCreated(entity)
@@ -419,7 +419,7 @@ function GM:NetworkEntityCreated(entity)
 	end
 end
 
-local vignette = ix.util.GetMaterial("helix/gui/vignette.png")
+local vignette = ws.util.GetMaterial("helix/gui/vignette.png")
 local vignetteAlphaGoal = 0
 local vignetteAlphaDelta = 0
 local vignetteTraceHeight = Vector(0, 0, 768)
@@ -427,7 +427,7 @@ local blurGoal = 0
 local blurDelta = 0
 local hasVignetteMaterial = !vignette:IsError()
 
-timer.Create("ixVignetteChecker", 1, 0, function()
+timer.Create("wsVignetteChecker", 1, 0, function()
 	local client = LocalPlayer()
 
 	if (IsValid(client)) then
@@ -468,8 +468,8 @@ function GM:CalcView(client, origin, angles, fov)
 		end
 	end
 
-	local menu = ix.gui.menu
-	local entityMenu = ix.menu.panel
+	local menu = ws.gui.menu
+	local entityMenu = ws.menu.panel
 
 	if (IsValid(menu) and menu:IsVisible() and menu:GetCharacterOverview()) then
 		local newOrigin, newAngles, newFOV, bDrawPlayer = menu:GetOverviewInfo(origin, angles, fov)
@@ -494,7 +494,7 @@ do
 	local lastEntity
 	local lastTrace = {}
 
-	timer.Create("ixCheckTargetEntity", 0.1, 0, function()
+	timer.Create("wsCheckTargetEntity", 0.1, 0, function()
 		local client = LocalPlayer()
 		local time = SysTime()
 
@@ -520,20 +520,20 @@ do
 			aimEntity = lastEntity
 		end
 
-		local panel = ix.gui.entityInfo
-		local bShouldShow = time >= aimTime and (!IsValid(ix.gui.menu) or ix.gui.menu.bClosing) and
-			(!IsValid(ix.gui.characterMenu) or ix.gui.characterMenu.bClosing)
+		local panel = ws.gui.entityInfo
+		local bShouldShow = time >= aimTime and (!IsValid(ws.gui.menu) or ws.gui.menu.bClosing) and
+			(!IsValid(ws.gui.characterMenu) or ws.gui.characterMenu.bClosing)
 		local bShouldPopulate = lastEntity.OnShouldPopulateEntityInfo and lastEntity:OnShouldPopulateEntityInfo() or true
 
 		if (bShouldShow and IsValid(lastEntity) and hookRun("ShouldPopulateEntityInfo", lastEntity) != false and
 			(lastEntity.PopulateEntityInfo or bShouldPopulate)) then
 
 			if (!IsValid(panel) or (IsValid(panel) and panel:GetEntity() != lastEntity)) then
-				if (IsValid(ix.gui.entityInfo)) then
-					ix.gui.entityInfo:Remove()
+				if (IsValid(ws.gui.entityInfo)) then
+					ws.gui.entityInfo:Remove()
 				end
 
-				local infoPanel = vgui.Create(ix.option.Get("minimalTooltips", false) and "ixTooltipMinimal" or "ixTooltip")
+				local infoPanel = vgui.Create(ws.option.Get("minimalTooltips", false) and "wsTooltipMinimal" or "wsTooltip")
 				local entityPlayer = lastEntity:GetNetVar("player")
 
 				if (entityPlayer) then
@@ -544,7 +544,7 @@ do
 				end
 
 				infoPanel:SetDrawArrow(true)
-				ix.gui.entityInfo = infoPanel
+				ws.gui.entityInfo = infoPanel
 			end
 		elseif (IsValid(panel)) then
 			panel:Remove()
@@ -565,7 +565,7 @@ function GM:HUDPaintBackground()
 	local frameTime = FrameTime()
 	local scrW, scrH = ScrW(), ScrH()
 
-	if (hasVignetteMaterial and ix.config.Get("vignette")) then
+	if (hasVignetteMaterial and ws.config.Get("vignette")) then
 		vignetteAlphaDelta = mathApproach(vignetteAlphaDelta, vignetteAlphaGoal, frameTime * 30)
 
 		surface.SetDrawColor(0, 0, 0, 175 + vignetteAlphaDelta)
@@ -580,7 +580,7 @@ function GM:HUDPaintBackground()
 	end
 
 	if (blurDelta > 0 and !client:ShouldDrawLocalPlayer()) then
-		ix.util.DrawBlurAt(0, 0, scrW, scrH, blurDelta)
+		ws.util.DrawBlurAt(0, 0, scrW, scrH, blurDelta)
 	end
 
 	self.BaseClass:PaintWorldTips()
@@ -595,41 +595,41 @@ function GM:HUDPaintBackground()
 		local x, y = scrW - 80, scrH - 80
 
 		if (secondary > 0) then
-			ix.util.DrawBlurAt(x, y, 64, 64)
+			ws.util.DrawBlurAt(x, y, 64, 64)
 
 			surface.SetDrawColor(255, 255, 255, 5)
 			surface.DrawRect(x, y, 64, 64)
 			surface.SetDrawColor(255, 255, 255, 3)
 			surface.DrawOutlinedRect(x, y, 64, 64)
 
-			ix.util.DrawText(secondary, x + 32, y + 32, nil, 1, 1, "ixBigFont")
+			ws.util.DrawText(secondary, x + 32, y + 32, nil, 1, 1, "wsBigFont")
 		end
 
 		if (weapon:GetClass() != "weapon_slam" and clip > 0 or count > 0) then
 			x = x - (secondary > 0 and 144 or 64)
 
-			ix.util.DrawBlurAt(x, y, 128, 64)
+			ws.util.DrawBlurAt(x, y, 128, 64)
 
 			surface.SetDrawColor(255, 255, 255, 5)
 			surface.DrawRect(x, y, 128, 64)
 			surface.SetDrawColor(255, 255, 255, 3)
 			surface.DrawOutlinedRect(x, y, 128, 64)
 
-			ix.util.DrawText((clip == -1 or clipMax == -1) and count or clip.."/"..count, x + 64, y + 32, nil, 1, 1, "ixBigFont")
+			ws.util.DrawText((clip == -1 or clipMax == -1) and count or clip.."/"..count, x + 64, y + 32, nil, 1, 1, "wsBigFont")
 		end
 	end
 
 	if (client:GetLocalVar("restricted") and !client:GetLocalVar("restrictNoMsg")) then
-		ix.util.DrawText(L"restricted", scrW * 0.5, scrH * 0.33, nil, 1, 1, "ixBigFont")
+		ws.util.DrawText(L"restricted", scrW * 0.5, scrH * 0.33, nil, 1, 1, "wsBigFont")
 	end
 end
 
 function GM:PostDrawOpaqueRenderables(bDepth, bSkybox)
-	if (bDepth or bSkybox or #ix.blurRenderQueue == 0) then
+	if (bDepth or bSkybox or #ws.blurRenderQueue == 0) then
 		return
 	end
 
-	ix.util.ResetStencilValues()
+	ws.util.ResetStencilValues()
 	render.SetStencilEnable(true)
 		render.SetStencilWriteMask(27)
 		render.SetStencilTestMask(27)
@@ -639,8 +639,8 @@ function GM:PostDrawOpaqueRenderables(bDepth, bSkybox)
 		render.SetStencilCompareFunction(STENCILCOMPARISONFUNCTION_ALWAYS)
 		render.SetStencilReferenceValue(27)
 
-		for i = 1, #ix.blurRenderQueue do
-			ix.blurRenderQueue[i]()
+		for i = 1, #ws.blurRenderQueue do
+			ws.blurRenderQueue[i]()
 		end
 
 		render.SetStencilReferenceValue(34)
@@ -649,19 +649,19 @@ function GM:PostDrawOpaqueRenderables(bDepth, bSkybox)
 		render.SetStencilReferenceValue(27)
 
 		cam.Start2D()
-			ix.util.DrawBlurAt(0, 0, ScrW(), ScrH())
+			ws.util.DrawBlurAt(0, 0, ScrW(), ScrH())
 		cam.End2D()
 	render.SetStencilEnable(false)
 
-	ix.blurRenderQueue = {}
+	ws.blurRenderQueue = {}
 end
 
 function GM:PostDrawHUD()
 	cam.Start2D()
-		ix.hud.DrawAll()
+		ws.hud.DrawAll()
 
-		if (!IsValid(ix.gui.deathScreen) and (!IsValid(ix.gui.characterMenu) or ix.gui.characterMenu:IsClosing())) then
-			ix.bar.DrawAction()
+		if (!IsValid(ws.gui.deathScreen) and (!IsValid(ws.gui.characterMenu) or ws.gui.characterMenu:IsClosing())) then
+			ws.bar.DrawAction()
 		end
 	cam.End2D()
 end
@@ -735,7 +735,7 @@ function GM:KeyRelease(client, key)
 	end
 
 	if (key == IN_USE) then
-		if (!ix.menu.IsOpen()) then
+		if (!ws.menu.IsOpen()) then
 			local data = {}
 			data.start = client:GetShootPos()
 			data.endpos = data.start + client:GetAimVector() * 96
@@ -748,10 +748,10 @@ function GM:KeyRelease(client, key)
 			end
 		end
 
-		timer.Remove("ixItemUse")
+		timer.Remove("wsItemUse")
 
-		client.ixInteractionTarget = nil
-		client.ixInteractionStartTime = nil
+		client.wsInteractionTarget = nil
+		client.wsInteractionStartTime = nil
 	end
 end
 
@@ -759,7 +759,7 @@ function GM:PlayerBindPress(client, bind, pressed)
 	bind = bind:lower()
 
 	if (bind:find("use") and pressed) then
-		local pickupTime = ix.config.Get("itemPickupTime", 0.5)
+		local pickupTime = ws.config.Get("itemPickupTime", 0.5)
 
 		if (pickupTime > 0) then
 			local data = {}
@@ -768,13 +768,13 @@ function GM:PlayerBindPress(client, bind, pressed)
 				data.filter = client
 			local entity = util.TraceLine(data).Entity
 
-			if (IsValid(entity) and entity.ShowPlayerInteraction and !ix.menu.IsOpen()) then
-				client.ixInteractionTarget = entity
-				client.ixInteractionStartTime = SysTime()
+			if (IsValid(entity) and entity.ShowPlayerInteraction and !ws.menu.IsOpen()) then
+				client.wsInteractionTarget = entity
+				client.wsInteractionStartTime = SysTime()
 
-				timer.Create("ixItemUse", pickupTime, 1, function()
-					client.ixInteractionTarget = nil
-					client.ixInteractionStartTime = nil
+				timer.Create("wsItemUse", pickupTime, 1, function()
+					client.wsInteractionTarget = nil
+					client.wsInteractionStartTime = nil
 				end)
 			end
 		end
@@ -782,7 +782,7 @@ function GM:PlayerBindPress(client, bind, pressed)
 		local entity = Entity(client:GetLocalVar("ragdoll", 0))
 
 		if (IsValid(entity)) then
-			ix.command.Send("CharGetUp")
+			ws.command.Send("CharGetUp")
 		end
 	elseif (bind:find("speed") and client:KeyDown(IN_WALK) and pressed) then
 		if (LocalPlayer():Crouching()) then
@@ -794,8 +794,8 @@ function GM:PlayerBindPress(client, bind, pressed)
 end
 
 function GM:CreateMove(command)
-	if ((IsValid(ix.gui.characterMenu) and !ix.gui.characterMenu.bClosing) or
-		(IsValid(ix.gui.menu) and !ix.gui.menu.bClosing and ix.gui.menu:GetActiveTab() == "you")) then
+	if ((IsValid(ws.gui.characterMenu) and !ws.gui.characterMenu.bClosing) or
+		(IsValid(ws.gui.menu) and !ws.gui.menu.bClosing and ws.gui.menu:GetActiveTab() == "you")) then
 		command:ClearButtons()
 		command:ClearMovement()
 	end
@@ -806,7 +806,7 @@ function GM:ShowEntityMenu(entity)
 	local options = entity:GetEntityMenu(LocalPlayer())
 
 	if (istable(options) and !table.IsEmpty(options)) then
-		ix.menu.Open(options, entity)
+		ws.menu.Open(options, entity)
 	end
 end
 
@@ -830,7 +830,7 @@ function GM:HUDShouldDraw(element)
 end
 
 function GM:ShouldDrawLocalPlayer(client)
-	if (IsValid(ix.gui.characterMenu) and ix.gui.characterMenu:IsVisible()) then
+	if (IsValid(ws.gui.characterMenu) and ws.gui.characterMenu:IsVisible()) then
 		return false
 	end
 end
@@ -840,7 +840,7 @@ function GM:PostProcessPermitted(class)
 end
 
 function GM:RenderScreenspaceEffects()
-	local menu = ix.gui.menu
+	local menu = ws.gui.menu
 
 	if (IsValid(menu) and menu:GetCharacterOverview()) then
 		local client = LocalPlayer()
@@ -848,7 +848,7 @@ function GM:RenderScreenspaceEffects()
 		local weapon = client:GetActiveWeapon()
 
 		cam.Start3D()
-			ix.util.ResetStencilValues()
+			ws.util.ResetStencilValues()
 			render.SetStencilEnable(true)
 			render.SuppressEngineLighting(true)
 			cam.IgnoreZ(true)
@@ -906,7 +906,7 @@ function GM:DrawHelixModelView(panel, ent)
 	end
 end
 
-net.Receive("ixStringRequest", function()
+net.Receive("wsStringRequest", function()
 	local time = net.ReadUInt(32)
 	local title, subTitle = net.ReadString(), net.ReadString()
 	local default = net.ReadString()
@@ -920,40 +920,40 @@ net.Receive("ixStringRequest", function()
 	end
 
 	Derma_StringRequest(title, subTitle, default or "", function(text)
-		net.Start("ixStringRequest")
+		net.Start("wsStringRequest")
 			net.WriteUInt(time, 32)
 			net.WriteString(text)
 		net.SendToServer()
 	end)
 end)
 
-net.Receive("ixPlayerDeath", function()
-	if (IsValid(ix.gui.deathScreen)) then
-		ix.gui.deathScreen:Remove()
+net.Receive("wsPlayerDeath", function()
+	if (IsValid(ws.gui.deathScreen)) then
+		ws.gui.deathScreen:Remove()
 	end
 
-	ix.gui.deathScreen = vgui.Create("ixDeathScreen")
+	ws.gui.deathScreen = vgui.Create("wsDeathScreen")
 end)
 
 function GM:Think()
 	local client = LocalPlayer()
 
-	if (IsValid(client) and client:Alive() and client.ixRaisedTween) then
-		client.ixRaisedTween:update(FrameTime())
+	if (IsValid(client) and client:Alive() and client.wsRaisedTween) then
+		client.wsRaisedTween:update(FrameTime())
 	end
 end
 
 function GM:ScreenResolutionChanged(oldW, oldH)
-	hook.Run("LoadFonts", ix.config.Get("font"), ix.config.Get("genericFont"))
+	hook.Run("LoadFonts", ws.config.Get("font"), ws.config.Get("genericFont"))
 
-	if (IsValid(ix.gui.notices)) then
-		ix.gui.notices:Remove()
-		ix.gui.notices = vgui.Create("ixNoticeManager")
+	if (IsValid(ws.gui.notices)) then
+		ws.gui.notices:Remove()
+		ws.gui.notices = vgui.Create("wsNoticeManager")
 	end
 
-	if (IsValid(ix.gui.bars)) then
-		ix.gui.bars:Remove()
-		ix.gui.bars = vgui.Create("ixInfoBarManager")
+	if (IsValid(ws.gui.bars)) then
+		ws.gui.bars:Remove()
+		ws.gui.bars = vgui.Create("wsInfoBarManager")
 	end
 end
 
@@ -974,13 +974,13 @@ function GM:HUDDrawTargetID()
 end
 
 function GM:BuildBusinessMenu()
-	if (!ix.config.Get("allowBusiness", true)) then
+	if (!ws.config.Get("allowBusiness", true)) then
 		return false
 	end
 end
 
 gameevent.Listen("player_spawn")
-hook.Add("player_spawn", "ixPlayerSpawn", function(data)
+hook.Add("player_spawn", "wsPlayerSpawn", function(data)
 	local client = Player(data.userid)
 
 	if (IsValid(client)) then
@@ -988,8 +988,8 @@ hook.Add("player_spawn", "ixPlayerSpawn", function(data)
 		client:SetupBones()
 		client:SetIK(false)
 
-		if (client == LocalPlayer() and (IsValid(ix.gui.deathScreen) and !ix.gui.deathScreen:IsClosing())) then
-			ix.gui.deathScreen:Close()
+		if (client == LocalPlayer() and (IsValid(ws.gui.deathScreen) and !ws.gui.deathScreen:IsClosing())) then
+			ws.gui.deathScreen:Close()
 		end
 	end
 end)

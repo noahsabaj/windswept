@@ -72,7 +72,7 @@ if (CLIENT) then
 		surface.DrawRect(x - 2, y - 2, 4, 4)
 	end
 
-	hook.Add("CreateMove", "ixHandsCreateMove", function(cmd)
+	hook.Add("CreateMove", "wsHandsCreateMove", function(cmd)
 		if (LocalPlayer():GetLocalVar("bIsHoldingObject", false) and cmd:KeyDown(IN_ATTACK2)) then
 			cmd:ClearMovement()
 			local angle = RenderAngles()
@@ -213,16 +213,16 @@ function SWEP:CanHoldObject(entity)
 	local physics = entity:GetPhysicsObject()
 
 	return IsValid(physics) and
-		(physics:GetMass() <= ix.config.Get("maxHoldWeight", 100) and physics:IsMoveable()) and
+		(physics:GetMass() <= ws.config.Get("maxHoldWeight", 100) and physics:IsMoveable()) and
 		!self:IsHoldingObject() and
-		!IsValid(entity.ixHeldOwner) and
+		!IsValid(entity.wsHeldOwner) and
 		hook.Run("CanPlayerHoldObject", self:GetOwner(), entity)
 end
 
 function SWEP:IsHoldingObject()
 	return IsValid(self.heldEntity) and
-		IsValid(self.heldEntity.ixHeldOwner) and
-		self.heldEntity.ixHeldOwner == self:GetOwner()
+		IsValid(self.heldEntity.wsHeldOwner) and
+		self.heldEntity.wsHeldOwner == self:GetOwner()
 end
 
 function SWEP:PickupObject(entity)
@@ -236,8 +236,8 @@ function SWEP:PickupObject(entity)
 	physics:EnableGravity(false)
 	physics:AddGameFlag(FVPHYSICS_PLAYER_HELD)
 
-	entity.ixHeldOwner = self:GetOwner()
-	entity.ixCollisionGroup = entity:GetCollisionGroup()
+	entity.wsHeldOwner = self:GetOwner()
+	entity.wsCollisionGroup = entity:GetCollisionGroup()
 	entity:StartMotionController()
 	entity:SetCollisionGroup(COLLISION_GROUP_WEAPON)
 
@@ -278,7 +278,7 @@ function SWEP:PickupObject(entity)
 end
 
 function SWEP:DropObject(bThrow)
-	if (!IsValid(self.heldEntity) or self.heldEntity.ixHeldOwner != self:GetOwner()) then
+	if (!IsValid(self.heldEntity) or self.heldEntity.wsHeldOwner != self:GetOwner()) then
 		return
 	end
 
@@ -289,7 +289,7 @@ function SWEP:DropObject(bThrow)
 	self.holdEntity:Remove()
 
 	self.heldEntity:StopMotionController()
-	self.heldEntity:SetCollisionGroup(self.heldEntity.ixCollisionGroup or COLLISION_GROUP_NONE)
+	self.heldEntity:SetCollisionGroup(self.heldEntity.wsCollisionGroup or COLLISION_GROUP_NONE)
 
 	local physics = self:GetHeldPhysicsObject()
 	physics:EnableGravity(true)
@@ -300,13 +300,13 @@ function SWEP:DropObject(bThrow)
 		timer.Simple(0, function()
 			if (IsValid(physics) and IsValid(self:GetOwner())) then
 				physics:AddGameFlag(FVPHYSICS_WAS_THROWN)
-				physics:ApplyForceCenter(self:GetOwner():GetAimVector() * ix.config.Get("throwForce", 732))
+				physics:ApplyForceCenter(self:GetOwner():GetAimVector() * ws.config.Get("throwForce", 732))
 			end
 		end)
 	end
 
-	self.heldEntity.ixHeldOwner = nil
-	self.heldEntity.ixCollisionGroup = nil
+	self.heldEntity.wsHeldOwner = nil
+	self.heldEntity.wsCollisionGroup = nil
 	self.heldEntity = nil
 end
 
@@ -377,8 +377,8 @@ function SWEP:PrimaryAttack()
 		return
 	end
 
-	if (ix.plugin.Get("stamina")) then
-		local staminaUse = ix.config.Get("punchStamina")
+	if (ws.plugin.Get("stamina")) then
+		local staminaUse = ws.config.Get("punchStamina")
 
 		if (staminaUse > 0) then
 			local value = self:GetOwner():GetLocalVar("stm", 0) - staminaUse
@@ -478,7 +478,7 @@ function SWEP:SecondaryAttack()
 			self:DoPunchAnimation()
 			self:SetNextSecondaryFire(CurTime() + 0.4)
 			self:SetNextPrimaryFire(CurTime() + 1)
-		elseif (entity:IsPlayer() and ix.config.Get("allowPush", true)) then
+		elseif (entity:IsPlayer() and ws.config.Get("allowPush", true)) then
 			local direction = self:GetOwner():GetAimVector() * (300 + (self:GetOwner():GetCharacter():GetAttribute("str", 0) * 3))
 				direction.z = 0
 			entity:SetVelocity(direction)

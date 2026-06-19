@@ -14,7 +14,7 @@ function PLUGIN:PlayerLoadout(client)
 		local points
 		local className = "default"
 
-		for k, v in ipairs(ix.faction.indices) do
+		for k, v in ipairs(ws.faction.indices) do
 			if (k == client:Team()) then
 				points = self.spawns[v.uniqueID] or {}
 
@@ -23,7 +23,7 @@ function PLUGIN:PlayerLoadout(client)
 		end
 
 		if (points) then
-			for _, v in ipairs(ix.class.list) do
+			for _, v in ipairs(ws.class.list) do
 				if (class == v.index) then
 					className = v.uniqueID
 
@@ -50,22 +50,22 @@ function PLUGIN:SaveSpawns()
 	self:SetData(self.spawns)
 end
 
-ix.command.Add("SpawnAdd", {
+ws.command.Add("SpawnAdd", {
 	description = "@cmdSpawnAdd",
 	privilege = "Manage Spawn Points",
 	adminOnly = true,
 	arguments = {
-		ix.type.string,
-		bit.bor(ix.type.text, ix.type.optional)
+		ws.type.string,
+		bit.bor(ws.type.text, ws.type.optional)
 	},
 	OnRun = function(self, client, name, class)
-		local info = ix.faction.indices[name:lower()]
+		local info = ws.faction.indices[name:lower()]
 		local info2
 		local faction
 
 		if (!info) then
-			for _, v in ipairs(ix.faction.indices) do
-				if (ix.util.StringMatches(v.uniqueID, name) or ix.util.StringMatches(L(v.name, client), name)) then
+			for _, v in ipairs(ws.faction.indices) do
+				if (ws.util.StringMatches(v.uniqueID, name) or ws.util.StringMatches(L(v.name, client), name)) then
 					faction = v.uniqueID
 					info = v
 
@@ -78,9 +78,9 @@ ix.command.Add("SpawnAdd", {
 			if (class and class != "") then
 				local found = false
 
-				for _, v in ipairs(ix.class.list) do
+				for _, v in ipairs(ws.class.list) do
 					if (v.faction == info.index and
-						(v.uniqueID:lower() == class:lower() or ix.util.StringMatches(L(v.name, client), class))) then
+						(v.uniqueID:lower() == class:lower() or ws.util.StringMatches(L(v.name, client), class))) then
 						class = v.uniqueID
 						info2 = v
 						found = true
@@ -116,11 +116,11 @@ ix.command.Add("SpawnAdd", {
 	end
 })
 
-ix.command.Add("SpawnRemove", {
+ws.command.Add("SpawnRemove", {
 	description = "@cmdSpawnRemove",
 	privilege = "Manage Spawn Points",
 	adminOnly = true,
-	arguments = bit.bor(ix.type.number, ix.type.optional),
+	arguments = bit.bor(ws.type.number, ws.type.optional),
 	OnRun = function(self, client, radius)
 		radius = radius or 120
 

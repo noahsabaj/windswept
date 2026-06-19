@@ -45,7 +45,7 @@ end
 --- Whether or not a message can be auto formatted with punctuation and capitalization.
 -- @realm server
 -- @player speaker Player that sent the message
--- @string chatType Chat type of the message. This will be something registered with `ix.chat.Register` - like `ic`, `ooc`, etc.
+-- @string chatType Chat type of the message. This will be something registered with `ws.chat.Register` - like `ic`, `ooc`, etc.
 -- @string text Unformatted text of the message
 -- @treturn bool Whether or not to allow auto formatting on the message
 -- @usage function PLUGIN:CanAutoFormatMessage(speaker, chatType, text)
@@ -106,7 +106,7 @@ end
 -- @number other instance ID of the item being combined into the first item, this can be invalid due to it being from clientside
 -- @treturn bool Whether or not to allow the player to combine the items
 -- @usage function PLUGIN:CanPlayerCombineItem(client, item, other)
---		local otherItem = ix.item.instances[other]
+--		local otherItem = ws.item.instances[other]
 --
 --		if (otherItem and otherItem.uniqueID == "soda") then
 --			return false -- disallow combining any item that has a uniqueID equal to `soda`
@@ -587,19 +587,19 @@ end
 -- @realm shared
 -- @usage function PLUGIN:InitializedChatClasses()
 -- 	-- let's say you wanted to reference an existing chat class's color
--- 	ix.chat.Register("myclass", {
+-- 	ws.chat.Register("myclass", {
 -- 		format = "%s says \"%s\"",
 -- 		GetColor = function(self, speaker, text)
 -- 			-- make the chat class slightly brighter than the "ic" chat class
--- 			local color = ix.chat.classes.ic:GetColor(speaker, text)
+-- 			local color = ws.chat.classes.ic:GetColor(speaker, text)
 --
 -- 			return Color(color.r + 35, color.g + 35, color.b + 35)
 -- 		end,
 -- 		-- etc.
 -- 	})
 -- end
--- @see ix.chat.Register
--- @see ix.chat.classes
+-- @see ws.chat.Register
+-- @see ws.chat.classes
 function InitializedChatClasses()
 end
 

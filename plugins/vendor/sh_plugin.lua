@@ -36,16 +36,16 @@ VENDOR_SELLONLY = 2
 VENDOR_BUYONLY = 3
 
 if (SERVER) then
-	util.AddNetworkString("ixVendorOpen")
-	util.AddNetworkString("ixVendorClose")
-	util.AddNetworkString("ixVendorTrade")
+	util.AddNetworkString("wsVendorOpen")
+	util.AddNetworkString("wsVendorClose")
+	util.AddNetworkString("wsVendorTrade")
 
-	util.AddNetworkString("ixVendorEdit")
-	util.AddNetworkString("ixVendorEditFinish")
-	util.AddNetworkString("ixVendorEditor")
-	util.AddNetworkString("ixVendorMoney")
-	util.AddNetworkString("ixVendorStock")
-	util.AddNetworkString("ixVendorAddItem")
+	util.AddNetworkString("wsVendorEdit")
+	util.AddNetworkString("wsVendorEditFinish")
+	util.AddNetworkString("wsVendorEditor")
+	util.AddNetworkString("wsVendorMoney")
+	util.AddNetworkString("wsVendorStock")
+	util.AddNetworkString("wsVendorAddItem")
 
 	function PLUGIN:SaveData()
 		local data = {}
@@ -125,25 +125,25 @@ if (SERVER) then
 		return true
 	end
 
-	ix.log.AddType("vendorUse", function(client, ...)
+	ws.log.AddType("vendorUse", function(client, ...)
 		local arg = {...}
 		return string.format("%s used the '%s' vendor.", client:Name(), arg[1])
 	end)
 
-	ix.log.AddType("vendorBuy", function(client, ...)
+	ws.log.AddType("vendorBuy", function(client, ...)
 		local arg = {...}
 
 		return string.format("%s purchased a '%s' from the '%s' vendor for %s.", client:Name(), arg[1], arg[2], arg[3])
 	end)
 
-	ix.log.AddType("vendorSell", function(client, ...)
+	ws.log.AddType("vendorSell", function(client, ...)
 		local arg = {...}
 
 		return string.format("%s sold a '%s' to the '%s' vendor for %s.", client:Name(), arg[1], arg[2], arg[3])
 	end)
 
-	net.Receive("ixVendorClose", function(length, client)
-		local entity = client.ixVendor
+	net.Receive("wsVendorClose", function(length, client)
+		local entity = client.wsVendor
 
 		if (IsValid(entity)) then
 			for k, v in ipairs(entity.receivers) do
@@ -154,23 +154,23 @@ if (SERVER) then
 				end
 			end
 
-			client.ixVendor = nil
+			client.wsVendor = nil
 		end
 	end)
 
 	local function UpdateEditReceivers(receivers, key, value)
-		net.Start("ixVendorEdit")
+		net.Start("wsVendorEdit")
 			net.WriteString(key)
 			net.WriteType(value)
 		net.Send(receivers)
 	end
 
-	net.Receive("ixVendorEdit", function(length, client)
+	net.Receive("wsVendorEdit", function(length, client)
 		if (!CAMI.PlayerHasAccess(client, "Helix - Manage Vendors", nil)) then
 			return
 		end
 
-		local entity = client.ixVendor
+		local entity = client.wsVendor
 
 		if (!IsValid(entity)) then
 			return
@@ -244,7 +244,7 @@ if (SERVER) then
 
 			data = uniqueID
 		elseif (key == "faction") then
-			local faction = ix.faction.teams[data]
+			local faction = ws.faction.teams[data]
 
 			if (faction) then
 				entity.factions[data] = !entity.factions[data]
@@ -259,7 +259,7 @@ if (SERVER) then
 		elseif (key == "class") then
 			local class
 
-			for _, v in ipairs(ix.class.list) do
+			for _, v in ipairs(ws.class.list) do
 				if (v.uniqueID == data) then
 					class = v
 
@@ -311,21 +311,21 @@ if (SERVER) then
 				end
 			end
 
-			net.Start("ixVendorEditFinish")
+			net.Start("wsVendorEditFinish")
 				net.WriteString(key)
 				net.WriteType(data)
 			net.Send(receivers)
 		end
 	end)
 
-	net.Receive("ixVendorTrade", function(length, client)
-		if ((client.ixVendorTry or 0) < CurTime()) then
-			client.ixVendorTry = CurTime() + 0.33
+	net.Receive("wsVendorTrade", function(length, client)
+		if ((client.wsVendorTry or 0) < CurTime()) then
+			client.wsVendorTry = CurTime() + 0.33
 		else
 			return
 		end
 
-		local entity = client.ixVendor
+		local entity = client.wsVendor
 
 		if (!IsValid(entity) or client:GetPos():Distance(entity:GetPos()) > 192) then
 			return
@@ -356,11 +356,15 @@ if (SERVER) then
 					return client:NotifyLocalized("vendorMaxStock")
 				end
 
-				local invOkay = true
+				-- Locate the item to sell, but do NOT remove it yet. With physical
+				-- currency GiveMoney can fail (no inventory space for the cash/coins),
+				-- so we must pay first and only destroy the item once payment lands;
+				-- otherwise the player loses the item and gets nothing.
+				local sellItem
 
 				for k, _ in client:GetCharacter():GetInventory():Iter() do
-					if (k.uniqueID == uniqueID and k:GetID() != 0 and ix.item.instances[k:GetID()] and k:GetData("equip", false) == false) then
-						invOkay = k:Remove()
+					if (k.uniqueID == uniqueID and k:GetID() != 0 and ws.item.instances[k:GetID()] and k:GetData("equip", false) == false) then
+						sellItem = k
 						found = true
 						name = L(k.name, client)
 
@@ -372,17 +376,27 @@ if (SERVER) then
 					return
 				end
 
-				if (!invOkay) then
+				-- Pay the seller first; abort (keep the item) if it cannot fit.
+				if (price > 0 and !client:GetCharacter():GiveMoney(price)) then
+					return client:NotifyLocalized("businessSellNoRoom")
+				end
+
+				-- Now destroy the sold item. If removal somehow fails, refund the
+				-- payment so money isn't duplicated.
+				if (!sellItem:Remove()) then
+					if (price > 0) then
+						client:GetCharacter():TakeMoney(price)
+					end
+
 					client:GetCharacter():GetInventory():Sync(client, true)
 					return client:NotifyLocalized("tellAdmin", "trd!iid")
 				end
 
-				client:GetCharacter():GiveMoney(price, price == 0)
-				client:NotifyLocalized("businessSell", name, ix.currency.Get(price))
+				client:NotifyLocalized("businessSell", name, ws.currency.Get(price))
 				entity:TakeMoney(price)
 				entity:AddStock(uniqueID)
 
-				ix.log.Add(client, "vendorSell", name, entity:GetDisplayName(), ix.currency.Get(price))
+				ws.log.Add(client, "vendorSell", name, entity:GetDisplayName(), ws.currency.Get(price))
 			else
 				local stock = entity:GetStock(uniqueID)
 
@@ -398,24 +412,24 @@ if (SERVER) then
 					return false
 				end
 
-				local name = L(ix.item.list[uniqueID].name, client)
+				local name = L(ws.item.list[uniqueID].name, client)
 
 				client:GetCharacter():TakeMoney(price, price == 0)
-				client:NotifyLocalized("businessPurchase", name, ix.currency.Get(price))
+				client:NotifyLocalized("businessPurchase", name, ws.currency.Get(price))
 
 				entity:GiveMoney(price)
 
 				if (!client:GetCharacter():GetInventory():Add(uniqueID)) then
-					ix.item.Spawn(uniqueID, client)
+					ws.item.Spawn(uniqueID, client)
 				else
-					net.Start("ixVendorAddItem")
+					net.Start("wsVendorAddItem")
 						net.WriteString(uniqueID)
 					net.Send(client)
 				end
 
 				entity:TakeStock(uniqueID)
 
-				ix.log.Add(client, "vendorBuy", name, entity:GetDisplayName(), ix.currency.Get(price))
+				ws.log.Add(client, "vendorBuy", name, entity:GetDisplayName(), ws.currency.Get(price))
 			end
 
 			PLUGIN:SaveData()
@@ -430,7 +444,7 @@ else
 	VENDOR_TEXT[VENDOR_BUYONLY] = "vendorBuy"
 	VENDOR_TEXT[VENDOR_SELLONLY] = "vendorSell"
 
-	net.Receive("ixVendorOpen", function()
+	net.Receive("wsVendorOpen", function()
 		local entity = net.ReadEntity()
 
 		if (!IsValid(entity)) then
@@ -441,12 +455,12 @@ else
 		entity.items = net.ReadTable()
 		entity.scale = net.ReadFloat()
 
-		ix.gui.vendor = vgui.Create("ixVendor")
-		ix.gui.vendor:SetReadOnly(false)
-		ix.gui.vendor:Setup(entity)
+		ws.gui.vendor = vgui.Create("wsVendor")
+		ws.gui.vendor:SetReadOnly(false)
+		ws.gui.vendor:Setup(entity)
 	end)
 
-	net.Receive("ixVendorEditor", function()
+	net.Receive("wsVendorEditor", function()
 		local entity = net.ReadEntity()
 
 		if (!IsValid(entity) or !CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Manage Vendors", nil)) then
@@ -460,14 +474,14 @@ else
 		entity.factions = net.ReadTable()
 		entity.classes = net.ReadTable()
 
-		ix.gui.vendor = vgui.Create("ixVendor")
-		ix.gui.vendor:SetReadOnly(true)
-		ix.gui.vendor:Setup(entity)
-		ix.gui.vendorEditor = vgui.Create("ixVendorEditor")
+		ws.gui.vendor = vgui.Create("wsVendor")
+		ws.gui.vendor:SetReadOnly(true)
+		ws.gui.vendor:Setup(entity)
+		ws.gui.vendorEditor = vgui.Create("wsVendorEditor")
 	end)
 
-	net.Receive("ixVendorEdit", function()
-		local panel = ix.gui.vendor
+	net.Receive("wsVendorEdit", function()
+		local panel = ws.gui.vendor
 
 		if (!IsValid(panel)) then
 			return
@@ -527,9 +541,9 @@ else
 		end
 	end)
 
-	net.Receive("ixVendorEditFinish", function()
-		local panel = ix.gui.vendor
-		local editor = ix.gui.vendorEditor
+	net.Receive("wsVendorEditFinish", function()
+		local panel = ws.gui.vendor
+		local editor = ws.gui.vendorEditor
 
 		if (!IsValid(panel) or !IsValid(editor)) then
 			return
@@ -568,7 +582,7 @@ else
 		elseif (key == "faction") then
 			local uniqueID = data[1]
 			local state = data[2]
-			local editPanel = ix.gui.editorFaction
+			local editPanel = ws.gui.editorFaction
 
 			entity.factions[uniqueID] = state
 
@@ -578,7 +592,7 @@ else
 		elseif (key == "class") then
 			local uniqueID = data[1]
 			local state = data[2]
-			local editPanel = ix.gui.editorFaction
+			local editPanel = ws.gui.editorFaction
 
 			entity.classes[uniqueID] = state
 
@@ -595,8 +609,8 @@ else
 		surface.PlaySound("buttons/button14.wav")
 	end)
 
-	net.Receive("ixVendorMoney", function()
-		local panel = ix.gui.vendor
+	net.Receive("wsVendorMoney", function()
+		local panel = ws.gui.vendor
 
 		if (!IsValid(panel)) then
 			return
@@ -613,7 +627,7 @@ else
 
 		entity.money = value
 
-		local editor = ix.gui.vendorEditor
+		local editor = ws.gui.vendorEditor
 
 		if (IsValid(editor)) then
 			local useMoney = tonumber(value) != nil
@@ -624,8 +638,8 @@ else
 		end
 	end)
 
-	net.Receive("ixVendorStock", function()
-		local panel = ix.gui.vendor
+	net.Receive("wsVendorStock", function()
+		local panel = ws.gui.vendor
 
 		if (!IsValid(panel)) then
 			return
@@ -643,7 +657,7 @@ else
 		entity.items[uniqueID] = entity.items[uniqueID] or {}
 		entity.items[uniqueID][VENDOR_STOCK] = amount
 
-		local editor = ix.gui.vendorEditor
+		local editor = ws.gui.vendorEditor
 
 		if (IsValid(editor)) then
 			local _, max = entity:GetStock(uniqueID)
@@ -652,11 +666,11 @@ else
 		end
 	end)
 
-	net.Receive("ixVendorAddItem", function()
+	net.Receive("wsVendorAddItem", function()
 		local uniqueID = net.ReadString()
 
-		if (IsValid(ix.gui.vendor)) then
-			ix.gui.vendor:addItem(uniqueID, "buying")
+		if (IsValid(ws.gui.vendor)) then
+			ws.gui.vendor:addItem(uniqueID, "buying")
 		end
 	end)
 end
@@ -696,9 +710,9 @@ properties.Add("vendor_edit", {
 			end
 		end
 
-		client.ixVendor = entity
+		client.wsVendor = entity
 
-		net.Start("ixVendorEditor")
+		net.Start("wsVendorEditor")
 			net.WriteEntity(entity)
 			net.WriteUInt(entity.money or 0, 16)
 			net.WriteTable(itemsTable)

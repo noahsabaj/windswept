@@ -66,7 +66,7 @@ end
 
 function ENT:CanAccess(client)
 	local bAccess = false
-	local faction = ix.faction.indices[client:Team()]
+	local faction = ws.faction.indices[client:Team()]
 	local uniqueID = faction and faction.uniqueID
 
 	if (self.factions and !table.IsEmpty(self.factions)) then
@@ -79,7 +79,7 @@ function ENT:CanAccess(client)
 	end
 
 	if (bAccess and self.classes and !table.IsEmpty(self.classes)) then
-		local class = ix.class.list[client:GetCharacter():GetClass()]
+		local class = ws.class.list[client:GetCharacter():GetClass()]
 		local classID = class and class.uniqueID
 
 		if (classID and !self.classes[classID]) then
@@ -97,8 +97,8 @@ function ENT:GetStock(uniqueID)
 end
 
 function ENT:GetPrice(uniqueID, selling)
-	local price = ix.item.list[uniqueID] and self.items[uniqueID] and
-		self.items[uniqueID][VENDOR_PRICE] or ix.item.list[uniqueID].price or 0
+	local price = ws.item.list[uniqueID] and self.items[uniqueID] and
+		self.items[uniqueID][VENDOR_PRICE] or ws.item.list[uniqueID].price or 0
 
 	if (selling) then
 		price = math.floor(price * (self.scale or 0.5))
@@ -110,7 +110,7 @@ end
 function ENT:CanSellToPlayer(client, uniqueID)
 	local data = self.items[uniqueID]
 
-	if (!data or !client:GetCharacter() or !ix.item.list[uniqueID]) then
+	if (!data or !client:GetCharacter() or !ws.item.list[uniqueID]) then
 		return false
 	end
 
@@ -132,7 +132,7 @@ end
 function ENT:CanBuyFromPlayer(client, uniqueID)
 	local data = self.items[uniqueID]
 
-	if (!data or !client:GetCharacter() or !ix.item.list[uniqueID]) then
+	if (!data or !client:GetCharacter() or !ws.item.list[uniqueID]) then
 		return false
 	end
 
@@ -140,7 +140,7 @@ function ENT:CanBuyFromPlayer(client, uniqueID)
 		return false
 	end
 
-	if (!self:HasMoney(data[VENDOR_PRICE] or ix.item.list[uniqueID].price or 0)) then
+	if (!self:HasMoney(data[VENDOR_PRICE] or ws.item.list[uniqueID].price or 0)) then
 		return false
 	end
 
@@ -217,27 +217,27 @@ if (SERVER) then
 
 		self.scale = self.scale or 0.5
 
-		activator.ixVendor = self
+		activator.wsVendor = self
 
 		-- force sync to prevent outdated inventories while buying/selling
 		if (character) then
 			character:GetInventory():Sync(activator, true)
 		end
 
-		net.Start("ixVendorOpen")
+		net.Start("wsVendorOpen")
 			net.WriteEntity(self)
 			net.WriteUInt(self.money or 0, 16)
 			net.WriteTable(items)
 			net.WriteFloat(self.scale or 0.5)
 		net.Send(activator)
 
-		ix.log.Add(activator, "vendorUse", self:GetDisplayName())
+		ws.log.Add(activator, "vendorUse", self:GetDisplayName())
 	end
 
 	function ENT:SetMoney(value)
 		self.money = value
 
-		net.Start("ixVendorMoney")
+		net.Start("wsVendorMoney")
 			net.WriteUInt(value and value or -1, 16)
 		net.Send(self.receivers)
 	end
@@ -262,7 +262,7 @@ if (SERVER) then
 		self.items[uniqueID] = self.items[uniqueID] or {}
 		self.items[uniqueID][VENDOR_STOCK] = math.min(value, self.items[uniqueID][VENDOR_MAXSTOCK])
 
-		net.Start("ixVendorStock")
+		net.Start("wsVendorStock")
 			net.WriteString(uniqueID)
 			net.WriteUInt(value, 16)
 		net.Send(self.receivers)

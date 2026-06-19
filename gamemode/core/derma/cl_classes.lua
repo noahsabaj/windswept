@@ -32,7 +32,7 @@ function PANEL:Init()
 	self.limit:SetCursor("hand")
 	self.limit:SetExpensiveShadow(1, Color(0, 0, 60))
 	self.limit:SetContentAlignment(5)
-	self.limit:SetFont("ixMediumFont")
+	self.limit:SetFont("wsMediumFont")
 	self.limit:SetWide(64)
 	AssignClick(self.limit)
 
@@ -42,12 +42,12 @@ function PANEL:Init()
 	self.label:SetCursor("hand")
 	self.label:SetExpensiveShadow(1, Color(0, 0, 60))
 	self.label:SetContentAlignment(5)
-	self.label:SetFont("ixMediumFont")
+	self.label:SetFont("wsMediumFont")
 	AssignClick(self.label)
 end
 
 function PANEL:OnClick()
-	ix.command.Send("BecomeClass", self.class)
+	ws.command.Send("BecomeClass", self.class)
 end
 
 function PANEL:SetNumber(number)
@@ -83,15 +83,15 @@ function PANEL:SetClass(data)
 	self.data = data
 	self.class = data.index
 
-	self:SetNumber(#ix.class.GetPlayers(data.index))
+	self:SetNumber(#ws.class.GetPlayers(data.index))
 end
 
-vgui.Register("ixClassPanel", PANEL, "DPanel")
+vgui.Register("wsClassPanel", PANEL, "DPanel")
 
 PANEL = {}
 
 function PANEL:Init()
-	ix.gui.classes = self
+	ws.gui.classes = self
 
 	self:SetSize(self:GetParent():GetSize())
 
@@ -108,12 +108,12 @@ end
 function PANEL:LoadClasses()
 	self.list:Clear()
 
-	for k, v in ipairs(ix.class.list) do
-		local no, why = ix.class.CanSwitchTo(LocalPlayer(), k)
+	for k, v in ipairs(ws.class.list) do
+		local no, why = ws.class.CanSwitchTo(LocalPlayer(), k)
 		local itsFull = ("class is full" == why)
 
 		if (no or itsFull) then
-			local panel = vgui.Create("ixClassPanel", self.list)
+			local panel = vgui.Create("wsClassPanel", self.list)
 			panel:SetClass(v)
 			table.insert(self.classPanels, panel)
 
@@ -122,19 +122,19 @@ function PANEL:LoadClasses()
 	end
 end
 
-vgui.Register("ixClasses", PANEL, "EditablePanel")
+vgui.Register("wsClasses", PANEL, "EditablePanel")
 
-hook.Add("CreateMenuButtons", "ixClasses", function(tabs)
-	local cnt = table.Count(ix.class.list)
+hook.Add("CreateMenuButtons", "wsClasses", function(tabs)
+	local cnt = table.Count(ws.class.list)
 
 	if (cnt <= 1) then return end
 
-	for k, _ in ipairs(ix.class.list) do
-		if (!ix.class.CanSwitchTo(LocalPlayer(), k)) then
+	for k, _ in ipairs(ws.class.list) do
+		if (!ws.class.CanSwitchTo(LocalPlayer(), k)) then
 			continue
 		else
 			tabs["classes"] = function(container)
-				container:Add("ixClasses")
+				container:Add("wsClasses")
 			end
 
 			return
@@ -142,17 +142,17 @@ hook.Add("CreateMenuButtons", "ixClasses", function(tabs)
 	end
 end)
 
-net.Receive("ixClassUpdate", function()
+net.Receive("wsClassUpdate", function()
 	local client = net.ReadEntity()
 
-	if (ix.gui.classes and ix.gui.classes:IsVisible()) then
+	if (ws.gui.classes and ws.gui.classes:IsVisible()) then
 		if (client == LocalPlayer()) then
-			ix.gui.classes:LoadClasses()
+			ws.gui.classes:LoadClasses()
 		else
-			for _, v in ipairs(ix.gui.classes.classPanels) do
+			for _, v in ipairs(ws.gui.classes.classPanels) do
 				local data = v.data
 
-				v:SetNumber(#ix.class.GetPlayers(data.index))
+				v:SetNumber(#ws.class.GetPlayers(data.index))
 			end
 		end
 	end

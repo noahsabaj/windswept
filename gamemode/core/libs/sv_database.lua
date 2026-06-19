@@ -1,51 +1,51 @@
 
-ix.db = ix.db or {
+ws.db = ws.db or {
 	schema = {},
 	schemaQueue = {},
 	type = {
 		-- TODO: more specific types, lengths, and defaults
 		-- i.e INT(11) UNSIGNED, SMALLINT(4), LONGTEXT, VARCHAR(350), NOT NULL, DEFAULT NULL, etc
-		[ix.type.string] = "VARCHAR(255)",
-		[ix.type.text] = "TEXT",
-		[ix.type.number] = "INT(11)",
-		[ix.type.steamid] = "VARCHAR(20)",
-		[ix.type.bool] = "TINYINT(1)"
+		[ws.type.string] = "VARCHAR(255)",
+		[ws.type.text] = "TEXT",
+		[ws.type.number] = "INT(11)",
+		[ws.type.steamid] = "VARCHAR(20)",
+		[ws.type.bool] = "TINYINT(1)"
 	}
 }
 
-ix.db.config = ix.config.server.database or {}
+ws.db.config = ws.config.server.database or {}
 
-function ix.db.Connect()
-	ix.db.config.adapter = ix.db.config.adapter or "sqlite"
+function ws.db.Connect()
+	ws.db.config.adapter = ws.db.config.adapter or "sqlite"
 
-	local dbmodule = ix.db.config.adapter
-	local hostname = ix.db.config.hostname
-	local username = ix.db.config.username
-	local password = ix.db.config.password
-	local database = ix.db.config.database
-	local port = ix.db.config.port
+	local dbmodule = ws.db.config.adapter
+	local hostname = ws.db.config.hostname
+	local username = ws.db.config.username
+	local password = ws.db.config.password
+	local database = ws.db.config.database
+	local port = ws.db.config.port
 
 	mysql:SetModule(dbmodule)
 	mysql:Connect(hostname, username, password, database, port)
 end
 
-function ix.db.AddToSchema(schemaType, field, fieldType)
-	if (!ix.db.type[fieldType]) then
+function ws.db.AddToSchema(schemaType, field, fieldType)
+	if (!ws.db.type[fieldType]) then
 		error(string.format("attempted to add field in schema with invalid type '%s'", fieldType))
 		return
 	end
 
-	if (!mysql:IsConnected() or !ix.db.schema[schemaType]) then
-		ix.db.schemaQueue[#ix.db.schemaQueue + 1] = {schemaType, field, fieldType}
+	if (!mysql:IsConnected() or !ws.db.schema[schemaType]) then
+		ws.db.schemaQueue[#ws.db.schemaQueue + 1] = {schemaType, field, fieldType}
 		return
 	end
 
-	ix.db.InsertSchema(schemaType, field, fieldType)
+	ws.db.InsertSchema(schemaType, field, fieldType)
 end
 
 -- this is only ever used internally
-function ix.db.InsertSchema(schemaType, field, fieldType)
-	local schema = ix.db.schema[schemaType]
+function ws.db.InsertSchema(schemaType, field, fieldType)
+	local schema = ws.db.schema[schemaType]
 
 	if (!schema) then
 		error(string.format("attempted to insert into schema with invalid schema type '%s'", schemaType))
@@ -61,12 +61,12 @@ function ix.db.InsertSchema(schemaType, field, fieldType)
 		query:Execute()
 
 		query = mysql:Alter(schemaType)
-			query:Add(field, ix.db.type[fieldType])
+			query:Add(field, ws.db.type[fieldType])
 		query:Execute()
 	end
 end
 
-function ix.db.LoadTables()
+function ws.db.LoadTables()
 	local query
 
 	query = mysql:Create("ix_schema")
@@ -76,7 +76,7 @@ function ix.db.LoadTables()
 	query:Execute()
 
 	-- table structure will be populated with more fields when vars
-	-- are registered using ix.char.RegisterVar
+	-- are registered using ws.char.RegisterVar
 	query = mysql:Create("ix_characters")
 		query:Create("id", "INT(11) UNSIGNED NOT NULL AUTO_INCREMENT")
 		query:PrimaryKey("id")
@@ -176,19 +176,19 @@ function ix.db.LoadTables()
 			end
 
 			for _, v in pairs(result) do
-				ix.db.schema[v.table] = util.JSONToTable(v.columns)
+				ws.db.schema[v.table] = util.JSONToTable(v.columns)
 			end
 
 			-- update schema if needed
-			for i = 1, #ix.db.schemaQueue do
-				local entry = ix.db.schemaQueue[i]
-				ix.db.InsertSchema(entry[1], entry[2], entry[3])
+			for i = 1, #ws.db.schemaQueue do
+				local entry = ws.db.schemaQueue[i]
+				ws.db.InsertSchema(entry[1], entry[2], entry[3])
 			end
 		end)
 	query:Execute()
 end
 
-function ix.db.WipeTables(callback)
+function ws.db.WipeTables(callback)
 	local query
 
 	query = mysql:Drop("ix_schema")
@@ -208,9 +208,9 @@ function ix.db.WipeTables(callback)
 	query:Execute()
 end
 
-hook.Add("InitPostEntity", "ixDatabaseConnect", function()
+hook.Add("InitPostEntity", "wsDatabaseConnect", function()
 	-- Connect to the database using SQLite, mysqoo, or tmysql4.
-	ix.db.Connect()
+	ws.db.Connect()
 end)
 
 local resetCalled = 0
@@ -230,7 +230,7 @@ concommand.Add("ix_wipedb", function(client, cmd, arguments)
 			MsgC(Color(255, 0, 0), "[Helix] DATABASE WIPE IN PROGRESS...\n")
 
 			hook.Run("OnWipeTables")
-			ix.db.WipeTables(function()
+			ws.db.WipeTables(function()
 				MsgC(Color(255, 255, 0), "[Helix] DATABASE WIPE COMPLETED!\n")
 				RunConsoleCommand("changelevel", game.GetMap())
 			end)

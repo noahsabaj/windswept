@@ -11,8 +11,8 @@ function PLUGIN:CharacterPreSave(character)
 	if (IsValid(client)) then
 		local position, eyeAngles = client:GetPos(), client:EyeAngles()
 		-- Use pre-observer position to prevent spawning in the air.
-		if (client.ixObsData) then
-			position, eyeAngles = client.ixObsData[1], client.ixObsData[2]
+		if (client.wsObsData) then
+			position, eyeAngles = client.wsObsData[1], client.wsObsData[2]
 		end
 		-- Store the position in the character's data.
 		character:SetData("pos", {position, eyeAngles, game.GetMap()})

@@ -54,19 +54,19 @@ local PROP_BLACKLIST = {
 }
 
 if (SERVER) then
-	ix.log.AddType("spawnProp", function(client, ...)
+	ws.log.AddType("spawnProp", function(client, ...)
 		local arg = {...}
 		return string.format("%s has spawned '%s'.", client:Name(), arg[1])
 	end)
 
-	ix.log.AddType("spawnEntity", function(client, ...)
+	ws.log.AddType("spawnEntity", function(client, ...)
 		local arg = {...}
 		return string.format("%s has spawned a '%s'.", client:Name(), arg[1])
 	end)
 
 	function PLUGIN:PlayerSpawnObject(client, model, entity)
-		if ((client.ixNextSpawn or 0) < CurTime()) then
-			client.ixNextSpawn = CurTime() + 0.75
+		if ((client.wsNextSpawn or 0) < CurTime()) then
+			client.wsNextSpawn = CurTime() + 0.75
 		else
 			return false
 		end
@@ -115,14 +115,14 @@ if (SERVER) then
 	end
 
 	function PLUGIN:PlayerSpawnedProp(client, model, entity)
-		ix.log.Add(client, "spawnProp", model)
+		ws.log.Add(client, "spawnProp", model)
 	end
 
 	PLUGIN.PlayerSpawnedEffect = PLUGIN.PlayerSpawnedProp
 	PLUGIN.PlayerSpawnedRagdoll = PLUGIN.PlayerSpawnedProp
 
 	function PLUGIN:PlayerSpawnedNPC(client, entity)
-		ix.log.Add(client, "spawnEntity", entity)
+		ws.log.Add(client, "spawnEntity", entity)
 	end
 
 	PLUGIN.PlayerSpawnedSWEP = PLUGIN.PlayerSpawnedNPC

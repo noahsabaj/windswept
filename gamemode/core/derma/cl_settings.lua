@@ -1,10 +1,10 @@
 
 local panelMap = {
-	[ix.type.bool] = "ixSettingsRowBool",
-	[ix.type.array] = "ixSettingsRowArray",
-	[ix.type.string] = "ixSettingsRowString",
-	[ix.type.number] = "ixSettingsRowNumber",
-	[ix.type.color] = "ixSettingsRowColor"
+	[ws.type.bool] = "wsSettingsRowBool",
+	[ws.type.array] = "wsSettingsRowArray",
+	[ws.type.string] = "wsSettingsRowString",
+	[ws.type.number] = "wsSettingsRowNumber",
+	[ws.type.color] = "wsSettingsRowColor"
 }
 
 local function EmitChange(pitch)
@@ -47,7 +47,7 @@ function PANEL:OpenPicker()
 		return
 	end
 
-	self.picker = vgui.Create("ixSettingsRowColorPicker")
+	self.picker = vgui.Create("wsSettingsRowColorPicker")
 	self.picker:Attach(self)
 	self.picker:SetValue(self.color)
 
@@ -74,13 +74,13 @@ function PANEL:GetValue()
 end
 
 function PANEL:PerformLayout(width, height)
-	surface.SetFont("ixMenuButtonFont")
+	surface.SetFont("wsMenuButtonFont")
 	local totalWidth = surface.GetTextSize("999")
 
 	self.panel:SetSize(totalWidth + self.padding * 2, height)
 end
 
-vgui.Register("ixSettingsRowColor", PANEL, "ixSettingsRow")
+vgui.Register("wsSettingsRowColor", PANEL, "wsSettingsRow")
 
 -- color setting picker
 DEFINE_BASECLASS("Panel")
@@ -158,13 +158,13 @@ function PANEL:Remove()
 	BaseClass.Remove(self)
 end
 
-vgui.Register("ixSettingsRowColorPicker", PANEL, "EditablePanel")
+vgui.Register("wsSettingsRowColorPicker", PANEL, "EditablePanel")
 
 -- number setting
 PANEL = {}
 
 function PANEL:Init()
-	self.setting = self:Add("ixNumSlider")
+	self.setting = self:Add("wsNumSlider")
 	self.setting.nextUpdate = 0
 	self.setting:Dock(RIGHT)
 	self.setting.OnValueChanged = function(panel)
@@ -203,7 +203,7 @@ function PANEL:OpenEntry()
 		return
 	end
 
-	self.entry = vgui.Create("ixSettingsRowNumberEntry")
+	self.entry = vgui.Create("wsSettingsRowNumberEntry")
 	self.entry:Attach(self)
 	self.entry:SetValue(self:GetValue(), true)
 	self.entry.OnValueChanged = function(panel)
@@ -244,7 +244,7 @@ function PANEL:PerformLayout(width, height)
 	self.setting:SetWide(width * 0.5)
 end
 
-vgui.Register("ixSettingsRowNumber", PANEL, "ixSettingsRow")
+vgui.Register("wsSettingsRowNumber", PANEL, "wsSettingsRow")
 
 -- number setting entry
 DEFINE_BASECLASS("Panel")
@@ -253,7 +253,7 @@ PANEL = {}
 AccessorFunc(PANEL, "bDeleteSelf", "DeleteSelf", FORCE_BOOL)
 
 function PANEL:Init()
-	surface.SetFont("ixMenuButtonFont")
+	surface.SetFont("wsMenuButtonFont")
 	local width, height = surface.GetTextSize("999999")
 
 	self.m_bIsMenuComponent = true
@@ -264,9 +264,9 @@ function PANEL:Init()
 	self:SetSize(width, height)
 	self:DockPadding(4, 4, 4, 4)
 
-	self.textEntry = self:Add("ixTextEntry")
+	self.textEntry = self:Add("wsTextEntry")
 	self.textEntry:SetNumeric(true)
-	self.textEntry:SetFont("ixMenuButtonFont")
+	self.textEntry:SetFont("wsMenuButtonFont")
 	self.textEntry:Dock(FILL)
 	self.textEntry:RequestFocus()
 	self.textEntry.OnEnter = function()
@@ -333,15 +333,15 @@ function PANEL:Remove()
 	BaseClass.Remove(self)
 end
 
-vgui.Register("ixSettingsRowNumberEntry", PANEL, "EditablePanel")
+vgui.Register("wsSettingsRowNumberEntry", PANEL, "EditablePanel")
 
 -- string setting
 PANEL = {}
 
 function PANEL:Init()
-	self.setting = self:Add("ixTextEntry")
+	self.setting = self:Add("wsTextEntry")
 	self.setting:Dock(RIGHT)
-	self.setting:SetFont("ixMenuButtonFont")
+	self.setting:SetFont("wsMenuButtonFont")
 	self.setting:SetBackgroundColor(derma.GetColor("DarkerBackground", self))
 	self.setting.OnEnter = function()
 		self:OnValueChanged(self:GetValue())
@@ -360,13 +360,13 @@ function PANEL:PerformLayout(width, height)
 	self.setting:SetWide(width * 0.5)
 end
 
-vgui.Register("ixSettingsRowString", PANEL, "ixSettingsRow")
+vgui.Register("wsSettingsRowString", PANEL, "wsSettingsRow")
 
 -- bool setting
 PANEL = {}
 
 function PANEL:Init()
-	self.setting = self:Add("ixCheckBox")
+	self.setting = self:Add("wsCheckBox")
 	self.setting:Dock(RIGHT)
 	self.setting.DoClick = function(panel)
 		self:OnValueChanged(self:GetValue())
@@ -383,7 +383,7 @@ function PANEL:GetValue()
 	return self.setting:GetChecked()
 end
 
-vgui.Register("ixSettingsRowBool", PANEL, "ixSettingsRow")
+vgui.Register("wsSettingsRowBool", PANEL, "wsSettingsRow")
 
 -- array setting
 PANEL = {}
@@ -393,7 +393,7 @@ function PANEL:Init()
 
 	self.setting = self:Add("DComboBox")
 	self.setting:Dock(RIGHT)
-	self.setting:SetFont("ixMenuButtonFont")
+	self.setting:SetFont("wsMenuButtonFont")
 	self.setting:SetTextColor(color_white)
 	self.setting.OnSelect = function(panel)
 		self:OnValueChanged(self:GetValue())
@@ -434,7 +434,7 @@ function PANEL:GetValue()
 	return select(2, self.setting:GetSelected())
 end
 
-vgui.Register("ixSettingsRowArray", PANEL, "ixSettingsRow")
+vgui.Register("wsSettingsRowArray", PANEL, "wsSettingsRow")
 
 -- settings row
 PANEL = {}
@@ -447,7 +447,7 @@ function PANEL:Init()
 
 	self.text = self:Add("DLabel")
 	self.text:Dock(LEFT)
-	self.text:SetFont("ixMenuButtonFont")
+	self.text:SetFont("wsMenuButtonFont")
 	self.text:SetExpensiveShadow(1, color_black)
 
 	self.backgroundIndex = 0
@@ -458,7 +458,7 @@ function PANEL:SetShowReset(value, name, default)
 
 	if (value and !IsValid(self.reset)) then
 		self.reset = self:Add("DButton")
-		self.reset:SetFont("ixSmallTitleIcons")
+		self.reset:SetFont("wsSmallTitleIcons")
 		self.reset:SetText("x")
 		self.reset:SetTextColor(ColorAlpha(derma.GetColor("Warning", self), 100))
 		self.reset:Dock(LEFT)
@@ -528,15 +528,15 @@ function PANEL:SizeToContents()
 
 	self.text:SizeToContents()
 	self:SetTall(self.text:GetTall() + top + bottom)
-	self.ixRealHeight = self:GetTall()
-	self.ixHeight = self.ixRealHeight
+	self.wsRealHeight = self:GetTall()
+	self.wsHeight = self.wsRealHeight
 end
 
 function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintSettingsRowBackground", self, width, height)
 end
 
-vgui.Register("ixSettingsRow", PANEL, "EditablePanel")
+vgui.Register("wsSettingsRow", PANEL, "EditablePanel")
 
 -- settings panel
 PANEL = {}
@@ -561,14 +561,14 @@ function PANEL:Init()
 end
 
 function PANEL:GetRowPanelName(type)
-	return panelMap[type] or "ixSettingsRow"
+	return panelMap[type] or "wsSettingsRow"
 end
 
 function PANEL:AddCategory(name)
 	local panel = self.categories[name]
 
 	if (!IsValid(panel)) then
-		panel = self.canvas:Add("ixCategoryPanel")
+		panel = self.canvas:Add("wsCategoryPanel")
 		panel:SetText(name)
 		panel:Dock(TOP)
 		panel:DockMargin(0, 8, 0, 0)
@@ -583,8 +583,8 @@ function PANEL:AddRow(type, category)
 	local id = panelMap[type]
 
 	if (!id) then
-		ErrorNoHalt("attempted to create row with unimplemented type '" .. tostring(ix.type[type]) .. "'\n")
-		id = "ixSettingsRow"
+		ErrorNoHalt("attempted to create row with unimplemented type '" .. tostring(ws.type[type]) .. "'\n")
+		id = "wsSettingsRow"
 	end
 
 	local panel = (IsValid(category) and category or self.canvas):Add(id)
@@ -619,7 +619,7 @@ function PANEL:SetSearchEnabled(bValue)
 	end
 
 	-- search entry
-	self.searchEntry = self:Add("ixIconTextEntry")
+	self.searchEntry = self:Add("wsIconTextEntry")
 	self.searchEntry:Dock(TOP)
 	self.searchEntry:SetEnterAllowed(false)
 
@@ -650,11 +650,11 @@ function PANEL:FilterRows(query)
 			row:SetVisible(true)
 			row:CreateAnimation(0.5, {
 				index = 21,
-				target = {ixHeight = bFound and row.ixRealHeight or 0},
+				target = {wsHeight = bFound and row.wsRealHeight or 0},
 				easing = "outQuint",
 
 				Think = function(animation, panel)
-					panel:SetTall(bFound and math.min(panel.ixHeight + 2, panel.ixRealHeight) or math.max(panel.ixHeight - 2, 0))
+					panel:SetTall(bFound and math.min(panel.wsHeight + 2, panel.wsRealHeight) or math.max(panel.wsHeight - 2, 0))
 				end,
 
 				OnComplete = function(animation, panel)
@@ -663,7 +663,7 @@ function PANEL:FilterRows(query)
 					-- need this so categories are sized properly when animations are disabled - there is no guaranteed order
 					-- that animations will think so we SizeToContents here. putting it here will result in redundant calls but
 					-- I guess we have the performance to spare
-					if (ix.option.Get("disableAnimations", false)) then
+					if (ws.option.Get("disableAnimations", false)) then
 						category:SizeToContents()
 					end
 				end
@@ -681,18 +681,18 @@ function PANEL:SizeToContents()
 	end
 end
 
-vgui.Register("ixSettings", PANEL, "Panel")
+vgui.Register("wsSettings", PANEL, "Panel")
 
-hook.Add("CreateMenuButtons", "ixSettings", function(tabs)
+hook.Add("CreateMenuButtons", "wsSettings", function(tabs)
 	tabs["settings"] = {
 		PopulateTabButton = function(info, button)
-			local menu = ix.gui.menu
+			local menu = ws.gui.menu
 
 			if (!IsValid(menu)) then
 				return
 			end
 
-			DEFINE_BASECLASS("ixMenuButton")
+			DEFINE_BASECLASS("wsMenuButton")
 			button:SetZPos(9999)
 			button.Paint = function(panel, width, height)
 				BaseClass.Paint(panel, width, height)
@@ -703,10 +703,10 @@ hook.Add("CreateMenuButtons", "ixSettings", function(tabs)
 		end,
 
 		Create = function(info, container)
-			local panel = container:Add("ixSettings")
+			local panel = container:Add("wsSettings")
 			panel:SetSearchEnabled(true)
 
-			for category, options in SortedPairs(ix.option.GetAllByCategories(true)) do
+			for category, options in SortedPairs(ws.option.GetAllByCategories(true)) do
 				category = L(category)
 				panel:AddCategory(category)
 
@@ -718,13 +718,13 @@ hook.Add("CreateMenuButtons", "ixSettings", function(tabs)
 				for _, data in pairs(options) do
 					local key = data.key
 					local row = panel:AddRow(data.type, category)
-					local value = ix.util.SanitizeType(data.type, ix.option.Get(key))
+					local value = ws.util.SanitizeType(data.type, ws.option.Get(key))
 
 					row:SetText(L(data.phrase))
 					row:Populate(key, data)
 
 					-- type-specific properties
-					if (data.type == ix.type.number) then
+					if (data.type == ws.type.number) then
 						row:SetMin(data.min or 0)
 						row:SetMax(data.max or 10)
 						row:SetDecimals(data.decimals or 0)
@@ -736,14 +736,14 @@ hook.Add("CreateMenuButtons", "ixSettings", function(tabs)
 						local newValue = row:GetValue()
 
 						row:SetShowReset(newValue != data.default, key, data.default)
-						ix.option.Set(key, newValue)
+						ws.option.Set(key, newValue)
 					end
 
 					row.OnResetClicked = function()
 						row:SetShowReset(false)
 						row:SetValue(data.default, true)
 
-						ix.option.Set(key, data.default)
+						ws.option.Set(key, data.default)
 					end
 
 					row:GetLabel():SetHelixTooltip(function(tooltip)

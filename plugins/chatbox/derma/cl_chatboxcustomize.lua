@@ -4,13 +4,13 @@ local PLUGIN = PLUGIN
 local PANEL = {}
 
 function PANEL:Init()
-	ix.gui.chatTabCustomize = self
+	ws.gui.chatTabCustomize = self
 
 	self:SetTitle(L("chatNewTab"))
 	self:SetSizable(true)
 	self:SetSize(ScrW() * 0.5, ScrH() * 0.5)
 
-	self.settings = self:Add("ixSettings")
+	self.settings = self:Add("wsSettings")
 	self.settings:Dock(FILL)
 	self.settings:SetSearchEnabled(true)
 	self.settings:AddCategory(L("chatAllowedClasses"))
@@ -26,7 +26,7 @@ function PANEL:Init()
 	self.create:SizeToContents()
 	self.create:Dock(FILL)
 	self.create:DockMargin(0, 0, 4, 0)
-	self.create.DoClick = ix.util.Bind(self, self.CreateClicked)
+	self.create.DoClick = ws.util.Bind(self, self.CreateClicked)
 
 	local uncheckAll = controlsPanel:Add("DButton")
 	uncheckAll:SetText(L("uncheckAll"))
@@ -46,13 +46,13 @@ function PANEL:Init()
 	end
 
 	-- chat class settings
-	self.name = self.settings:AddRow(ix.type.string)
+	self.name = self.settings:AddRow(ws.type.string)
 	self.name:SetText(L("chatTabName"))
 	self.name:SetValue(L("chatNewTabTitle"))
 	self.name:SetZPos(-1)
 
-	for k, _ in SortedPairs(ix.chat.classes) do
-		local panel = self.settings:AddRow(ix.type.bool, L("chatAllowedClasses"))
+	for k, _ in SortedPairs(ws.chat.classes) do
+		local panel = self.settings:AddRow(ws.type.bool, L("chatAllowedClasses"))
 		panel:SetText(k)
 		panel:SetValue(true, true)
 	end
@@ -90,7 +90,7 @@ function PANEL:CreateClicked()
 	local name = self.tab and self.tab or self.name:GetValue()
 
 	if (self.tab != self.name:GetValue() and PLUGIN:TabExists(self.name:GetValue())) then
-		ix.util.Notify(L("chatTabExists"))
+		ws.util.Notify(L("chatTabExists"))
 		return
 	end
 
@@ -118,4 +118,4 @@ end
 function PANEL:OnTabUpdated(id, filter, newID)
 end
 
-vgui.Register("ixChatboxTabCustomize", PANEL, "DFrame")
+vgui.Register("wsChatboxTabCustomize", PANEL, "DFrame")

@@ -1,36 +1,36 @@
 
-ix.command.Add("Roll", {
+ws.command.Add("Roll", {
 	description = "@cmdRoll",
-	arguments = bit.bor(ix.type.number, ix.type.optional),
+	arguments = bit.bor(ws.type.number, ws.type.optional),
 	OnRun = function(self, client, maximum)
 		maximum = math.Clamp(maximum or 100, 0, 1000000)
 
 		local value = math.random(0, maximum)
 
-		ix.chat.Send(client, "roll", tostring(value), nil, nil, {
+		ws.chat.Send(client, "roll", tostring(value), nil, nil, {
 			max = maximum
 		})
 
-		ix.log.Add(client, "roll", value, maximum)
+		ws.log.Add(client, "roll", value, maximum)
 	end
 })
 
-ix.command.Add("Event", {
+ws.command.Add("Event", {
 	description = "@cmdEvent",
-	arguments = ix.type.text,
+	arguments = ws.type.text,
 	superAdminOnly = true,
 	OnRun = function(self, client, text)
-		ix.chat.Send(client, "event", text)
+		ws.chat.Send(client, "event", text)
 	end
 })
 
-ix.command.Add("CharGiveFlag", {
+ws.command.Add("CharGiveFlag", {
 	description = "@cmdCharGiveFlag",
 	privilege = "Manage Character Flags",
 	superAdminOnly = true,
 	arguments = {
-		ix.type.character,
-		bit.bor(ix.type.string, ix.type.optional)
+		ws.type.character,
+		bit.bor(ws.type.string, ws.type.optional)
 	},
 	OnRun = function(self, client, target, flags)
 		-- show string request if no flags are specified
@@ -38,14 +38,14 @@ ix.command.Add("CharGiveFlag", {
 			local available = ""
 
 			-- sort and display flags the character already has
-			for k, _ in SortedPairs(ix.flag.list) do
+			for k, _ in SortedPairs(ws.flag.list) do
 				if (!target:HasFlags(k)) then
 					available = available .. k
 				end
 			end
 
 			return client:RequestString("@flagGiveTitle", "@cmdCharGiveFlag", function(text)
-				ix.command.Run(client, "CharGiveFlag", {target:GetName(), text})
+				ws.command.Run(client, "CharGiveFlag", {target:GetName(), text})
 			end, available)
 		end
 
@@ -59,18 +59,18 @@ ix.command.Add("CharGiveFlag", {
 	end
 })
 
-ix.command.Add("CharTakeFlag", {
+ws.command.Add("CharTakeFlag", {
 	description = "@cmdCharTakeFlag",
 	privilege = "Manage Character Flags",
 	superAdminOnly = true,
 	arguments = {
-		ix.type.character,
-		bit.bor(ix.type.string, ix.type.optional)
+		ws.type.character,
+		bit.bor(ws.type.string, ws.type.optional)
 	},
 	OnRun = function(self, client, target, flags)
 		if (!flags) then
 			return client:RequestString("@flagTakeTitle", "@cmdCharTakeFlag", function(text)
-				ix.command.Run(client, "CharTakeFlag", {target:GetName(), text})
+				ws.command.Run(client, "CharTakeFlag", {target:GetName(), text})
 			end, target:GetFlags())
 		end
 
@@ -84,23 +84,23 @@ ix.command.Add("CharTakeFlag", {
 	end
 })
 
-ix.command.Add("ToggleRaise", {
+ws.command.Add("ToggleRaise", {
 	description = "@cmdToggleRaise",
 	OnRun = function(self, client, arguments)
-		if (!timer.Exists("ixToggleRaise" .. client:SteamID())) then
-			timer.Create("ixToggleRaise" .. client:SteamID(), ix.config.Get("weaponRaiseTime"), 1, function()
+		if (!timer.Exists("wsToggleRaise" .. client:SteamID())) then
+			timer.Create("wsToggleRaise" .. client:SteamID(), ws.config.Get("weaponRaiseTime"), 1, function()
 				client:ToggleWepRaised()
 			end)
 		end
 	end
 })
 
-ix.command.Add("CharSetModel", {
+ws.command.Add("CharSetModel", {
 	description = "@cmdCharSetModel",
 	superAdminOnly = true,
 	arguments = {
-		ix.type.character,
-		ix.type.string
+		ws.type.character,
+		ws.type.string
 	},
 	OnRun = function(self, client, target, model)
 		target:SetModel(model)
@@ -114,12 +114,12 @@ ix.command.Add("CharSetModel", {
 	end
 })
 
-ix.command.Add("CharSetSkin", {
+ws.command.Add("CharSetSkin", {
 	description = "@cmdCharSetSkin",
 	adminOnly = true,
 	arguments = {
-		ix.type.character,
-		bit.bor(ix.type.number, ix.type.optional)
+		ws.type.character,
+		bit.bor(ws.type.number, ws.type.optional)
 	},
 	OnRun = function(self, client, target, skin)
 		target:SetData("skin", skin)
@@ -133,13 +133,13 @@ ix.command.Add("CharSetSkin", {
 	end
 })
 
-ix.command.Add("CharSetBodygroup", {
+ws.command.Add("CharSetBodygroup", {
 	description = "@cmdCharSetBodygroup",
 	adminOnly = true,
 	arguments = {
-		ix.type.character,
-		ix.type.string,
-		bit.bor(ix.type.number, ix.type.optional)
+		ws.type.character,
+		ws.type.string,
+		bit.bor(ws.type.number, ws.type.optional)
 	},
 	OnRun = function(self, client, target, bodygroup, value)
 		local index = target:GetPlayer():FindBodygroupByName(bodygroup)
@@ -154,25 +154,25 @@ ix.command.Add("CharSetBodygroup", {
 			target:SetData("groups", groups)
 			target:GetPlayer():SetBodygroup(index, value or 0)
 
-			ix.util.NotifyLocalized("cChangeGroups", nil, client:GetName(), target:GetName(), bodygroup, value or 0)
+			ws.util.NotifyLocalized("cChangeGroups", nil, client:GetName(), target:GetName(), bodygroup, value or 0)
 		else
 			return "@invalidArg", 2
 		end
 	end
 })
 
-ix.command.Add("CharSetAttribute", {
+ws.command.Add("CharSetAttribute", {
 	description = "@cmdCharSetAttribute",
 	privilege = "Manage Character Attributes",
 	adminOnly = true,
 	arguments = {
-		ix.type.character,
-		ix.type.string,
-		ix.type.number
+		ws.type.character,
+		ws.type.string,
+		ws.type.number
 	},
 	OnRun = function(self, client, target, attributeName, level)
-		for k, v in pairs(ix.attributes.list) do
-			if (ix.util.StringMatches(L(v.name, client), attributeName) or ix.util.StringMatches(k, attributeName)) then
+		for k, v in pairs(ws.attributes.list) do
+			if (ws.util.StringMatches(L(v.name, client), attributeName) or ws.util.StringMatches(k, attributeName)) then
 				target:SetAttrib(k, math.abs(level))
 				return "@attributeSet", target:GetName(), L(v.name, client), math.abs(level)
 			end
@@ -182,18 +182,18 @@ ix.command.Add("CharSetAttribute", {
 	end
 })
 
-ix.command.Add("CharAddAttribute", {
+ws.command.Add("CharAddAttribute", {
 	description = "@cmdCharAddAttribute",
 	privilege = "Manage Character Attributes",
 	adminOnly = true,
 	arguments = {
-		ix.type.character,
-		ix.type.string,
-		ix.type.number
+		ws.type.character,
+		ws.type.string,
+		ws.type.number
 	},
 	OnRun = function(self, client, target, attributeName, level)
-		for k, v in pairs(ix.attributes.list) do
-			if (ix.util.StringMatches(L(v.name, client), attributeName) or ix.util.StringMatches(k, attributeName)) then
+		for k, v in pairs(ws.attributes.list) do
+			if (ws.util.StringMatches(L(v.name, client), attributeName) or ws.util.StringMatches(k, attributeName)) then
 				target:UpdateAttrib(k, math.abs(level))
 				return "@attributeUpdate", target:GetName(), L(v.name, client), math.abs(level)
 			end
@@ -203,18 +203,18 @@ ix.command.Add("CharAddAttribute", {
 	end
 })
 
-ix.command.Add("CharSetName", {
+ws.command.Add("CharSetName", {
 	description = "@cmdCharSetName",
 	adminOnly = true,
 	arguments = {
-		ix.type.character,
-		bit.bor(ix.type.text, ix.type.optional)
+		ws.type.character,
+		bit.bor(ws.type.text, ws.type.optional)
 	},
 	OnRun = function(self, client, target, newName)
 		-- display string request panel if no name was specified
 		if (newName:len() == 0) then
 			return client:RequestString("@chgName", "@chgNameDesc", function(text)
-				ix.command.Run(client, "CharSetName", {target:GetName(), text})
+				ws.command.Run(client, "CharSetName", {target:GetName(), text})
 			end, target:GetName())
 		end
 
@@ -228,20 +228,20 @@ ix.command.Add("CharSetName", {
 	end
 })
 
-ix.command.Add("CharGiveItem", {
+ws.command.Add("CharGiveItem", {
 	description = "@cmdCharGiveItem",
 	superAdminOnly = true,
 	arguments = {
-		ix.type.character,
-		ix.type.string,
-		bit.bor(ix.type.number, ix.type.optional)
+		ws.type.character,
+		ws.type.string,
+		bit.bor(ws.type.number, ws.type.optional)
 	},
 	OnRun = function(self, client, target, item, amount)
 		local uniqueID = item:lower()
 
-		if (!ix.item.list[uniqueID]) then
-			for k, v in SortedPairs(ix.item.list) do
-				if (ix.util.StringMatches(v.name, uniqueID)) then
+		if (!ws.item.list[uniqueID]) then
+			for k, v in SortedPairs(ws.item.list) do
+				if (ws.util.StringMatches(v.name, uniqueID)) then
 					uniqueID = k
 
 					break
@@ -249,7 +249,7 @@ ix.command.Add("CharGiveItem", {
 			end
 		end
 
-		local itemTable = ix.item.list[uniqueID]
+		local itemTable = ws.item.list[uniqueID]
 		if (!itemTable) then
 			return "@invalidItem"
 		end
@@ -257,7 +257,7 @@ ix.command.Add("CharGiveItem", {
 		amount = amount or 1
 
 		-- Handle currency items specially - use stacking system
-		if (itemTable.isCurrency and ix.currency) then
+		if (itemTable.isCurrency and ws.currency) then
 			local cents = amount * (itemTable.currencyValue or 1)
 			local bSuccess = target:GiveMoney(cents)
 
@@ -287,10 +287,10 @@ ix.command.Add("CharGiveItem", {
 	end
 })
 
-ix.command.Add("CharKick", {
+ws.command.Add("CharKick", {
 	description = "@cmdCharKick",
 	adminOnly = true,
-	arguments = ix.type.character,
+	arguments = ws.type.character,
 	OnRun = function(self, client, target)
 		target:Save(function()
 			target:Kick()
@@ -304,12 +304,12 @@ ix.command.Add("CharKick", {
 	end
 })
 
-ix.command.Add("CharBan", {
+ws.command.Add("CharBan", {
 	description = "@cmdCharBan",
 	privilege = "Ban Character",
 	arguments = {
-		ix.type.character,
-		bit.bor(ix.type.number, ix.type.optional)
+		ws.type.character,
+		bit.bor(ws.type.number, ws.type.optional)
 	},
 	adminOnly = true,
 	OnRun = function(self, client, target, minutes)
@@ -328,18 +328,18 @@ ix.command.Add("CharBan", {
 	end
 })
 
-ix.command.Add("CharUnban", {
+ws.command.Add("CharUnban", {
 	description = "@cmdCharUnban",
 	privilege = "Ban Character",
-	arguments = ix.type.text,
+	arguments = ws.type.text,
 	adminOnly = true,
 	OnRun = function(self, client, name)
-		if ((client.ixNextSearch or 0) >= CurTime()) then
+		if ((client.wsNextSearch or 0) >= CurTime()) then
 			return L("charSearching", client)
 		end
 
-		for _, v in pairs(ix.char.loaded) do
-			if (ix.util.StringMatches(v:GetName(), name)) then
+		for _, v in pairs(ws.char.loaded) do
+			if (ws.util.StringMatches(v:GetName(), name)) then
 				if (v:GetData("banned")) then
 					v:SetData("banned")
 				else
@@ -356,7 +356,7 @@ ix.command.Add("CharUnban", {
 			end
 		end
 
-		client.ixNextSearch = CurTime() + 15
+		client.wsNextSearch = CurTime() + 15
 
 		local query = mysql:Select("ix_characters")
 			query:Select("id")
@@ -370,7 +370,7 @@ ix.command.Add("CharUnban", {
 					local data = util.JSONToTable(result[1].data or "[]")
 					name = result[1].name
 
-					client.ixNextSearch = 0
+					client.wsNextSearch = 0
 
 					if (!data.banned) then
 						return client:NotifyLocalized("charNotBanned")
@@ -395,13 +395,13 @@ ix.command.Add("CharUnban", {
 })
 
 do
-	hook.Add("InitializedConfig", "ixMoneyCommands", function()
-		local MONEY_NAME = string.gsub(ix.util.ExpandCamelCase(ix.currency.plural), "%s", "")
+	hook.Add("InitializedConfig", "wsMoneyCommands", function()
+		local MONEY_NAME = string.gsub(ws.util.ExpandCamelCase(ws.currency.plural), "%s", "")
 
-		ix.command.Add("Give" .. MONEY_NAME, {
+		ws.command.Add("Give" .. MONEY_NAME, {
 			alias = {"GiveMoney"},
 			description = "@cmdGiveMoney",
-			arguments = ix.type.number,
+			arguments = ws.type.number,
 			OnRun = function(self, client, amount)
 				-- User enters dollars, internal system uses cents
 				amount = math.floor(amount)
@@ -417,7 +417,7 @@ do
 				local target = util.TraceLine(data).Entity
 
 				if (IsValid(target) and target:IsPlayer() and target:GetCharacter()) then
-					local cents = amount * ix.currency.CENTS_PER_DOLLAR
+					local cents = amount * ws.currency.CENTS_PER_DOLLAR
 
 					if (!client:GetCharacter():HasMoney(cents)) then
 						return
@@ -431,19 +431,19 @@ do
 
 					client:GetCharacter():TakeMoney(cents)
 
-					target:NotifyLocalized("moneyTaken", ix.currency.Get(cents))
-					client:NotifyLocalized("moneyGiven", ix.currency.Get(cents))
+					target:NotifyLocalized("moneyTaken", ws.currency.Get(cents))
+					client:NotifyLocalized("moneyGiven", ws.currency.Get(cents))
 				end
 			end
 		})
 
-		ix.command.Add("CharSet" .. MONEY_NAME, {
+		ws.command.Add("CharSet" .. MONEY_NAME, {
 			alias = {"CharSetMoney"},
 			description = "@cmdCharSetMoney",
 			superAdminOnly = true,
 			arguments = {
-				ix.type.character,
-				ix.type.number
+				ws.type.character,
+				ws.type.number
 			},
 			OnRun = function(self, client, target, amount)
 				-- User enters dollars, internal system uses cents
@@ -453,28 +453,28 @@ do
 					return "@invalidArg", 2
 				end
 
-				local cents = amount * ix.currency.CENTS_PER_DOLLAR
+				local cents = amount * ws.currency.CENTS_PER_DOLLAR
 				target:SetMoney(cents)
-				client:NotifyLocalized("setMoney", target:GetName(), ix.currency.Get(cents))
+				client:NotifyLocalized("setMoney", target:GetName(), ws.currency.Get(cents))
 			end
 		})
 
-		ix.command.Add("Drop" .. MONEY_NAME, {
+		ws.command.Add("Drop" .. MONEY_NAME, {
 			alias = {"DropMoney"},
 			description = "@cmdDropMoney",
-			arguments = ix.type.number,
+			arguments = ws.type.number,
 			OnRun = function(self, client, amount)
 				-- User enters dollars, internal system uses cents
 				amount = math.Round(amount)
 
-				local minDropAmount = ix.config.Get("minMoneyDropAmount", 1)
+				local minDropAmount = ws.config.Get("minMoneyDropAmount", 1)
 
 				if (amount < minDropAmount) then
 					return "@belowMinMoneyDrop", minDropAmount
 				end
 
 				-- Convert to cents for internal checks
-				local cents = amount * ix.currency.CENTS_PER_DOLLAR
+				local cents = amount * ws.currency.CENTS_PER_DOLLAR
 
 				if (!client:GetCharacter():HasMoney(cents)) then
 					return "@insufficientMoney"
@@ -482,23 +482,23 @@ do
 
 				client:GetCharacter():TakeMoney(cents)
 
-				-- Spawn money entity (amount in dollars for ix.currency.Spawn)
-				local money = ix.currency.Spawn(client, amount)
-				money.ixCharID = client:GetCharacter():GetID()
-				money.ixSteamID = client:SteamID()
+				-- Spawn money entity (amount in dollars for ws.currency.Spawn)
+				local money = ws.currency.Spawn(client, amount)
+				money.wsCharID = client:GetCharacter():GetID()
+				money.wsSteamID = client:SteamID()
 			end
 		})
 	end)
 end
 
-ix.command.Add("CharGetUp", {
+ws.command.Add("CharGetUp", {
 	description = "@cmdCharGetUp",
 	OnRun = function(self, client, arguments)
-		local entity = client.ixRagdoll
+		local entity = client.wsRagdoll
 
-		if (IsValid(entity) and entity.ixGrace and entity.ixGrace < CurTime() and
-			entity:GetVelocity():Length2D() < 8 and !entity.ixWakingUp) then
-			entity.ixWakingUp = true
+		if (IsValid(entity) and entity.wsGrace and entity.wsGrace < CurTime() and
+			entity:GetVelocity():Length2D() < 8 and !entity.wsWakingUp) then
+			entity.wsWakingUp = true
 			entity:CallOnRemove("CharGetUp", function()
 				client:SetAction()
 			end)
@@ -515,9 +515,9 @@ ix.command.Add("CharGetUp", {
 	end
 })
 
-ix.command.Add("CharFallOver", {
+ws.command.Add("CharFallOver", {
 	description = "@cmdCharFallOver",
-	arguments = bit.bor(ix.type.number, ix.type.optional),
+	arguments = bit.bor(ws.type.number, ws.type.optional),
 	OnRun = function(self, client, time)
 		if (!client:Alive() or client:GetMoveType() == MOVETYPE_NOCLIP) then
 			return "@notNow"
@@ -527,23 +527,23 @@ ix.command.Add("CharFallOver", {
 			time = math.Clamp(time, 1, 60)
 		end
 
-		if (!IsValid(client.ixRagdoll)) then
+		if (!IsValid(client.wsRagdoll)) then
 			client:SetRagdolled(true, time)
 		end
 	end
 })
 
-ix.command.Add("CharDesc", {
+ws.command.Add("CharDesc", {
 	description = "@cmdCharDesc",
-	arguments = bit.bor(ix.type.text, ix.type.optional),
+	arguments = bit.bor(ws.type.text, ws.type.optional),
 	OnRun = function(self, client, description)
 		if (!description:find("%S")) then
 			return client:RequestString("@cmdCharDescTitle", "@cmdCharDescDescription", function(text)
-				ix.command.Run(client, "CharDesc", {text})
+				ws.command.Run(client, "CharDesc", {text})
 			end, client:GetCharacter():GetDescription())
 		end
 
-		local info = ix.char.vars.description
+		local info = ws.char.vars.description
 		local result, fault, count = info:OnValidate(description)
 
 		if (result == false) then
@@ -555,13 +555,13 @@ ix.command.Add("CharDesc", {
 	end
 })
 
-ix.command.Add("MapRestart", {
+ws.command.Add("MapRestart", {
 	description = "@cmdMapRestart",
 	adminOnly = true,
-	arguments = bit.bor(ix.type.number, ix.type.optional),
+	arguments = bit.bor(ws.type.number, ws.type.optional),
 	OnRun = function(self, client, delay)
 		delay = delay or 10
-		ix.util.NotifyLocalized("mapRestarting", nil, delay)
+		ws.util.NotifyLocalized("mapRestarting", nil, delay)
 
 		timer.Simple(delay, function()
 			RunConsoleCommand("changelevel", game.GetMap())

@@ -2,30 +2,30 @@
 local padding = ScreenScale(32)
 
 -- character creation field visibility API
-ix.charCreate = ix.charCreate or {}
+ws.charCreate = ws.charCreate or {}
 
 --- Collapse or expand a character creation field panel and its label.
 -- Properly removes from dock layout flow when hidden (GMod's dock system does NOT skip invisible panels).
 -- @realm client
 -- @param panel The panel to show/hide
 -- @param bVisible Whether the panel should be visible
-function ix.charCreate.SetFieldVisible(panel, bVisible)
+function ws.charCreate.SetFieldVisible(panel, bVisible)
 	if not IsValid(panel) then return end
 
 	if bVisible then
 		panel:SetVisible(true)
 		panel:Dock(TOP)
 
-		if panel.ixOrigMargin then
-			panel:DockMargin(unpack(panel.ixOrigMargin))
-			panel.ixOrigMargin = nil
+		if panel.wsOrigMargin then
+			panel:DockMargin(unpack(panel.wsOrigMargin))
+			panel.wsOrigMargin = nil
 		end
 
 		panel:InvalidateLayout(true)
 	else
-		if not panel.ixOrigMargin then
+		if not panel.wsOrigMargin then
 			local l, t, r, b = panel:GetDockMargin()
-			panel.ixOrigMargin = {l, t, r, b}
+			panel.wsOrigMargin = {l, t, r, b}
 		end
 
 		panel:SetVisible(false)
@@ -33,25 +33,25 @@ function ix.charCreate.SetFieldVisible(panel, bVisible)
 	end
 
 	-- Also toggle the label sibling
-	if IsValid(panel.ixLabel) then
+	if IsValid(panel.wsLabel) then
 		if bVisible then
-			panel.ixLabel:SetVisible(true)
-			panel.ixLabel:Dock(TOP)
+			panel.wsLabel:SetVisible(true)
+			panel.wsLabel:Dock(TOP)
 
-			if panel.ixLabel.ixOrigMargin then
-				panel.ixLabel:DockMargin(unpack(panel.ixLabel.ixOrigMargin))
-				panel.ixLabel.ixOrigMargin = nil
+			if panel.wsLabel.wsOrigMargin then
+				panel.wsLabel:DockMargin(unpack(panel.wsLabel.wsOrigMargin))
+				panel.wsLabel.wsOrigMargin = nil
 			end
 
-			panel.ixLabel:InvalidateLayout(true)
+			panel.wsLabel:InvalidateLayout(true)
 		else
-			if not panel.ixLabel.ixOrigMargin then
-				local l, t, r, b = panel.ixLabel:GetDockMargin()
-				panel.ixLabel.ixOrigMargin = {l, t, r, b}
+			if not panel.wsLabel.wsOrigMargin then
+				local l, t, r, b = panel.wsLabel:GetDockMargin()
+				panel.wsLabel.wsOrigMargin = {l, t, r, b}
 			end
 
-			panel.ixLabel:SetVisible(false)
-			panel.ixLabel:Dock(NODOCK)
+			panel.wsLabel:SetVisible(false)
+			panel.wsLabel:Dock(NODOCK)
 		end
 	end
 
@@ -62,7 +62,7 @@ function ix.charCreate.SetFieldVisible(panel, bVisible)
 end
 
 -- create character panel
-DEFINE_BASECLASS("ixCharMenuPanel")
+DEFINE_BASECLASS("wsCharMenuPanel")
 local PANEL = {}
 
 function PANEL:Init()
@@ -90,7 +90,7 @@ function PANEL:Init()
 	modelList:Dock(RIGHT)
 	modelList:SetSize(halfWidth + padding * 2, halfHeight)
 
-	local proceed = modelList:Add("ixMenuButton")
+	local proceed = modelList:Add("wsMenuButton")
 	proceed:SetText("proceed")
 	proceed:SetContentAlignment(6)
 	proceed:Dock(BOTTOM)
@@ -102,17 +102,17 @@ function PANEL:Init()
 		self:SetActiveSubpanel("description")
 	end
 
-	self.factionModel = modelList:Add("ixModelPanel")
+	self.factionModel = modelList:Add("wsModelPanel")
 	self.factionModel:Dock(FILL)
 	self.factionModel:SetModel("models/error.mdl")
 	self.factionModel:SetFOV(modelFOV)
 	self.factionModel.PaintModel = self.factionModel.Paint
 
-	self.factionButtonsPanel = self.factionPanel:Add("ixCharMenuButtonList")
+	self.factionButtonsPanel = self.factionPanel:Add("wsCharMenuButtonList")
 	self.factionButtonsPanel:SetWide(halfWidth)
 	self.factionButtonsPanel:Dock(FILL)
 
-	local factionBack = self.factionPanel:Add("ixMenuButton")
+	local factionBack = self.factionPanel:Add("wsMenuButton")
 	factionBack:SetText("return")
 	factionBack:SizeToContents()
 	factionBack:Dock(BOTTOM)
@@ -133,7 +133,7 @@ function PANEL:Init()
 	descriptionModelList:Dock(LEFT)
 	descriptionModelList:SetSize(halfWidth, halfHeight)
 
-	local descriptionBack = descriptionModelList:Add("ixMenuButton")
+	local descriptionBack = descriptionModelList:Add("wsMenuButton")
 	descriptionBack:SetText("return")
 	descriptionBack:SetContentAlignment(4)
 	descriptionBack:SizeToContents()
@@ -148,7 +148,7 @@ function PANEL:Init()
 		end
 	end
 
-	self.descriptionModel = descriptionModelList:Add("ixModelPanel")
+	self.descriptionModel = descriptionModelList:Add("wsModelPanel")
 	self.descriptionModel:Dock(FILL)
 	self.descriptionModel:SetModel(self.factionModel:GetModel())
 	self.descriptionModel:SetFOV(modelFOV - 13)
@@ -159,7 +159,7 @@ function PANEL:Init()
 	descriptionContainer:SetWide(halfWidth + padding * 2)
 	descriptionContainer:Dock(RIGHT)
 
-	local descriptionProceed = descriptionContainer:Add("ixMenuButton")
+	local descriptionProceed = descriptionContainer:Add("wsMenuButton")
 	descriptionProceed:SetText("proceed")
 	descriptionProceed:SetContentAlignment(6)
 	descriptionProceed:SizeToContents()
@@ -190,7 +190,7 @@ function PANEL:Init()
 	attributesModelList:Dock(LEFT)
 	attributesModelList:SetSize(halfWidth, halfHeight)
 
-	local attributesBack = attributesModelList:Add("ixMenuButton")
+	local attributesBack = attributesModelList:Add("wsMenuButton")
 	attributesBack:SetText("return")
 	attributesBack:SetContentAlignment(4)
 	attributesBack:SizeToContents()
@@ -200,7 +200,7 @@ function PANEL:Init()
 		self:SetActiveSubpanel("description")
 	end
 
-	self.attributesModel = attributesModelList:Add("ixModelPanel")
+	self.attributesModel = attributesModelList:Add("wsModelPanel")
 	self.attributesModel:Dock(FILL)
 	self.attributesModel:SetModel(self.factionModel:GetModel())
 	self.attributesModel:SetFOV(modelFOV - 13)
@@ -210,7 +210,7 @@ function PANEL:Init()
 	attributesContainer:SetWide(halfWidth + padding * 2)
 	attributesContainer:Dock(RIGHT)
 
-	local create = attributesContainer:Add("ixMenuButton")
+	local create = attributesContainer:Add("wsMenuButton")
 	create:SetText("finish")
 	create:SetContentAlignment(6)
 	create:SizeToContents()
@@ -224,21 +224,21 @@ function PANEL:Init()
 	self.attributesPanel:GetVBar():SetWide(0)
 
 	-- creation progress panel
-	self.progress = self:Add("ixSegmentedProgress")
-	self.progress:SetBarColor(ix.config.Get("color"))
+	self.progress = self:Add("wsSegmentedProgress")
+	self.progress:SetBarColor(ws.config.Get("color"))
 	self.progress:SetSize(parent:GetWide(), 0)
 	self.progress:SizeToContents()
 	self.progress:SetPos(0, parent:GetTall() - self.progress:GetTall())
 
 	-- setup payload hooks
 	self:AddPayloadHook("model", function(value)
-		local faction = ix.faction.indices[self.payload.faction]
+		local faction = ws.faction.indices[self.payload.faction]
 		local models
 
 		if (faction) then
 			models = faction:GetModels(LocalPlayer())
 		else
-			models = ix.config.Get("factionlessModels") or {}
+			models = ws.config.Get("factionlessModels") or {}
 		end
 
 		local model = models[value]
@@ -258,8 +258,8 @@ function PANEL:Init()
 	end)
 
 	-- setup character creation hooks
-	net.Receive("ixCharacterAuthed", function()
-		timer.Remove("ixCharacterCreateTimeout")
+	net.Receive("wsCharacterAuthed", function()
+		timer.Remove("wsCharacterCreateTimeout")
 		self.awaitingResponse = false
 
 		local id = net.ReadUInt(32)
@@ -270,7 +270,7 @@ function PANEL:Init()
 			charList[#charList + 1] = net.ReadUInt(32)
 		end
 
-		ix.characters = charList
+		ws.characters = charList
 
 		self:SlideDown()
 
@@ -284,7 +284,7 @@ function PANEL:Init()
 		elseif (id) then
 			self.bMenuShouldClose = true
 
-			net.Start("ixCharacterChoose")
+			net.Start("wsCharacterChoose")
 				net.WriteUInt(id, 32)
 			net.SendToServer()
 		else
@@ -292,8 +292,8 @@ function PANEL:Init()
 		end
 	end)
 
-	net.Receive("ixCharacterAuthFailed", function()
-		timer.Remove("ixCharacterCreateTimeout")
+	net.Receive("wsCharacterAuthFailed", function()
+		timer.Remove("wsCharacterCreateTimeout")
 		self.awaitingResponse = false
 
 		local fault = net.ReadString()
@@ -313,7 +313,7 @@ function PANEL:SendPayload()
 
 	self.awaitingResponse = true
 
-	timer.Create("ixCharacterCreateTimeout", 10, 1, function()
+	timer.Create("wsCharacterCreateTimeout", 10, 1, function()
 		if (IsValid(self) and self.awaitingResponse) then
 			local parent = self:GetParent()
 
@@ -327,7 +327,7 @@ function PANEL:SendPayload()
 
 	self.payload:Prepare()
 
-	net.Start("ixCharacterCreate")
+	net.Start("wsCharacterCreate")
 	net.WriteUInt(table.Count(self.payload), 8)
 
 	for k, v in pairs(self.payload) do
@@ -428,16 +428,16 @@ function PANEL:Populate()
 
 		self.factionButtons = {}
 
-		for _, v in SortedPairs(ix.faction.teams) do
-			if (ix.faction.HasWhitelist(v.index)) then
-				local button = self.factionButtonsPanel:Add("ixMenuSelectionButton")
+		for _, v in SortedPairs(ws.faction.teams) do
+			if (ws.faction.HasWhitelist(v.index)) then
+				local button = self.factionButtonsPanel:Add("wsMenuSelectionButton")
 				button:SetBackgroundColor(v.color or color_white)
 				button:SetText(L(v.name):utf8upper())
 				button:SizeToContents()
 				button:SetButtonList(self.factionButtons)
 				button.faction = v.index
 				button.OnSelected = function(panel)
-					local faction = ix.faction.indices[panel.faction]
+					local faction = ws.faction.indices[panel.faction]
 					local models = faction:GetModels(LocalPlayer())
 
 					self.payload:Set("faction", panel.faction)
@@ -452,7 +452,7 @@ function PANEL:Populate()
 		end
 
 		-- Add factionless/none option
-		local noneButton = self.factionButtonsPanel:Add("ixMenuSelectionButton")
+		local noneButton = self.factionButtonsPanel:Add("wsMenuSelectionButton")
 		noneButton:SetBackgroundColor(Color(128, 128, 128))
 		noneButton:SetText(L("noFaction"):utf8upper())
 		noneButton:SizeToContents()
@@ -460,7 +460,7 @@ function PANEL:Populate()
 		noneButton.faction = nil
 		noneButton.OnSelected = function(panel)
 			self.payload:Set("faction", nil)
-			local defaultModels = ix.config.Get("factionlessModels")
+			local defaultModels = ws.config.Get("factionlessModels")
 			if (defaultModels and #defaultModels > 0) then
 				self.payload:Set("model", math.random(1, #defaultModels))
 			else
@@ -497,7 +497,7 @@ function PANEL:Populate()
 	local zPos = 1
 
 	-- set up character vars
-	for k, v in SortedPairsByMemberValue(ix.char.vars, "index") do
+	for k, v in SortedPairsByMemberValue(ws.char.vars, "index") do
 		if (!v.bNoDisplay and k != "__SortedIndex") then
 			local container = self:GetContainerPanel(v.category or "description")
 
@@ -511,9 +511,9 @@ function PANEL:Populate()
 			if (v.OnDisplay) then
 				panel = v:OnDisplay(container, self.payload)
 			elseif (isstring(v.default)) then
-				panel = container:Add("ixTextEntry")
+				panel = container:Add("wsTextEntry")
 				panel:Dock(TOP)
-				panel:SetFont("ixMenuButtonHugeFont")
+				panel:SetFont("wsMenuButtonHugeFont")
 				panel:SetUpdateOnType(true)
 				panel.OnValueChange = function(this, text)
 					self.payload:Set(k, text)
@@ -523,7 +523,7 @@ function PANEL:Populate()
 			if (IsValid(panel)) then
 				-- add label for entry
 				local label = container:Add("DLabel")
-				label:SetFont("ixMenuButtonLabelFont")
+				label:SetFont("wsMenuButtonLabelFont")
 				label:SetText(L(k):utf8upper())
 				label:SizeToContents()
 				label:DockMargin(0, 16, 0, 2)
@@ -533,8 +533,8 @@ function PANEL:Populate()
 				label:SetZPos(zPos - 1)
 				panel:SetZPos(zPos)
 
-				-- store label reference for ix.charCreate.SetFieldVisible
-				panel.ixLabel = label
+				-- store label reference for ws.charCreate.SetFieldVisible
+				panel.wsLabel = label
 
 				self:AttachCleanup(label)
 				self:AttachCleanup(panel)
@@ -570,7 +570,7 @@ function PANEL:Populate()
 end
 
 function PANEL:VerifyProgression(name)
-	for k, v in SortedPairsByMemberValue(ix.char.vars, "index") do
+	for k, v in SortedPairsByMemberValue(ws.char.vars, "index") do
 		if (name ~= nil and (v.category or "description") != name) then
 			continue
 		end
@@ -599,4 +599,4 @@ function PANEL:Paint(width, height)
 	BaseClass.Paint(self, width, height)
 end
 
-vgui.Register("ixCharMenuNew", PANEL, "ixCharMenuPanel")
+vgui.Register("wsCharMenuNew", PANEL, "wsCharMenuPanel")

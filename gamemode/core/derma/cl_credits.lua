@@ -36,7 +36,7 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("DrawHelixCurved", width * 0.5, height * 0.5, width * 0.25)
 
 	-- title
-	surface.SetFont("ixIntroSubtitleFont")
+	surface.SetFont("wsIntroSubtitleFont")
 	local text = L("helix"):lower()
 	local textWidth, textHeight = surface.GetTextSize(text)
 
@@ -45,20 +45,20 @@ function PANEL:Paint(width, height)
 	surface.DrawText(text)
 
 	-- version
-	surface.SetFont("ixMenuMiniFont")
+	surface.SetFont("wsMenuMiniFont")
 	surface.SetTextColor(200, 200, 200, 255)
 	surface.SetTextPos(width * 0.5 + textWidth * 0.5, height * 0.5 - textHeight * 0.5)
 	surface.DrawText(GAMEMODE.Version)
 end
 
-vgui.Register("ixCreditsLogo", PANEL, "Panel")
+vgui.Register("wsCreditsLogo", PANEL, "Panel")
 
 -- nametag
 PANEL = {}
 
 function PANEL:Init()
 	self.name = self:Add("DLabel")
-	self.name:SetFont("ixMenuButtonFontThick")
+	self.name:SetFont("wsMenuButtonFontThick")
 
 	self.avatar = self:Add("AvatarImage")
 end
@@ -84,7 +84,7 @@ function PANEL:SizeToContents()
 	self:SetSize(self.name:GetWide() + self.avatar:GetWide() + padding * 0.5, self.name:GetTall())
 end
 
-vgui.Register("ixCreditsNametag", PANEL, "Panel")
+vgui.Register("wsCreditsNametag", PANEL, "Panel")
 
 -- name row
 PANEL = {}
@@ -93,10 +93,10 @@ function PANEL:Init()
 	self:DockMargin(0, padding, 0, 0)
 	self:Dock(TOP)
 
-	self.nametag = self:Add("ixCreditsNametag")
+	self.nametag = self:Add("wsCreditsNametag")
 
 	self.tags = self:Add("DLabel")
-	self.tags:SetFont("ixMenuButtonFont")
+	self.tags:SetFont("wsMenuButtonFont")
 
 	self:SizeToContents()
 end
@@ -118,7 +118,7 @@ function PANEL:SetTags(tags)
 end
 
 function PANEL:Paint(width, height)
-	surface.SetDrawColor(ix.config.Get("color"))
+	surface.SetDrawColor(ws.config.Get("color"))
 	surface.DrawRect(width * 0.5 - 1, 0, 1, height)
 end
 
@@ -134,7 +134,7 @@ function PANEL:SizeToContents()
 	self:SetTall(math.max(self.nametag:GetTall(), self.tags:GetTall()))
 end
 
-vgui.Register("ixCreditsRow", PANEL, "Panel")
+vgui.Register("wsCreditsRow", PANEL, "Panel")
 
 PANEL = {}
 
@@ -144,7 +144,7 @@ function PANEL:Init()
 end
 
 function PANEL:AddLeft(name, steamid)
-	local nametag = self:Add("ixCreditsNametag")
+	local nametag = self:Add("wsCreditsNametag")
 	nametag:SetName(name)
 	nametag:SetAvatar(steamid)
 	nametag:SizeToContents()
@@ -153,7 +153,7 @@ function PANEL:AddLeft(name, steamid)
 end
 
 function PANEL:AddRight(name, steamid)
-	local nametag = self:Add("ixCreditsNametag")
+	local nametag = self:Add("wsCreditsNametag")
 	nametag:SetName(name)
 	nametag:SetAvatar(steamid)
 	nametag:SizeToContents()
@@ -209,15 +209,15 @@ function PANEL:SizeToContents()
 	self:SetTall(math.max(heightLeft, heightRight) + centerHeight)
 end
 
-vgui.Register("ixCreditsSpecials", PANEL, "Panel")
+vgui.Register("wsCreditsSpecials", PANEL, "Panel")
 
 PANEL = {}
 
 function PANEL:Init()
-	self:Add("ixCreditsLogo")
+	self:Add("wsCreditsLogo")
 
 	local link = self:Add("DLabel", self)
-	link:SetFont("ixMenuMiniFont")
+	link:SetFont("wsMenuMiniFont")
 	link:SetTextColor(Color(200, 200, 200, 255))
 	link:SetText(url)
 	link:SetContentAlignment(5)
@@ -230,17 +230,17 @@ function PANEL:Init()
 	end
 
 	for _, v in ipairs(CREDITS) do
-		local row = self:Add("ixCreditsRow")
+		local row = self:Add("wsCreditsRow")
 		row:SetName(v[1])
 		row:SetAvatar(v[2])
 		row:SetTags(v[3])
 		row:SizeToContents()
 	end
 
-	local specials = self:Add("ixLabel")
-	specials:SetFont("ixMenuButtonFont")
+	local specials = self:Add("wsLabel")
+	specials:SetFont("wsMenuButtonFont")
 	specials:SetText(L("creditSpecial"):utf8upper())
-	specials:SetTextColor(ix.config.Get("color"))
+	specials:SetTextColor(ws.config.Get("color"))
 	specials:SetDropShadow(1)
 	specials:SetKerning(16)
 	specials:SetContentAlignment(5)
@@ -248,7 +248,7 @@ function PANEL:Init()
 	specials:Dock(TOP)
 	specials:SizeToContents()
 
-	local specialList = self:Add("ixCreditsSpecials")
+	local specialList = self:Add("wsCreditsSpecials")
 	specialList:DockMargin(0, padding, 0, 0)
 	specialList:Dock(TOP)
 
@@ -269,7 +269,7 @@ function PANEL:Init()
 
 	for _, v in ipairs(MISC) do
 		local title = self:Add("DLabel")
-		title:SetFont("ixMenuButtonFontThick")
+		title:SetFont("wsMenuButtonFontThick")
 		title:SetText(v[1])
 		title:SetContentAlignment(5)
 		title:SizeToContents()
@@ -277,7 +277,7 @@ function PANEL:Init()
 		title:Dock(TOP)
 
 		local description = self:Add("DLabel")
-		description:SetFont("ixSmallTitleFont")
+		description:SetFont("wsSmallTitleFont")
 		description:SetText(v[2])
 		description:SetContentAlignment(5)
 		description:SizeToContents()
@@ -299,10 +299,10 @@ function PANEL:SizeToContents()
 	self:SetTall(height)
 end
 
-vgui.Register("ixCredits", PANEL, "Panel")
+vgui.Register("wsCredits", PANEL, "Panel")
 
-hook.Add("PopulateHelpMenu", "ixCredits", function(tabs)
+hook.Add("PopulateHelpMenu", "wsCredits", function(tabs)
 	tabs["credits"] = function(container)
-		container:Add("ixCredits")
+		container:Add("wsCredits")
 	end
 end)

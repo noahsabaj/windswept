@@ -27,7 +27,7 @@ function PANEL:Paint(width, height)
 	BaseClass.Paint(self, width, height)
 end
 
-vgui.Register("ixTextEntry", PANEL, "DTextEntry")
+vgui.Register("wsTextEntry", PANEL, "DTextEntry")
 
 -- similar to a frame, but is mainly used for grouping panels together in a list
 PANEL = {}
@@ -67,7 +67,7 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintCategoryPanel", self, self.text, self.color)
 end
 
-vgui.Register("ixCategoryPanel", PANEL, "EditablePanel")
+vgui.Register("wsCategoryPanel", PANEL, "EditablePanel")
 
 -- segmented progress bar
 PANEL = {}
@@ -145,7 +145,7 @@ function PANEL:Paint(width, height)
 	end
 end
 
-vgui.Register("ixSegmentedProgress", PANEL, "Panel")
+vgui.Register("wsSegmentedProgress", PANEL, "Panel")
 
 -- list of labelled information
 PANEL = {}
@@ -157,7 +157,7 @@ AccessorFunc(PANEL, "minWidth", "MinimumWidth", FORCE_NUMBER)
 
 function PANEL:Init()
 	self.label = self:Add("DLabel")
-	self.label:SetFont("ixMediumFont")
+	self.label:SetFont("wsMediumFont")
 	self.label:SetExpensiveShadow(1)
 	self.label:SetTextColor(color_white)
 	self.label:SetText("Label")
@@ -170,7 +170,7 @@ function PANEL:Init()
 	end
 
 	self.text = self:Add("DLabel")
-	self.text:SetFont("ixMediumLightFont")
+	self.text:SetFont("wsMediumLightFont")
 	self.text:SetTextColor(color_white)
 	self.text:SetText("Text")
 	self.text:SetTextInset(8, 0)
@@ -255,7 +255,7 @@ function PANEL:SizeToContents()
 	self:SetTall(math.max(self.label:GetTall(), self.text:GetTall()) + 8)
 end
 
-vgui.Register("ixListRow", PANEL, "Panel")
+vgui.Register("wsListRow", PANEL, "Panel")
 
 -- alternative checkbox
 DEFINE_BASECLASS("EditablePanel")
@@ -276,7 +276,7 @@ function PANEL:Init()
 
 	self.enabledText = L("yes"):utf8upper()
 	self.disabledText = L("no"):utf8upper()
-	self.font = "ixMenuButtonFont"
+	self.font = "wsMenuButtonFont"
 	self.animationTime = 0.5
 	self.bChecked = false
 	self.labelPadding = 8
@@ -351,7 +351,7 @@ function PANEL:Paint(width, height)
 	surface.DrawText(text)
 end
 
-vgui.Register("ixCheckBox", PANEL, "EditablePanel")
+vgui.Register("wsCheckBox", PANEL, "EditablePanel")
 
 -- alternative num slider
 PANEL = {}
@@ -361,14 +361,14 @@ AccessorFunc(PANEL, "labelPadding", "LabelPadding", FORCE_NUMBER)
 function PANEL:Init()
 	self.labelPadding = 8
 
-	surface.SetFont("ixMenuButtonFont")
+	surface.SetFont("wsMenuButtonFont")
 	local totalWidth = surface.GetTextSize("999") -- start off with 3 digit width
 
 	self.label = self:Add("DLabel")
 	self.label:Dock(RIGHT)
 	self.label:SetWide(totalWidth + self.labelPadding)
 	self.label:SetContentAlignment(5)
-	self.label:SetFont("ixMenuButtonFont")
+	self.label:SetFont("wsMenuButtonFont")
 	self.label.Paint = function(panel, width, height)
 		surface.SetDrawColor(derma.GetColor("DarkerBackground", self))
 		surface.DrawRect(0, 0, width, height)
@@ -384,7 +384,7 @@ function PANEL:Init()
 		end
 	end
 
-	self.slider = self:Add("ixSlider")
+	self.slider = self:Add("wsSlider")
 	self.slider:Dock(FILL)
 	self.slider:DockMargin(0, 0, 4, 0)
 	self.slider.OnValueChanged = function(panel)
@@ -458,7 +458,7 @@ end
 function PANEL:OnValueUpdated()
 end
 
-vgui.Register("ixNumSlider", PANEL, "Panel")
+vgui.Register("wsNumSlider", PANEL, "Panel")
 
 -- alternative slider
 PANEL = {}
@@ -562,23 +562,23 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintHelixSlider", self, width, height)
 end
 
-vgui.Register("ixSlider", PANEL, "EditablePanel")
+vgui.Register("wsSlider", PANEL, "EditablePanel")
 
 --- Alternative to DLabel that adds extra functionality.
 -- This panel is meant for drawing single-line text. It can add extra kerning (spaces between letters), and it can forcefully
 -- scale the text down to fit the current width, without cutting off any letters. Text scaling is most useful when docking this
 -- this panel without knowing what the width could be. For example, text scaling is used for the character name in the character
 -- status menu.
--- 	local label = vgui.Create("ixLabel")
+-- 	local label = vgui.Create("wsLabel")
 -- 	label:SetText("hello world")
--- 	label:SetFont("ixMenuButtonHugeFont")
+-- 	label:SetFont("wsMenuButtonHugeFont")
 -- 	label:SetContentAlignment(5)
 -- 	label:SetTextColor(Color(255, 255, 255, 255))
 -- 	label:SetBackgroundColor(Color(200, 30, 30, 255))
 -- 	label:SetPadding(8)
 -- 	label:SetScaleWidth(true)
 -- 	label:SizeToContents()
--- @panel ixLabel
+-- @panel wsLabel
 PANEL = {}
 
 --- Sets the text for this label to display.
@@ -702,7 +702,7 @@ end
 -- @color[opt] color Color of the shadow. Defaults to a dimmed version of the text color
 function PANEL:SetDropShadow(distance, color)
 	self.shadowDistance = distance or 1
-	self.shadowColor = color or ix.util.DimColor(self.color, 0.5)
+	self.shadowColor = color or ws.util.DimColor(self.color, 0.5)
 end
 
 PANEL.SetExpensiveShadow = PANEL.SetDropShadow -- aliasing for easier conversion from DLabels
@@ -880,10 +880,10 @@ function PANEL:SizeToContents()
 	self:SetSize(contentWidth + self.padding * 2, contentHeight + self.padding * 2)
 end
 
-vgui.Register("ixLabel", PANEL, "Panel")
+vgui.Register("wsLabel", PANEL, "Panel")
 
 -- text entry with icon
-DEFINE_BASECLASS("ixTextEntry")
+DEFINE_BASECLASS("wsTextEntry")
 PANEL = {}
 
 AccessorFunc(PANEL, "icon", "Icon", FORCE_STRING)
@@ -891,13 +891,13 @@ AccessorFunc(PANEL, "iconColor", "IconColor")
 
 function PANEL:Init()
 	self:SetIcon("V")
-	self:SetFont("ixSmallTitleFont")
+	self:SetFont("wsSmallTitleFont")
 
 	self.iconColor = Color(200, 200, 200, 160)
 end
 
 function PANEL:SetIcon(newIcon)
-	surface.SetFont("ixSmallTitleIcons")
+	surface.SetFont("wsSmallTitleIcons")
 
 	self.iconWidth, self.iconHeight = surface.GetTextSize(newIcon)
 	self.icon = newIcon
@@ -913,11 +913,11 @@ function PANEL:Paint(width, height)
 		surface.SetDrawColor(self:GetBackgroundColor() or derma.GetColor("DarkerBackground", self))
 		surface.DrawRect(-self.iconWidth - 4, 0, self.iconWidth + 4, height)
 
-		surface.SetFont("ixSmallTitleIcons")
+		surface.SetFont("wsSmallTitleIcons")
 		surface.SetTextColor(self.iconColor)
 		surface.SetTextPos(-self.iconWidth - 2, 0)
 		surface.DrawText(self:GetIcon())
 	DisableClipping(false)
 end
 
-vgui.Register("ixIconTextEntry", PANEL, "ixTextEntry")
+vgui.Register("wsIconTextEntry", PANEL, "wsTextEntry")

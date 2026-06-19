@@ -1,14 +1,14 @@
 
-ix.plugin = ix.plugin or {}
-ix.plugin.list = ix.plugin.list or {}
-ix.plugin.unloaded = ix.plugin.unloaded or {}
+ws.plugin = ws.plugin or {}
+ws.plugin.list = ws.plugin.list or {}
+ws.plugin.unloaded = ws.plugin.unloaded or {}
 
-ix.util.Include("helix/gamemode/core/meta/sh_tool.lua")
+ws.util.Include("windswept/gamemode/core/meta/sh_tool.lua")
 
 -- luacheck: globals HOOKS_CACHE
 HOOKS_CACHE = {}
 
-function ix.plugin.Load(uniqueID, path, isSingleFile, variable)
+function ws.plugin.Load(uniqueID, path, isSingleFile, variable)
 	if (hook.Run("PluginShouldLoad", uniqueID) == false) then return end
 
 	variable = variable or "PLUGIN"
@@ -31,28 +31,28 @@ function ix.plugin.Load(uniqueID, path, isSingleFile, variable)
 
 		variable = "Schema"
 		PLUGIN.folder = engine.ActiveGamemode()
-	elseif (ix.plugin.list[uniqueID]) then
-		PLUGIN = ix.plugin.list[uniqueID]
+	elseif (ws.plugin.list[uniqueID]) then
+		PLUGIN = ws.plugin.list[uniqueID]
 	end
 
 	_G[variable] = PLUGIN
 	PLUGIN.loading = true
 
 	if (!isSingleFile) then
-		ix.lang.LoadFromDir(path.."/languages")
-		ix.util.IncludeDir(path.."/libs", true)
-		ix.attributes.LoadFromDir(path.."/attributes")
-		ix.faction.LoadFromDir(path.."/factions")
-		ix.class.LoadFromDir(path.."/classes")
-		ix.item.LoadFromDir(path.."/items")
-		ix.plugin.LoadFromDir(path.."/plugins")
-		ix.util.IncludeDir(path.."/derma", true)
-		ix.plugin.LoadEntities(path.."/entities")
+		ws.lang.LoadFromDir(path.."/languages")
+		ws.util.IncludeDir(path.."/libs", true)
+		ws.attributes.LoadFromDir(path.."/attributes")
+		ws.faction.LoadFromDir(path.."/factions")
+		ws.class.LoadFromDir(path.."/classes")
+		ws.item.LoadFromDir(path.."/items")
+		ws.plugin.LoadFromDir(path.."/plugins")
+		ws.util.IncludeDir(path.."/derma", true)
+		ws.plugin.LoadEntities(path.."/entities")
 
 		hook.Run("DoPluginIncludes", path, PLUGIN)
 	end
 
-	ix.util.Include(isSingleFile and path or path.."/sh_"..variable:lower()..".lua", "shared")
+	ws.util.Include(isSingleFile and path or path.."/sh_"..variable:lower()..".lua", "shared")
 	PLUGIN.loading = false
 
 	local uniqueID2 = uniqueID
@@ -62,11 +62,11 @@ function ix.plugin.Load(uniqueID, path, isSingleFile, variable)
 	end
 
 	function PLUGIN:SetData(value, global, ignoreMap)
-		ix.data.Set(uniqueID2, value, global, ignoreMap)
+		ws.data.Set(uniqueID2, value, global, ignoreMap)
 	end
 
 	function PLUGIN:GetData(default, global, ignoreMap, refresh)
-		return ix.data.Get(uniqueID2, default, global, ignoreMap, refresh) or {}
+		return ws.data.Get(uniqueID2, default, global, ignoreMap, refresh) or {}
 	end
 
 	hook.Run("PluginLoaded", uniqueID, PLUGIN)
@@ -82,7 +82,7 @@ function ix.plugin.Load(uniqueID, path, isSingleFile, variable)
 			end
 		end
 
-		ix.plugin.list[uniqueID] = PLUGIN
+		ws.plugin.list[uniqueID] = PLUGIN
 		_G[variable] = oldPlugin
 	end
 
@@ -91,11 +91,11 @@ function ix.plugin.Load(uniqueID, path, isSingleFile, variable)
 	end
 end
 
-function ix.plugin.GetHook(pluginName, hookName)
+function ws.plugin.GetHook(pluginName, hookName)
 	local h = HOOKS_CACHE[hookName]
 
 	if (h) then
-		local p = ix.plugin.list[pluginName]
+		local p = ws.plugin.list[pluginName]
 
 		if (p) then
 			return h[p]
@@ -105,25 +105,25 @@ function ix.plugin.GetHook(pluginName, hookName)
 	return
 end
 
-function ix.plugin.LoadEntities(path)
+function ws.plugin.LoadEntities(path)
 	local bLoadedTools
 	local files, folders
 
 	local function IncludeFiles(path2, bClientOnly)
 		if (SERVER and !bClientOnly) then
 			if (file.Exists(path2.."init.lua", "LUA")) then
-				ix.util.Include(path2.."init.lua", "server")
+				ws.util.Include(path2.."init.lua", "server")
 			elseif (file.Exists(path2.."shared.lua", "LUA")) then
-				ix.util.Include(path2.."shared.lua")
+				ws.util.Include(path2.."shared.lua")
 			end
 
 			if (file.Exists(path2.."cl_init.lua", "LUA")) then
-				ix.util.Include(path2.."cl_init.lua", "client")
+				ws.util.Include(path2.."cl_init.lua", "client")
 			end
 		elseif (file.Exists(path2.."cl_init.lua", "LUA")) then
-			ix.util.Include(path2.."cl_init.lua", "client")
+			ws.util.Include(path2.."cl_init.lua", "client")
 		elseif (file.Exists(path2.."shared.lua", "LUA")) then
-			ix.util.Include(path2.."shared.lua")
+			ws.util.Include(path2.."shared.lua")
 		end
 	end
 
@@ -133,7 +133,7 @@ function ix.plugin.LoadEntities(path)
 
 		for _, v in ipairs(folders) do
 			local path2 = path.."/"..folder.."/"..v.."/"
-			v = ix.util.StripRealmPrefix(v)
+			v = ws.util.StripRealmPrefix(v)
 
 			_G[variable] = table.Copy(default)
 
@@ -161,7 +161,7 @@ function ix.plugin.LoadEntities(path)
 		end
 
 		for _, v in ipairs(files) do
-			local niceName = ix.util.StripRealmPrefix(string.StripExtension(v))
+			local niceName = ws.util.StripRealmPrefix(string.StripExtension(v))
 
 			_G[variable] = table.Copy(default)
 
@@ -171,7 +171,7 @@ function ix.plugin.LoadEntities(path)
 				create(niceName)
 			end
 
-			ix.util.Include(path.."/"..folder.."/"..v, clientOnly and "client" or "shared")
+			ws.util.Include(path.."/"..folder.."/"..v, clientOnly and "client" or "shared")
 
 			if (clientOnly) then
 				if (CLIENT) then
@@ -213,7 +213,7 @@ function ix.plugin.LoadEntities(path)
 		Spawnable = true
 	}, false, nil, function(ent)
 		if (SERVER and ent.Holdable == true) then
-			ix.allowedHoldableClasses[ent.ClassName] = true
+			ws.allowedHoldableClasses[ent.ClassName] = true
 		end
 	end)
 
@@ -229,7 +229,7 @@ function ix.plugin.LoadEntities(path)
 			className = className:sub(4)
 		end
 
-		TOOL = ix.meta.tool:Create()
+		TOOL = ws.meta.tool:Create()
 		TOOL.Mode = className
 		TOOL:CreateConVars()
 	end)
@@ -243,47 +243,47 @@ function ix.plugin.LoadEntities(path)
 	end
 end
 
-function ix.plugin.Initialize()
+function ws.plugin.Initialize()
 	if SERVER then
-		ix.plugin.unloaded = ix.data.Get("unloaded", {}, true, true)
+		ws.plugin.unloaded = ws.data.Get("unloaded", {}, true, true)
 	end
 
-	ix.plugin.LoadFromDir("helix/plugins")
+	ws.plugin.LoadFromDir("windswept/plugins")
 
-	ix.plugin.Load("schema", engine.ActiveGamemode().."/schema")
+	ws.plugin.Load("schema", engine.ActiveGamemode().."/schema")
 	hook.Run("InitializedSchema")
 
-	ix.plugin.LoadFromDir(engine.ActiveGamemode().."/plugins")
+	ws.plugin.LoadFromDir(engine.ActiveGamemode().."/plugins")
 	hook.Run("InitializedPlugins")
 end
 
-function ix.plugin.Get(identifier)
-	return ix.plugin.list[identifier]
+function ws.plugin.Get(identifier)
+	return ws.plugin.list[identifier]
 end
 
-function ix.plugin.LoadFromDir(directory)
+function ws.plugin.LoadFromDir(directory)
 	local files, folders = file.Find(directory.."/*", "LUA")
 
 	for _, v in ipairs(folders) do
-		ix.plugin.Load(v, directory.."/"..v)
+		ws.plugin.Load(v, directory.."/"..v)
 	end
 
 	for _, v in ipairs(files) do
-		ix.plugin.Load(string.StripExtension(v), directory.."/"..v, true)
+		ws.plugin.Load(string.StripExtension(v), directory.."/"..v, true)
 	end
 end
 
-function ix.plugin.SetUnloaded(uniqueID, state, bNoSave)
-	local plugin = ix.plugin.list[uniqueID]
+function ws.plugin.SetUnloaded(uniqueID, state, bNoSave)
+	local plugin = ws.plugin.list[uniqueID]
 
 	if (state) then
 		if (plugin and plugin.OnUnload) then
 			plugin:OnUnload()
 		end
 
-		ix.plugin.unloaded[uniqueID] = true
-	elseif (ix.plugin.unloaded[uniqueID]) then
-		ix.plugin.unloaded[uniqueID] = false
+		ws.plugin.unloaded[uniqueID] = true
+	elseif (ws.plugin.unloaded[uniqueID]) then
+		ws.plugin.unloaded[uniqueID] = false
 	else
 		return false
 	end
@@ -295,9 +295,9 @@ function ix.plugin.SetUnloaded(uniqueID, state, bNoSave)
 			status = true
 		end
 
-		local unloaded = ix.data.Get("unloaded", {}, true, true)
+		local unloaded = ws.data.Get("unloaded", {}, true, true)
 			unloaded[uniqueID] = status
-		ix.data.Set("unloaded", unloaded, true, true)
+		ws.data.Set("unloaded", unloaded, true, true)
 	end
 
 	if (state) then
@@ -312,14 +312,14 @@ if (SERVER) then
 	-- hook will have their `SaveData` and `PostLoadData` hooks removed to prevent them from saving junk data.
 	-- @internal
 	-- @realm server
-	function ix.plugin.RunLoadData()
+	function ws.plugin.RunLoadData()
 		local errors = hook.SafeRun("LoadData")
 
 		-- remove the SaveData and PostLoadData hooks for any plugins that error during LoadData since they would probably be
 		-- saving bad data. this doesn't prevent plugins from saving data via other means, but there's only so much we can do
 		for _, v in pairs(errors or {}) do
 			if (v.plugin) then
-				local plugin = ix.plugin.Get(v.plugin)
+				local plugin = ws.plugin.Get(v.plugin)
 
 				if (plugin) then
 					local saveDataHooks = HOOKS_CACHE["SaveData"] or {}
@@ -337,7 +337,7 @@ end
 
 do
 	-- luacheck: globals hook
-	hook.ixCall = hook.ixCall or hook.Call
+	hook.wsCall = hook.wsCall or hook.Call
 
 	function hook.Call(name, gm, ...)
 		local cache = HOOKS_CACHE[name]
@@ -360,7 +360,7 @@ do
 			end
 		end
 
-		return hook.ixCall(name, gm, ...)
+		return hook.wsCall(name, gm, ...)
 	end
 
 	--- Runs the given hook in a protected call so that the calling function will continue executing even if any errors occur
@@ -423,7 +423,7 @@ do
 			end
 		end
 
-		local bSuccess, a, b, c, d, e, f = pcall(hook.ixCall, name, gm, ...)
+		local bSuccess, a, b, c, d, e, f = pcall(hook.wsCall, name, gm, ...)
 
 		if (bSuccess) then
 			return errors, a, b, c, d, e, f

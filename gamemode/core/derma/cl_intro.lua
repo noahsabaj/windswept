@@ -10,11 +10,11 @@ DEFINE_BASECLASS("EditablePanel")
 local PANEL = {}
 
 function PANEL:Init()
-	if (IsValid(ix.gui.intro)) then
-		ix.gui.intro:Remove()
+	if (IsValid(ws.gui.intro)) then
+		ws.gui.intro:Remove()
 	end
 
-	ix.gui.intro = self
+	ws.gui.intro = self
 
 	self:SetSize(ScrW(), ScrH())
 	self:SetPos(0, 0)
@@ -54,16 +54,16 @@ function PANEL:BeginIntro()
 	-- because if it errors here, the sound will play each tick and proceed to hurt ears
 	local bLoaded = false
 
-	if (ix and ix.option and ix.option.Set) then
-		local bSuccess, _ = pcall(ix.option.Set, "showIntro", false)
+	if (ix and ws.option and ws.option.Set) then
+		local bSuccess, _ = pcall(ws.option.Set, "showIntro", false)
 		bLoaded = bSuccess
 	end
 
 	if (!bLoaded) then
 		self:Remove()
 
-		if (ix and ix.gui and IsValid(ix.gui.characterMenu)) then
-			ix.gui.characterMenu:Remove()
+		if (ix and ws.gui and IsValid(ws.gui.characterMenu)) then
+			ws.gui.characterMenu:Remove()
 		end
 
 		ErrorNoHalt(
@@ -76,7 +76,7 @@ function PANEL:BeginIntro()
 	self:RequestFocus()
 
 	sound.PlayFile("sound/buttons/combine_button2.wav", "", function()
-		timer.Create("ixIntroStart", 2, 1, function()
+		timer.Create("wsIntroStart", 2, 1, function()
 			sound.PlayFile("sound/helix/intro.mp3", "", function(channel, status, error)
 				if (IsValid(channel)) then
 					channel:SetVolume(self.volume)
@@ -250,7 +250,7 @@ function PANEL:Paint(width, height)
 	surface.SetTextColor(255, 255, 255,
 		self.sunbeamOffset == 1 and self.kickTarget or sunbeamOffsetEasing * 255
 	)
-	surface.SetFont("ixIntroTitleBlurFont")
+	surface.SetFont("wsIntroTitleBlurFont")
 
 	local logoTextWidth, logoTextHeight = surface.GetTextSize(text)
 	surface.SetTextPos(width * 0.5 - logoTextWidth * 0.5, centerY - logoTextHeight * 0.5)
@@ -258,14 +258,14 @@ function PANEL:Paint(width, height)
 
 	-- title text
 	surface.SetTextColor(255, 255, 255, self.sunbeamOffset * 255)
-	surface.SetFont("ixIntroTitleFont")
+	surface.SetFont("wsIntroTitleFont")
 
 	logoTextWidth, logoTextHeight = surface.GetTextSize(text)
 	surface.SetTextPos(width * 0.5 - logoTextWidth * 0.5, centerY - logoTextHeight * 0.5)
 	surface.DrawText(text)
 
 	-- text one
-	surface.SetFont("ixIntroSubtitleFont")
+	surface.SetFont("wsIntroSubtitleFont")
 	text = L("introTextOne"):lower()
 	textWidth = surface.GetTextSize(text)
 
@@ -282,7 +282,7 @@ function PANEL:Paint(width, height)
 	surface.DrawText(text)
 
 	-- continue text
-	surface.SetFont("ixIntroSmallFont")
+	surface.SetFont("wsIntroSmallFont")
 	text = L("introContinue"):lower()
 	textWidth, textHeight = surface.GetTextSize(text)
 
@@ -314,14 +314,14 @@ function PANEL:OnKeyCodePressed(key)
 end
 
 function PANEL:OnRemove()
-	timer.Remove("ixIntroStart")
+	timer.Remove("wsIntroStart")
 
 	if (IsValid(self.channel)) then
 		self.channel:Stop()
 	end
 
-	if (IsValid(ix.gui.characterMenu)) then
-		ix.gui.characterMenu:PlayMusic()
+	if (IsValid(ws.gui.characterMenu)) then
+		ws.gui.characterMenu:PlayMusic()
 	end
 end
 
@@ -365,4 +365,4 @@ function PANEL:Remove(bForce)
 	})
 end
 
-vgui.Register("ixIntro", PANEL, "EditablePanel")
+vgui.Register("wsIntro", PANEL, "EditablePanel")

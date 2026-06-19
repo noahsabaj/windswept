@@ -1,7 +1,7 @@
 
 local PLUGIN = PLUGIN
 
-ix.command.Add("DoorSell", {
+ws.command.Add("DoorSell", {
 	description = "@cmdDoorSell",
 	OnRun = function(self, client, arguments)
 		-- Get the entity 96 units infront of the player.
@@ -16,10 +16,10 @@ ix.command.Add("DoorSell", {
 		if (IsValid(entity) and entity:IsDoor() and !entity:GetNetVar("disabled")) then
 			-- Check if the player owners the door.
 			if (client == entity:GetDTEntity(0)) then
-				entity = IsValid(entity.ixParent) and entity.ixParent or entity
+				entity = IsValid(entity.wsParent) and entity.wsParent or entity
 
 				-- Get the price that the door is sold for.
-				local price = math.Round(entity:GetNetVar("price", ix.config.Get("doorCost")) * ix.config.Get("doorSellRatio"))
+				local price = math.Round(entity:GetNetVar("price", ws.config.Get("doorCost")) * ws.config.Get("doorSellRatio"))
 				local character = client:GetCharacter()
 
 				-- Remove old door information.
@@ -39,8 +39,8 @@ ix.command.Add("DoorSell", {
 				character:GiveMoney(price)
 				hook.Run("OnPlayerPurchaseDoor", client, entity, false, PLUGIN.CallOnDoorChildren)
 
-				ix.log.Add(client, "selldoor")
-				return "@dSold", ix.currency.Get(price)
+				ws.log.Add(client, "selldoor")
+				return "@dSold", ws.currency.Get(price)
 			else
 				-- Otherwise tell them they can not.
 				return "@notOwner"
@@ -52,7 +52,7 @@ ix.command.Add("DoorSell", {
 	end
 })
 
-ix.command.Add("DoorBuy", {
+ws.command.Add("DoorBuy", {
 	description = "@cmdDoorBuy",
 	OnRun = function(self, client, arguments)
 		-- Get the entity 96 units infront of the player.
@@ -74,17 +74,17 @@ ix.command.Add("DoorBuy", {
 				return "@dOwnedBy", entity:GetDTEntity(0):Name()
 			end
 
-			entity = IsValid(entity.ixParent) and entity.ixParent or entity
+			entity = IsValid(entity.wsParent) and entity.wsParent or entity
 
 			-- Get the price that the door is bought for.
-			local price = entity:GetNetVar("price", ix.config.Get("doorCost"))
+			local price = entity:GetNetVar("price", ws.config.Get("doorCost"))
 			local character = client:GetCharacter()
 
 			-- Check if the player can actually afford it.
 			if (character:HasMoney(price)) then
 				-- Set the door to be owned by this player.
 				entity:SetDTEntity(0, client)
-				entity.ixAccess = {
+				entity.wsAccess = {
 					[client] = DOOR_OWNER
 				}
 
@@ -100,8 +100,8 @@ ix.command.Add("DoorBuy", {
 				character:TakeMoney(price)
 				hook.Run("OnPlayerPurchaseDoor", client, entity, true, PLUGIN.CallOnDoorChildren)
 
-				ix.log.Add(client, "buydoor")
-				return "@dPurchased", ix.currency.Get(price)
+				ws.log.Add(client, "buydoor")
+				return "@dPurchased", ws.currency.Get(price)
 			else
 				-- Otherwise tell them they can not.
 				return "@canNotAfford"
@@ -113,11 +113,11 @@ ix.command.Add("DoorBuy", {
 	end
 })
 
-ix.command.Add("DoorSetUnownable", {
+ws.command.Add("DoorSetUnownable", {
 	description = "@cmdDoorSetUnownable",
 	privilege = "Manage Doors",
 	adminOnly = true,
-	arguments = ix.type.text,
+	arguments = ws.type.text,
 	OnRun = function(self, client, name)
 		-- Get the door the player is looking at.
 		local entity = client:GetEyeTrace().Entity
@@ -150,11 +150,11 @@ ix.command.Add("DoorSetUnownable", {
 	end
 })
 
-ix.command.Add("DoorSetOwnable", {
+ws.command.Add("DoorSetOwnable", {
 	description = "@cmdDoorSetOwnable",
 	privilege = "Manage Doors",
 	adminOnly = true,
-	arguments = ix.type.text,
+	arguments = ws.type.text,
 	OnRun = function(self, client, name)
 		-- Get the door the player is looking at.
 		local entity = client:GetEyeTrace().Entity
@@ -190,11 +190,11 @@ ix.command.Add("DoorSetOwnable", {
 })
 
 -- Add a faction to the door
-ix.command.Add("DoorAddFaction", {
+ws.command.Add("DoorAddFaction", {
 	description = "@cmdDoorAddFaction",
 	privilege = "Manage Doors",
 	adminOnly = true,
-	arguments = ix.type.text,
+	arguments = ws.type.text,
 	OnRun = function(self, client, name)
 		-- Get the door the player is looking at.
 		local entity = client:GetEyeTrace().Entity
@@ -206,8 +206,8 @@ ix.command.Add("DoorAddFaction", {
 
 		-- Find the faction
 		local faction
-		for k, v in pairs(ix.faction.teams) do
-			if (ix.util.StringMatches(k, name) or ix.util.StringMatches(L(v.name, client), name)) then
+		for k, v in pairs(ws.faction.teams) do
+			if (ws.util.StringMatches(k, name) or ws.util.StringMatches(L(v.name, client), name)) then
 				faction = v
 				break
 			end
@@ -218,24 +218,24 @@ ix.command.Add("DoorAddFaction", {
 		end
 
 		-- Initialize or get existing factions
-		entity.ixFactionIDs = entity.ixFactionIDs or {}
+		entity.wsFactionIDs = entity.wsFactionIDs or {}
 		local factions = entity:GetNetVar("factions") or {}
 
 		-- Check if already added
-		for _, id in ipairs(entity.ixFactionIDs) do
+		for _, id in ipairs(entity.wsFactionIDs) do
 			if (id == faction.uniqueID) then
 				return "@dFactionAlreadyAdded"
 			end
 		end
 
 		-- Add the faction
-		table.insert(entity.ixFactionIDs, faction.uniqueID)
+		table.insert(entity.wsFactionIDs, faction.uniqueID)
 		table.insert(factions, faction.index)
 		entity:SetNetVar("factions", factions)
 
 		-- Apply to children
 		PLUGIN:CallOnDoorChildren(entity, function(child)
-			child.ixFactionIDs = table.Copy(entity.ixFactionIDs)
+			child.wsFactionIDs = table.Copy(entity.wsFactionIDs)
 			child:SetNetVar("factions", table.Copy(factions))
 		end)
 
@@ -245,11 +245,11 @@ ix.command.Add("DoorAddFaction", {
 })
 
 -- Remove a faction from the door
-ix.command.Add("DoorRemoveFaction", {
+ws.command.Add("DoorRemoveFaction", {
 	description = "@cmdDoorRemoveFaction",
 	privilege = "Manage Doors",
 	adminOnly = true,
-	arguments = ix.type.text,
+	arguments = ws.type.text,
 	OnRun = function(self, client, name)
 		-- Get the door the player is looking at.
 		local entity = client:GetEyeTrace().Entity
@@ -261,8 +261,8 @@ ix.command.Add("DoorRemoveFaction", {
 
 		-- Find the faction
 		local faction
-		for k, v in pairs(ix.faction.teams) do
-			if (ix.util.StringMatches(k, name) or ix.util.StringMatches(L(v.name, client), name)) then
+		for k, v in pairs(ws.faction.teams) do
+			if (ws.util.StringMatches(k, name) or ws.util.StringMatches(L(v.name, client), name)) then
 				faction = v
 				break
 			end
@@ -272,14 +272,14 @@ ix.command.Add("DoorRemoveFaction", {
 			return "@invalidFaction"
 		end
 
-		entity.ixFactionIDs = entity.ixFactionIDs or {}
+		entity.wsFactionIDs = entity.wsFactionIDs or {}
 		local factions = entity:GetNetVar("factions") or {}
 
 		-- Find and remove
 		local found = false
-		for i, id in ipairs(entity.ixFactionIDs) do
+		for i, id in ipairs(entity.wsFactionIDs) do
 			if (id == faction.uniqueID) then
-				table.remove(entity.ixFactionIDs, i)
+				table.remove(entity.wsFactionIDs, i)
 				table.remove(factions, i)
 				found = true
 				break
@@ -294,7 +294,7 @@ ix.command.Add("DoorRemoveFaction", {
 
 		-- Apply to children
 		PLUGIN:CallOnDoorChildren(entity, function(child)
-			child.ixFactionIDs = table.Copy(entity.ixFactionIDs)
+			child.wsFactionIDs = table.Copy(entity.wsFactionIDs)
 			child:SetNetVar("factions", #factions > 0 and table.Copy(factions) or nil)
 		end)
 
@@ -304,7 +304,7 @@ ix.command.Add("DoorRemoveFaction", {
 })
 
 -- Clear all factions from the door
-ix.command.Add("DoorClearFactions", {
+ws.command.Add("DoorClearFactions", {
 	description = "@cmdDoorClearFactions",
 	privilege = "Manage Doors",
 	adminOnly = true,
@@ -317,12 +317,12 @@ ix.command.Add("DoorClearFactions", {
 			return "@dNotValid"
 		end
 
-		entity.ixFactionIDs = nil
+		entity.wsFactionIDs = nil
 		entity:SetNetVar("factions", nil)
 
 		-- Apply to children
 		PLUGIN:CallOnDoorChildren(entity, function(child)
-			child.ixFactionIDs = nil
+			child.wsFactionIDs = nil
 			child:SetNetVar("factions", nil)
 		end)
 
@@ -331,11 +331,11 @@ ix.command.Add("DoorClearFactions", {
 	end
 })
 
-ix.command.Add("DoorSetDisabled", {
+ws.command.Add("DoorSetDisabled", {
 	description = "@cmdDoorSetDisabled",
 	privilege = "Manage Doors",
 	adminOnly = true,
-	arguments = ix.type.bool,
+	arguments = ws.type.bool,
 	OnRun = function(self, client, bDisabled)
 		-- Get the door the player is looking at.
 		local entity = client:GetEyeTrace().Entity
@@ -360,9 +360,9 @@ ix.command.Add("DoorSetDisabled", {
 	end
 })
 
-ix.command.Add("DoorSetTitle", {
+ws.command.Add("DoorSetTitle", {
 	description = "@cmdDoorSetTitle",
-	arguments = ix.type.text,
+	arguments = ws.type.text,
 	OnRun = function(self, client, name)
 		-- Get the door infront of the player.
 		local data = {}
@@ -409,7 +409,7 @@ ix.command.Add("DoorSetTitle", {
 	end
 })
 
-ix.command.Add("DoorSetParent", {
+ws.command.Add("DoorSetParent", {
 	description = "@cmdDoorSetParent",
 	privilege = "Manage Doors",
 	adminOnly = true,
@@ -419,7 +419,7 @@ ix.command.Add("DoorSetParent", {
 
 		-- Validate it is a door.
 		if (IsValid(entity) and entity:IsDoor() and !entity:GetNetVar("disabled")) then
-			client.ixDoorParent = entity
+			client.wsDoorParent = entity
 			return "@dSetParentDoor"
 		else
 			-- Tell the player the door isn't valid.
@@ -428,7 +428,7 @@ ix.command.Add("DoorSetParent", {
 	end
 })
 
-ix.command.Add("DoorSetChild", {
+ws.command.Add("DoorSetChild", {
 	description = "@cmdDoorSetChild",
 	privilege = "Manage Doors",
 	adminOnly = true,
@@ -438,18 +438,18 @@ ix.command.Add("DoorSetChild", {
 
 		-- Validate it is a door.
 		if (IsValid(entity) and entity:IsDoor() and !entity:GetNetVar("disabled")) then
-			if (client.ixDoorParent == entity) then
+			if (client.wsDoorParent == entity) then
 				return "@dCanNotSetAsChild"
 			end
 
 			-- Check if the player has set a door as a parent.
-			if (IsValid(client.ixDoorParent)) then
+			if (IsValid(client.wsDoorParent)) then
 				-- Add the door to the parent's list of children.
-				client.ixDoorParent.ixChildren = client.ixDoorParent.ixChildren or {}
-				client.ixDoorParent.ixChildren[entity:MapCreationID()] = true
+				client.wsDoorParent.wsChildren = client.wsDoorParent.wsChildren or {}
+				client.wsDoorParent.wsChildren[entity:MapCreationID()] = true
 
 				-- Set the door's parent to the parent.
-				entity.ixParent = client.ixDoorParent
+				entity.wsParent = client.wsDoorParent
 
 				-- Save the door information.
 				PLUGIN:SaveDoorData()
@@ -467,7 +467,7 @@ ix.command.Add("DoorSetChild", {
 	end
 })
 
-ix.command.Add("DoorRemoveChild", {
+ws.command.Add("DoorRemoveChild", {
 	description = "@cmdDoorRemoveChild",
 	privilege = "Manage Doors",
 	adminOnly = true,
@@ -477,21 +477,21 @@ ix.command.Add("DoorRemoveChild", {
 
 		-- Validate it is a door.
 		if (IsValid(entity) and entity:IsDoor() and !entity:GetNetVar("disabled")) then
-			if (client.ixDoorParent == entity) then
+			if (client.wsDoorParent == entity) then
 				PLUGIN:CallOnDoorChildren(entity, function(child)
-					child.ixParent = nil
+					child.wsParent = nil
 				end)
 
-				entity.ixChildren = nil
+				entity.wsChildren = nil
 				return "@dRemoveChildren"
 			end
 
 			-- Check if the player has set a door as a parent.
-			if (IsValid(entity.ixParent) and entity.ixParent.ixChildren) then
+			if (IsValid(entity.wsParent) and entity.wsParent.wsChildren) then
 				-- Remove the door from the list of children.
-				entity.ixParent.ixChildren[entity:MapCreationID()] = nil
+				entity.wsParent.wsChildren[entity:MapCreationID()] = nil
 				-- Remove the variable for the parent.
-				entity.ixParent = nil
+				entity.wsParent = nil
 
 				PLUGIN:SaveDoorData()
 				return "@dRemoveChildDoor"
@@ -503,11 +503,11 @@ ix.command.Add("DoorRemoveChild", {
 	end
 })
 
-ix.command.Add("DoorSetHidden", {
+ws.command.Add("DoorSetHidden", {
 	description = "@cmdDoorSetHidden",
 	privilege = "Manage Doors",
 	adminOnly = true,
-	arguments = ix.type.bool,
+	arguments = ws.type.bool,
 	OnRun = function(self, client, bHidden)
 		-- Get the door the player is looking at.
 		local entity = client:GetEyeTrace().Entity
@@ -531,11 +531,11 @@ ix.command.Add("DoorSetHidden", {
 	end
 })
 
-ix.command.Add("DoorSetClass", {
+ws.command.Add("DoorSetClass", {
 	description = "@cmdDoorSetClass",
 	privilege = "Manage Doors",
 	adminOnly = true,
-	arguments = bit.bor(ix.type.text, ix.type.optional),
+	arguments = bit.bor(ws.type.text, ws.type.optional),
 	OnRun = function(self, client, name)
 		-- Get the door the player is looking at.
 		local entity = client:GetEyeTrace().Entity
@@ -555,8 +555,8 @@ ix.command.Add("DoorSetClass", {
 
 			local class, classData
 
-			for k, v in pairs(ix.class.list) do
-				if (ix.util.StringMatches(v.name, name) or ix.util.StringMatches(L(v.name, client), name)) then
+			for k, v in pairs(ws.class.list) do
+				if (ws.util.StringMatches(v.name, name) or ws.util.StringMatches(L(v.name, client), name)) then
 					class, classData = k, v
 
 					break
@@ -565,11 +565,11 @@ ix.command.Add("DoorSetClass", {
 
 			-- Check if a faction was found.
 			if (class) then
-				entity.ixClassID = class
+				entity.wsClassID = class
 				entity:SetNetVar("class", class)
 
 				PLUGIN:CallOnDoorChildren(entity, function()
-					entity.ixClassID = class
+					entity.wsClassID = class
 					entity:SetNetVar("class", class)
 				end)
 

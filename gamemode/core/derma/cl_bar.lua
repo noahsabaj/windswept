@@ -14,7 +14,7 @@ function PANEL:Init()
 	self.padding = 2
 
 	-- add bars that were registered before manager creation
-	for _, v in ipairs(ix.bar.list) do
+	for _, v in ipairs(ws.bar.list) do
 		v.panel = self:AddBar(v.index, v.color, v.priority)
 	end
 end
@@ -32,7 +32,7 @@ function PANEL:Clear()
 end
 
 function PANEL:AddBar(index, color, priority)
-	local panel = self:Add("ixInfoBar")
+	local panel = self:Add("wsInfoBar")
 	panel:SetSize(self:GetWide(), BAR_HEIGHT)
 	panel:SetVisible(false)
 	panel:SetID(index)
@@ -60,7 +60,7 @@ function PANEL:RemoveBar(panel)
 
 		-- Decrease index value for the next bars
 		for i = toRemove, #self.bars do
-			ix.bar.list[i].index = i
+			ws.bar.list[i].index = i
 			self.bars[i]:SetID(i)
 		end
 	end
@@ -94,8 +94,8 @@ function PANEL:Organize()
 end
 
 function PANEL:Think()
-	local menu = (IsValid(ix.gui.characterMenu) and !ix.gui.characterMenu:IsClosing()) and ix.gui.characterMenu
-		or IsValid(ix.gui.menu) and ix.gui.menu
+	local menu = (IsValid(ws.gui.characterMenu) and !ws.gui.characterMenu:IsClosing()) and ws.gui.characterMenu
+		or IsValid(ws.gui.menu) and ws.gui.menu
 	local fraction = menu and 1 - menu.currentAlpha / 255 or 1
 
 	self:SetAlpha(255 * fraction)
@@ -107,10 +107,10 @@ function PANEL:Think()
 
 	local curTime = CurTime()
 	local bShouldHide = hook.Run("ShouldHideBars")
-	local bAlwaysShow = ix.option.Get("alwaysShowBars", false)
+	local bAlwaysShow = ws.option.Get("alwaysShowBars", false)
 
 	for _, v in ipairs(self.bars) do
-		local info = ix.bar.list[v:GetID()]
+		local info = ws.bar.list[v:GetID()]
 		local realValue, barText = info.GetValue()
 
 		if (bShouldHide or realValue == false) then
@@ -139,7 +139,7 @@ function PANEL:OnRemove()
 	self:Clear()
 end
 
-vgui.Register("ixInfoBarManager", PANEL, "Panel")
+vgui.Register("wsInfoBarManager", PANEL, "Panel")
 
 PANEL = {}
 
@@ -166,7 +166,7 @@ function PANEL:Init()
 	end
 
 	self.label = self:Add("DLabel")
-	self.label:SetFont("ixSmallFont")
+	self.label:SetFont("wsSmallFont")
 	self.label:SetContentAlignment(5)
 	self.label:SetText("")
 	self.label:SetTextColor(Color(240, 240, 240))
@@ -189,9 +189,9 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintInfoBarBackground", self, width, height)
 end
 
-vgui.Register("ixInfoBar", PANEL, "Panel")
+vgui.Register("wsInfoBar", PANEL, "Panel")
 
-if (IsValid(ix.gui.bars)) then
-	ix.gui.bars:Remove()
-	ix.gui.bars = vgui.Create("ixInfoBarManager")
+if (IsValid(ws.gui.bars)) then
+	ws.gui.bars:Remove()
+	ws.gui.bars = vgui.Create("wsInfoBarManager")
 end

@@ -117,4 +117,4 @@ end
 function PANEL:OnMousePressed()
 end
 
-vgui.Register("ixModelPanel", PANEL, "DModelPanel")
+vgui.Register("wsModelPanel", PANEL, "DModelPanel")

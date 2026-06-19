@@ -1,18 +1,18 @@
 
--- @module ix.net
+-- @module ws.net
 
 local entityMeta = FindMetaTable("Entity")
 local playerMeta = FindMetaTable("Player")
 
-ix.net = ix.net or {}
-ix.net.list = ix.net.list or {}
-ix.net.locals = ix.net.locals or {}
-ix.net.globals = ix.net.globals or {}
+ws.net = ws.net or {}
+ws.net.list = ws.net.list or {}
+ws.net.locals = ws.net.locals or {}
+ws.net.globals = ws.net.globals or {}
 
-util.AddNetworkString("ixGlobalVarSet")
-util.AddNetworkString("ixLocalVarSet")
-util.AddNetworkString("ixNetVarSet")
-util.AddNetworkString("ixNetVarDelete")
+util.AddNetworkString("wsGlobalVarSet")
+util.AddNetworkString("wsLocalVarSet")
+util.AddNetworkString("wsNetVarSet")
+util.AddNetworkString("wsNetVarDelete")
 
 -- Check if there is an attempt to send a function. Can't send those.
 local function CheckBadType(name, object)
@@ -31,7 +31,7 @@ local function CheckBadType(name, object)
 end
 
 function GetNetVar(key, default) -- luacheck: globals GetNetVar
-	local value = ix.net.globals[key]
+	local value = ws.net.globals[key]
 
 	return value != nil and value or default
 end
@@ -40,9 +40,9 @@ function SetNetVar(key, value, receiver) -- luacheck: globals SetNetVar
 	if (CheckBadType(key, value)) then return end
 	if (GetNetVar(key) == value and !istable(value)) then return end
 
-	ix.net.globals[key] = value
+	ws.net.globals[key] = value
 
-	net.Start("ixGlobalVarSet")
+	net.Start("wsGlobalVarSet")
 	net.WriteString(key)
 	net.WriteType(value)
 
@@ -60,26 +60,26 @@ end
 -- @realm server
 -- @internal
 function playerMeta:SyncVars()
-	for k, v in pairs(ix.net.globals) do
-		net.Start("ixGlobalVarSet")
+	for k, v in pairs(ws.net.globals) do
+		net.Start("wsGlobalVarSet")
 			net.WriteString(k)
 			net.WriteType(v)
 		net.Send(self)
 	end
 
-	for k, v in pairs(ix.net.locals[self] or {}) do
-		net.Start("ixLocalVarSet")
+	for k, v in pairs(ws.net.locals[self] or {}) do
+		net.Start("wsLocalVarSet")
 			net.WriteString(k)
 			net.WriteType(v)
 		net.Send(self)
 	end
 
-	for entity, data in pairs(ix.net.list) do
+	for entity, data in pairs(ws.net.list) do
 		if (IsValid(entity)) then
 			local index = entity:EntIndex()
 
 			for k, v in pairs(data) do
-				net.Start("ixNetVarSet")
+				net.Start("wsNetVarSet")
 					net.WriteUInt(index, 16)
 					net.WriteString(k)
 					net.WriteType(v)
@@ -99,8 +99,8 @@ end
 -- > 12345678
 -- @see SetLocalVar
 function playerMeta:GetLocalVar(key, default)
-	if (ix.net.locals[self] and ix.net.locals[self][key] != nil) then
-		return ix.net.locals[self][key]
+	if (ws.net.locals[self] and ws.net.locals[self][key] != nil) then
+		return ws.net.locals[self][key]
 	end
 
 	return default
@@ -115,10 +115,10 @@ end
 function playerMeta:SetLocalVar(key, value)
 	if (CheckBadType(key, value)) then return end
 
-	ix.net.locals[self] = ix.net.locals[self] or {}
-	ix.net.locals[self][key] = value
+	ws.net.locals[self] = ws.net.locals[self] or {}
+	ws.net.locals[self][key] = value
 
-	net.Start("ixLocalVarSet")
+	net.Start("wsLocalVarSet")
 		net.WriteString(key)
 		net.WriteType(value)
 	net.Send(self)
@@ -136,8 +136,8 @@ end
 -- > Hello World!
 -- @see SetNetVar
 function entityMeta:GetNetVar(key, default)
-	if (ix.net.list[self] and ix.net.list[self][key] != nil) then
-		return ix.net.list[self][key]
+	if (ws.net.list[self] and ws.net.list[self][key] != nil) then
+		return ws.net.list[self][key]
 	end
 
 	return default
@@ -153,10 +153,10 @@ end
 function entityMeta:SetNetVar(key, value, receiver)
 	if (CheckBadType(key, value)) then return end
 
-	ix.net.list[self] = ix.net.list[self] or {}
+	ws.net.list[self] = ws.net.list[self] or {}
 
-	if (ix.net.list[self][key] != value) then
-		ix.net.list[self][key] = value
+	if (ws.net.list[self][key] != value) then
+		ws.net.list[self][key] = value
 	end
 
 	self:SendNetVar(key, receiver)
@@ -168,10 +168,10 @@ end
 -- @string key Identifier of the networked variable
 -- @tab[opt=nil] receiver The players to send the networked variable to
 function entityMeta:SendNetVar(key, receiver)
-	net.Start("ixNetVarSet")
+	net.Start("wsNetVarSet")
 	net.WriteUInt(self:EntIndex(), 16)
 	net.WriteString(key)
-	net.WriteType(ix.net.list[self] and ix.net.list[self][key])
+	net.WriteType(ws.net.list[self] and ws.net.list[self][key])
 
 	if (receiver == nil) then
 		net.Broadcast()
@@ -185,10 +185,10 @@ end
 -- @internal
 -- @tab[opt=nil] receiver The players to clear the networked variable for
 function entityMeta:ClearNetVars(receiver)
-	ix.net.list[self] = nil
-	ix.net.locals[self] = nil
+	ws.net.list[self] = nil
+	ws.net.locals[self] = nil
 
-	net.Start("ixNetVarDelete")
+	net.Start("wsNetVarDelete")
 	net.WriteUInt(self:EntIndex(), 16)
 
 	if (receiver == nil) then

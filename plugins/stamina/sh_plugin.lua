@@ -3,22 +3,22 @@ PLUGIN.author = "Chessnut"
 PLUGIN.description = "Adds a stamina system to limit running."
 
 -- luacheck: push ignore 631
-ix.config.Add("staminaDrain", 1, "How much stamina to drain per tick (every quarter second). This is calculated before attribute reduction.", nil, {
+ws.config.Add("staminaDrain", 1, "How much stamina to drain per tick (every quarter second). This is calculated before attribute reduction.", nil, {
 	data = {min = 0, max = 10, decimals = 2},
 	category = "characters"
 })
 
-ix.config.Add("staminaRegeneration", 1.75, "How much stamina to regain per tick (every quarter second).", nil, {
+ws.config.Add("staminaRegeneration", 1.75, "How much stamina to regain per tick (every quarter second).", nil, {
 	data = {min = 0, max = 10, decimals = 2},
 	category = "characters"
 })
 
-ix.config.Add("staminaCrouchRegeneration", 2, "How much stamina to regain per tick (every quarter second) while crouching.", nil, {
+ws.config.Add("staminaCrouchRegeneration", 2, "How much stamina to regain per tick (every quarter second) while crouching.", nil, {
 	data = {min = 0, max = 10, decimals = 2},
 	category = "characters"
 })
 
-ix.config.Add("punchStamina", 10, "How much stamina punches use up.", nil, {
+ws.config.Add("punchStamina", 10, "How much stamina punches use up.", nil, {
 	data = {min = 0, max = 100},
 	category = "characters"
 })
@@ -30,15 +30,15 @@ local function CalcStaminaChange(client)
 		return 0
 	end
 
-	local walkSpeed = ix.config.Get("walkSpeed")
-	local maxAttributes = ix.config.Get("maxAttributes", 100)
+	local walkSpeed = ws.config.Get("walkSpeed")
+	local maxAttributes = ws.config.Get("maxAttributes", 100)
 	local offset
 
 	if (client:KeyDown(IN_SPEED) and client:GetVelocity():LengthSqr() >= (walkSpeed * walkSpeed) and client:OnGround()) then
 		-- characters could have attribute values greater than max if the config was changed
-		offset = -ix.config.Get("staminaDrain", 1) + math.min(character:GetAttribute("end", 0), maxAttributes) / 100
+		offset = -ws.config.Get("staminaDrain", 1) + math.min(character:GetAttribute("end", 0), maxAttributes) / 100
 	else
-		offset = client:Crouching() and ix.config.Get("staminaCrouchRegeneration", 2) or ix.config.Get("staminaRegeneration", 1.75)
+		offset = client:Crouching() and ws.config.Get("staminaCrouchRegeneration", 2) or ws.config.Get("staminaRegeneration", 1.75)
 	end
 
 	offset = hook.Run("AdjustStaminaOffset", client, offset) or offset
@@ -76,7 +76,7 @@ end
 
 if (SERVER) then
 	function PLUGIN:PostPlayerLoadout(client)
-		local uniqueID = "ixStam" .. client:SteamID()
+		local uniqueID = "wsStam" .. client:SteamID()
 
 		timer.Create(uniqueID, 0.25, 0, function()
 			if (!IsValid(client)) then
@@ -139,7 +139,7 @@ else
 		end
 	end
 
-	ix.bar.Add(function()
+	ws.bar.Add(function()
 		return predictedStamina / 100
 	end, Color(200, 200, 40), nil, "stm")
 end

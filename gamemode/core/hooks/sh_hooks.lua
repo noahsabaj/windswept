@@ -41,22 +41,22 @@ local animationFixOffset = Vector(16.5438, -0.1642, -20.5493)
 
 function GM:TranslateActivity(client, act)
 	local clientInfo = client:GetTable()
-	local modelClass = clientInfo.ixAnimModelClass or "player"
+	local modelClass = clientInfo.wsAnimModelClass or "player"
 	local bRaised = client:IsWepRaised()
 
 	if (modelClass == "player") then
 		local weapon = client:GetActiveWeapon()
-		local bAlwaysRaised = ix.config.Get("weaponAlwaysRaised")
+		local bAlwaysRaised = ws.config.Get("weaponAlwaysRaised")
 		weapon = IsValid(weapon) and weapon or nil
 
 		if (!bAlwaysRaised and weapon and !bRaised and client:OnGround()) then
 			local model = string.lower(client:GetModel())
 
 			if (string.find(model, "zombie")) then
-				local tree = ix.anim.zombie
+				local tree = ws.anim.zombie
 
 				if (string.find(model, "fast")) then
-					tree = ix.anim.fastZombie
+					tree = ws.anim.fastZombie
 				end
 
 				if (tree[act]) then
@@ -70,7 +70,7 @@ function GM:TranslateActivity(client, act)
 				holdType = PLAYER_HOLDTYPE_TRANSLATOR[holdType] or "passive"
 			end
 
-			local tree = ix.anim.player[holdType]
+			local tree = ws.anim.player[holdType]
 
 			if (tree and tree[act]) then
 				if (isstring(tree[act])) then
@@ -86,13 +86,13 @@ function GM:TranslateActivity(client, act)
 		return self.BaseClass:TranslateActivity(client, act)
 	end
 
-	if (clientInfo.ixAnimTable) then
-		local glide = clientInfo.ixAnimGlide
+	if (clientInfo.wsAnimTable) then
+		local glide = clientInfo.wsAnimGlide
 
 		if (client:InVehicle()) then
-			act = clientInfo.ixAnimTable[1]
+			act = clientInfo.wsAnimTable[1]
 
-			local fixVector = clientInfo.ixAnimTable[2]
+			local fixVector = clientInfo.wsAnimTable[2]
 
 			if (isvector(fixVector)) then
 				client:SetLocalPos(animationFixOffset)
@@ -104,8 +104,8 @@ function GM:TranslateActivity(client, act)
 				return act
 			end
 		elseif (client:OnGround()) then
-			if (clientInfo.ixAnimTable[act]) then
-				local act2 = clientInfo.ixAnimTable[act][bRaised and 2 or 1]
+			if (clientInfo.wsAnimTable[act]) then
+				local act2 = clientInfo.wsAnimTable[act][bRaised and 2 or 1]
 
 				if (isstring(act2)) then
 					clientInfo.CalcSeqOverride = client:LookupSequence(act2)
@@ -117,18 +117,18 @@ function GM:TranslateActivity(client, act)
 			if (isstring(glide)) then
 				clientInfo.CalcSeqOverride = client:LookupSequence(glide)
 			else
-				return clientInfo.ixAnimGlide
+				return clientInfo.wsAnimGlide
 			end
 		end
 	end
 end
 
 function GM:CanPlayerUseBusiness(client, uniqueID)
-	if (!ix.config.Get("allowBusiness", true)) then
+	if (!ws.config.Get("allowBusiness", true)) then
 		return false
 	end
 
-	local itemTable = ix.item.list[uniqueID]
+	local itemTable = ws.item.list[uniqueID]
 
 	if (!client:GetCharacter()) then
 		return false
@@ -188,7 +188,7 @@ function GM:CanPlayerUseBusiness(client, uniqueID)
 end
 
 function GM:DoAnimationEvent(client, event, data)
-	local class = client.ixAnimModelClass
+	local class = client.wsAnimModelClass
 
 	if (class == "player") then
 		return self.BaseClass:DoAnimationEvent(client, event, data)
@@ -196,7 +196,7 @@ function GM:DoAnimationEvent(client, event, data)
 		local weapon = client:GetActiveWeapon()
 
 		if (IsValid(weapon)) then
-			local animation = client.ixAnimTable
+			local animation = client.wsAnimTable
 
 			if (event == PLAYERANIMEVENT_ATTACK_PRIMARY) then
 				client:AnimRestartGesture(GESTURE_SLOT_ATTACK_AND_RELOAD, animation.attack or ACT_GESTURE_RANGE_ATTACK_SMG1, true)
@@ -226,7 +226,7 @@ function GM:DoAnimationEvent(client, event, data)
 end
 
 function GM:EntityEmitSound(data)
-	if (data.Entity.ixIsMuted) then
+	if (data.Entity.wsIsMuted) then
 		return false
 	end
 end
@@ -254,25 +254,25 @@ local function UpdatePlayerHoldType(client, weapon)
 		holdType = HOLDTYPE_TRANSLATOR[holdType] or holdType
 	end
 
-	client.ixAnimHoldType = holdType
+	client.wsAnimHoldType = holdType
 end
 
 local function UpdateAnimationTable(client, vehicle)
-	local baseTable = ix.anim[client.ixAnimModelClass] or {}
+	local baseTable = ws.anim[client.wsAnimModelClass] or {}
 
 	if (IsValid(client) and IsValid(vehicle)) then
 		local vehicleClass = vehicle:IsChair() and "chair" or vehicle:GetClass()
 
 		if (baseTable.vehicle and baseTable.vehicle[vehicleClass]) then
-			client.ixAnimTable = baseTable.vehicle[vehicleClass]
+			client.wsAnimTable = baseTable.vehicle[vehicleClass]
 		else
-			client.ixAnimTable = baseTable.normal[ACT_MP_CROUCH_IDLE]
+			client.wsAnimTable = baseTable.normal[ACT_MP_CROUCH_IDLE]
 		end
 	else
-		client.ixAnimTable = baseTable[client.ixAnimHoldType]
+		client.wsAnimTable = baseTable[client.wsAnimHoldType]
 	end
 
-	client.ixAnimGlide = baseTable["glide"]
+	client.wsAnimGlide = baseTable["glide"]
 end
 
 function GM:PlayerWeaponChanged(client, weapon)
@@ -299,7 +299,7 @@ function GM:PlayerWeaponChanged(client, weapon)
 	end
 
 	-- Let the config decide before actual results.
-	if (ix.config.Get("weaponAlwaysRaised")) then
+	if (ws.config.Get("weaponAlwaysRaised")) then
 		client:SetWepRaised(true, weapon)
 		return
 	end
@@ -324,7 +324,7 @@ function GM:PlayerSwitchWeapon(client, oldWeapon, weapon)
 end
 
 function GM:PlayerModelChanged(client, model)
-	client.ixAnimModelClass = ix.anim.GetModelClass(model)
+	client.wsAnimModelClass = ws.anim.GetModelClass(model)
 
 	UpdateAnimationTable(client)
 end
@@ -388,8 +388,8 @@ do
 end
 
 function GM:CharacterVarChanged(char, varName, oldVar, newVar)
-	if (ix.char.varHooks[varName]) then
-		for _, v in pairs(ix.char.varHooks[varName]) do
+	if (ws.char.varHooks[varName]) then
+		for _, v in pairs(ws.char.varHooks[varName]) do
 			v(char, oldVar, newVar)
 		end
 	end
@@ -407,7 +407,7 @@ function GM:OnCharacterCreated(client, character)
 	local factionIndex = character:GetFaction()
 
 	if (factionIndex) then
-		local faction = ix.faction.Get(factionIndex)
+		local faction = ws.faction.Get(factionIndex)
 
 		if (faction and faction.OnCharacterCreated) then
 			faction:OnCharacterCreated(client, character)
@@ -417,7 +417,7 @@ function GM:OnCharacterCreated(client, character)
 end
 
 function GM:GetDefaultCharacterName(client, faction)
-	local info = ix.faction.indices[faction]
+	local info = ws.faction.indices[faction]
 
 	if (info and info.GetDefaultName) then
 		return info:GetDefaultName(client)
@@ -473,8 +473,8 @@ function GM:PhysgunPickup(client, entity)
 	if (bPickup) then
 		if (entity:IsPlayer()) then
 			entity:SetMoveType(MOVETYPE_NONE)
-		elseif (!entity.ixCollisionGroup) then
-			entity.ixCollisionGroup = entity:GetCollisionGroup()
+		elseif (!entity.wsCollisionGroup) then
+			entity.wsCollisionGroup = entity:GetCollisionGroup()
 			entity:SetCollisionGroup(COLLISION_GROUP_WEAPON)
 		end
 	end
@@ -485,9 +485,9 @@ end
 function GM:PhysgunDrop(client, entity)
 	if (entity:IsPlayer()) then
 		entity:SetMoveType(MOVETYPE_WALK)
-	elseif (entity.ixCollisionGroup) then
-		entity:SetCollisionGroup(entity.ixCollisionGroup)
-		entity.ixCollisionGroup = nil
+	elseif (entity.wsCollisionGroup) then
+		entity:SetCollisionGroup(entity.wsCollisionGroup)
+		entity.wsCollisionGroup = nil
 	end
 end
 
@@ -522,7 +522,7 @@ function GM:Move(client, moveData)
 		if (client:GetMoveType() == MOVETYPE_WALK and moveData:KeyDown(IN_WALK)) then
 			local mf, ms = 0, 0
 			local speed = client:GetWalkSpeed()
-			local ratio = ix.config.Get("walkRatio")
+			local ratio = ws.config.Get("walkRatio")
 
 			if (moveData:KeyDown(IN_FORWARD)) then
 				mf = ratio
@@ -583,7 +583,7 @@ function GM:CanTransferItem(itemObject, curInv, inventory)
 		return
 	end
 
-	inventory = ix.item.inventories[itemObject:GetData("id")]
+	inventory = ws.item.inventories[itemObject:GetData("id")]
 
 	-- don't allow transferring items that are in use
 	if (inventory) then
@@ -631,9 +631,9 @@ function GM:PreGamemodeLoaded()
 end
 
 function GM:PostGamemodeLoaded()
-	baseclass.Set("ix_character", ix.meta.character)
-	baseclass.Set("ix_inventory", ix.meta.inventory)
-	baseclass.Set("ix_item", ix.meta.item)
+	baseclass.Set("ix_character", ws.meta.character)
+	baseclass.Set("ix_inventory", ws.meta.inventory)
+	baseclass.Set("ix_item", ws.meta.item)
 end
 
 if (SERVER) then

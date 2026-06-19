@@ -1,19 +1,19 @@
 
 --- A library representing the server's currency system.
 -- MODIFIED: Physical currency system - money is inventory items, not numeric values
--- @module ix.currency
+-- @module ws.currency
 
-ix.currency = ix.currency or {}
-ix.currency.symbol = ix.currency.symbol or "$"
-ix.currency.singular = ix.currency.singular or "dollar"
-ix.currency.plural = ix.currency.plural or "dollars"
-ix.currency.model = ix.currency.model or "models/props_lab/box01a.mdl"
+ws.currency = ws.currency or {}
+ws.currency.symbol = ws.currency.symbol or "$"
+ws.currency.singular = ws.currency.singular or "dollar"
+ws.currency.plural = ws.currency.plural or "dollars"
+ws.currency.model = ws.currency.model or "models/props_lab/box01a.mdl"
 
 -- Constants for physical currency
-ix.currency.CASH_ITEM = "cash"
-ix.currency.COINS_ITEM = "coins"
-ix.currency.MAX_STACK = 100
-ix.currency.CENTS_PER_DOLLAR = 100
+ws.currency.CASH_ITEM = "cash"
+ws.currency.COINS_ITEM = "coins"
+ws.currency.MAX_STACK = 100
+ws.currency.CENTS_PER_DOLLAR = 100
 
 --- Sets the currency type.
 -- @realm shared
@@ -21,11 +21,11 @@ ix.currency.CENTS_PER_DOLLAR = 100
 -- @string singular The name of the currency in it's singular form.
 -- @string plural The name of the currency in it's plural form.
 -- @string model The model of the currency entity.
-function ix.currency.Set(symbol, singular, plural, model)
-    ix.currency.symbol = symbol
-    ix.currency.singular = singular
-    ix.currency.plural = plural
-    ix.currency.model = model
+function ws.currency.Set(symbol, singular, plural, model)
+    ws.currency.symbol = symbol
+    ws.currency.singular = singular
+    ws.currency.plural = plural
+    ws.currency.model = model
 end
 
 --- Returns a formatted string according to the current currency.
@@ -33,15 +33,15 @@ end
 -- @realm shared
 -- @number amount The amount of cash in CENTS being formatted.
 -- @treturn string The formatted string.
-function ix.currency.Get(amount)
+function ws.currency.Get(amount)
     -- amount is in cents, format as dollars
     local dollars = math.floor(amount / 100)
     local cents = amount % 100
 
     if cents == 0 then
-        return ix.currency.symbol .. dollars
+        return ws.currency.symbol .. dollars
     else
-        return string.format("%s%d.%02d", ix.currency.symbol, dollars, cents)
+        return string.format("%s%d.%02d", ws.currency.symbol, dollars, cents)
     end
 end
 
@@ -52,7 +52,7 @@ end
 -- @number amount The amount of cash being spawned (in dollars).
 -- @angle[opt=angle_zero] angle The angle of the entity being spawned.
 -- @treturn entity The spawned money entity.
-function ix.currency.Spawn(pos, amount, angle)
+function ws.currency.Spawn(pos, amount, angle)
     if (!amount or amount < 0) then
         print("[Helix] Can't create currency entity: Invalid Amount of money")
         return
@@ -87,7 +87,7 @@ end
 -- @realm shared
 -- @param inventory The inventory to count currency in
 -- @treturn number Total value in cents
-function ix.currency.CountInInventory(inventory)
+function ws.currency.CountInInventory(inventory)
     if not inventory then return 0 end
 
     local total = 0
@@ -105,7 +105,7 @@ end
 -- @realm shared
 -- @param inventory The inventory to search
 -- @treturn table Array of currency items
-function ix.currency.FindCurrencyItems(inventory)
+function ws.currency.FindCurrencyItems(inventory)
     if not inventory then return {} end
 
     local items = {}
@@ -128,7 +128,7 @@ end
 -- @param inventory The inventory to search
 -- @param count Number of slots needed
 -- @treturn table Array of {x, y} slot positions
-function ix.currency.FindEmptySlots(inventory, count)
+function ws.currency.FindEmptySlots(inventory, count)
     if not inventory then return {} end
 
     local slots = {}
@@ -153,67 +153,75 @@ end
 -- @param inventory The inventory to add to
 -- @param cents Amount in cents to add
 -- @treturn boolean True on success, false if no space
-function ix.currency.AddToInventory(inventory, cents)
-    if not inventory or cents <= 0 then return cents == 0 end
+function ws.currency.AddToInventory(inventory, cents)
+    if not inventory then return false end
+    if cents <= 0 then return cents == 0 end
 
     local remaining = cents
+    local existingItems = ws.currency.FindCurrencyItems(inventory)
 
-    -- First, try to fill existing partial stacks
-    local existingItems = ix.currency.FindCurrencyItems(inventory)
+    -- PHASE 1: PLAN ONLY (no mutation yet). We must verify the ENTIRE amount fits
+    -- before changing anything, otherwise a partial add that returns false lets
+    -- callers' refund paths create money out of nothing.
+    local topups = {}  -- { {item = , newQty = }, ... }
 
-    -- Fill coin stacks first (for small amounts)
+    -- Plan top-ups into existing coin stacks first (1 cent each)
     for _, item in ipairs(existingItems) do
         if remaining <= 0 then break end
 
-        local quantity = item:GetData("quantity", 1)
-        local canAdd = ix.currency.MAX_STACK - quantity
-
-        if canAdd > 0 and item.uniqueID == ix.currency.COINS_ITEM then
-            local toAdd = math.min(canAdd, remaining)
-            item:SetData("quantity", quantity + toAdd)
-            remaining = remaining - toAdd
-        end
-    end
-
-    -- Fill cash stacks (for larger amounts, convert cents to dollars)
-    for _, item in ipairs(existingItems) do
-        if remaining < ix.currency.CENTS_PER_DOLLAR then break end
-
-        local quantity = item:GetData("quantity", 1)
-        local canAdd = ix.currency.MAX_STACK - quantity
-
-        if canAdd > 0 and item.uniqueID == ix.currency.CASH_ITEM then
-            local dollarsToAdd = math.min(canAdd, math.floor(remaining / ix.currency.CENTS_PER_DOLLAR))
-            if dollarsToAdd > 0 then
-                item:SetData("quantity", quantity + dollarsToAdd)
-                remaining = remaining - (dollarsToAdd * ix.currency.CENTS_PER_DOLLAR)
+        if item.uniqueID == ws.currency.COINS_ITEM then
+            local quantity = item:GetData("quantity", 1)
+            local canAdd = ws.currency.MAX_STACK - quantity
+            if canAdd > 0 then
+                local toAdd = math.min(canAdd, remaining)
+                topups[#topups + 1] = {item = item, newQty = quantity + toAdd}
+                remaining = remaining - toAdd
             end
         end
     end
 
-    -- Calculate new stacks needed
-    local dollarsNeeded = math.floor(remaining / ix.currency.CENTS_PER_DOLLAR)
-    local centsNeeded = remaining % ix.currency.CENTS_PER_DOLLAR
+    -- Plan top-ups into existing cash stacks (100 cents each)
+    for _, item in ipairs(existingItems) do
+        if remaining < ws.currency.CENTS_PER_DOLLAR then break end
 
-    local cashStacksNeeded = math.ceil(dollarsNeeded / ix.currency.MAX_STACK)
+        if item.uniqueID == ws.currency.CASH_ITEM then
+            local quantity = item:GetData("quantity", 1)
+            local canAdd = ws.currency.MAX_STACK - quantity
+            if canAdd > 0 then
+                local dollarsToAdd = math.min(canAdd, math.floor(remaining / ws.currency.CENTS_PER_DOLLAR))
+                if dollarsToAdd > 0 then
+                    topups[#topups + 1] = {item = item, newQty = quantity + dollarsToAdd}
+                    remaining = remaining - (dollarsToAdd * ws.currency.CENTS_PER_DOLLAR)
+                end
+            end
+        end
+    end
+
+    -- New stacks needed for the leftover (top-ups don't consume empty slots, so
+    -- the empty-slot count is accurate even though we haven't mutated yet)
+    local dollarsNeeded = math.floor(remaining / ws.currency.CENTS_PER_DOLLAR)
+    local centsNeeded = remaining % ws.currency.CENTS_PER_DOLLAR
+    local cashStacksNeeded = math.ceil(dollarsNeeded / ws.currency.MAX_STACK)
     local coinStacksNeeded = centsNeeded > 0 and 1 or 0
-
     local totalSlotsNeeded = cashStacksNeeded + coinStacksNeeded
-    local emptySlots = ix.currency.FindEmptySlots(inventory, totalSlotsNeeded)
 
-    -- Check if we have enough space
+    local emptySlots = ws.currency.FindEmptySlots(inventory, totalSlotsNeeded)
     if #emptySlots < totalSlotsNeeded then
-        return false  -- Not enough inventory space
+        return false  -- Not enough space; NOTHING has been mutated -> safe to refund
+    end
+
+    -- PHASE 2: APPLY (all checks passed, this cannot partially fail)
+    for _, t in ipairs(topups) do
+        t.item:SetData("quantity", t.newQty)
     end
 
     local slotIndex = 1
 
-    -- Create new cash stacks
     while dollarsNeeded > 0 and slotIndex <= #emptySlots do
-        local stackSize = math.min(ix.currency.MAX_STACK, dollarsNeeded)
+        local stackSize = math.min(ws.currency.MAX_STACK, dollarsNeeded)
         local slot = emptySlots[slotIndex]
 
-        inventory:Add(ix.currency.CASH_ITEM, 1, {
+        inventory:Add(ws.currency.CASH_ITEM, 1, {
             quantity = stackSize
         }, slot.x, slot.y)
 
@@ -221,11 +229,10 @@ function ix.currency.AddToInventory(inventory, cents)
         slotIndex = slotIndex + 1
     end
 
-    -- Create new coins stack if needed
     if centsNeeded > 0 and slotIndex <= #emptySlots then
         local slot = emptySlots[slotIndex]
 
-        inventory:Add(ix.currency.COINS_ITEM, 1, {
+        inventory:Add(ws.currency.COINS_ITEM, 1, {
             quantity = centsNeeded
         }, slot.x, slot.y)
     end
@@ -238,21 +245,22 @@ end
 -- @param inventory The inventory to remove from
 -- @param cents Amount in cents to remove
 -- @treturn boolean True on success, false if not enough money
-function ix.currency.RemoveFromInventory(inventory, cents)
-    if not inventory or cents <= 0 then return cents == 0 end
+function ws.currency.RemoveFromInventory(inventory, cents)
+    if not inventory then return false end
+    if cents <= 0 then return cents == 0 end
 
-    local available = ix.currency.CountInInventory(inventory)
+    local available = ws.currency.CountInInventory(inventory)
     if available < cents then
         return false  -- Not enough money
     end
 
     local remaining = cents
-    local items = ix.currency.FindCurrencyItems(inventory)
+    local items = ws.currency.FindCurrencyItems(inventory)
 
     -- Remove from coins first (smaller denomination)
     for _, item in ipairs(items) do
         if remaining <= 0 then break end
-        if item.uniqueID == ix.currency.COINS_ITEM then
+        if item.uniqueID == ws.currency.COINS_ITEM then
             local quantity = item:GetData("quantity", 1)
             local value = quantity  -- 1 cent per coin
 
@@ -271,9 +279,9 @@ function ix.currency.RemoveFromInventory(inventory, cents)
     -- Remove from cash
     for _, item in ipairs(items) do
         if remaining <= 0 then break end
-        if item.uniqueID == ix.currency.CASH_ITEM then
+        if item.uniqueID == ws.currency.CASH_ITEM then
             local quantity = item:GetData("quantity", 1)
-            local value = quantity * ix.currency.CENTS_PER_DOLLAR
+            local value = quantity * ws.currency.CENTS_PER_DOLLAR
 
             if value <= remaining then
                 -- Remove entire stack
@@ -282,15 +290,15 @@ function ix.currency.RemoveFromInventory(inventory, cents)
             else
                 -- Partial removal - need to calculate how many bills
                 local centsToRemove = remaining
-                local billsToRemove = math.ceil(centsToRemove / ix.currency.CENTS_PER_DOLLAR)
-                local actualCentsRemoved = billsToRemove * ix.currency.CENTS_PER_DOLLAR
+                local billsToRemove = math.ceil(centsToRemove / ws.currency.CENTS_PER_DOLLAR)
+                local actualCentsRemoved = billsToRemove * ws.currency.CENTS_PER_DOLLAR
                 local change = actualCentsRemoved - centsToRemove
 
                 item:SetData("quantity", quantity - billsToRemove)
 
                 -- If we removed more than needed, we need to give change as coins
                 if change > 0 then
-                    ix.currency.AddToInventory(inventory, change)
+                    ws.currency.AddToInventory(inventory, change)
                 end
 
                 remaining = 0
@@ -311,7 +319,7 @@ if SERVER then
     -- @param client The player picking up money
     -- @param moneyEntity The money entity being picked up
     -- @treturn boolean True if pickup succeeded
-    function ix.currency.HandlePickup(client, moneyEntity)
+    function ws.currency.HandlePickup(client, moneyEntity)
         local amount = moneyEntity:GetAmount()
         local character = client:GetCharacter()
 
@@ -321,9 +329,9 @@ if SERVER then
         if not inventory then return false end
 
         -- Convert dollars to cents
-        local cents = amount * ix.currency.CENTS_PER_DOLLAR
+        local cents = amount * ws.currency.CENTS_PER_DOLLAR
 
-        if ix.currency.AddToInventory(inventory, cents) then
+        if ws.currency.AddToInventory(inventory, cents) then
             return true
         else
             client:NotifyLocalized("inventoryFull")
@@ -335,13 +343,13 @@ end
 -- Hook for backwards compatibility
 function GM:OnPickupMoney(client, moneyEntity)
     if (IsValid(moneyEntity)) then
-        -- This is now handled by ix.currency.HandlePickup in the entity Use function
+        -- This is now handled by ws.currency.HandlePickup in the entity Use function
         -- Kept for backwards compatibility if called directly
         local character = client:GetCharacter()
         if not character then return end
 
         local amount = moneyEntity:GetAmount()
-        local cents = amount * ix.currency.CENTS_PER_DOLLAR
+        local cents = amount * ws.currency.CENTS_PER_DOLLAR
         character:GiveMoney(cents)
     end
 end
@@ -351,7 +359,7 @@ end
 -- ============================================================================
 
 do
-    local character = ix.meta.character
+    local character = ws.meta.character
 
     --- Checks if character has at least the specified amount
     -- @realm shared
@@ -363,7 +371,7 @@ do
         end
 
         local inventory = self:GetInventory()
-        return ix.currency.CountInInventory(inventory) >= amount
+        return ws.currency.CountInInventory(inventory) >= amount
     end
 
     --- Returns the character's total money
@@ -371,7 +379,7 @@ do
     -- @treturn number Total money in CENTS
     function character:GetMoney()
         local inventory = self:GetInventory()
-        return ix.currency.CountInInventory(inventory)
+        return ws.currency.CountInInventory(inventory)
     end
 
     if SERVER then
@@ -386,10 +394,10 @@ do
             local inventory = self:GetInventory()
             if not inventory then return false end
 
-            local success = ix.currency.AddToInventory(inventory, amount)
+            local success = ws.currency.AddToInventory(inventory, amount)
 
             if success and not bNoLog then
-                ix.log.Add(self:GetPlayer(), "money", amount)
+                ws.log.Add(self:GetPlayer(), "money", amount)
             end
 
             return success
@@ -406,10 +414,10 @@ do
             local inventory = self:GetInventory()
             if not inventory then return false end
 
-            local success = ix.currency.RemoveFromInventory(inventory, amount)
+            local success = ws.currency.RemoveFromInventory(inventory, amount)
 
             if success and not bNoLog then
-                ix.log.Add(self:GetPlayer(), "money", -amount)
+                ws.log.Add(self:GetPlayer(), "money", -amount)
             end
 
             return success
@@ -423,6 +431,10 @@ do
             local inventory = self:GetInventory()
             if not inventory then return false end
 
+            -- Snapshot the current balance so we can restore it if the new amount
+            -- doesn't fit (otherwise we'd wipe their money and add nothing back).
+            local original = ws.currency.CountInInventory(inventory)
+
             -- Remove all existing currency
             for _, item in pairs(inventory:GetItems()) do
                 if item.isCurrency then
@@ -430,12 +442,19 @@ do
                 end
             end
 
-            -- Add new amount
-            if amount > 0 then
-                return ix.currency.AddToInventory(inventory, amount)
+            if amount <= 0 then return true end
+
+            if ws.currency.AddToInventory(inventory, amount) then
+                return true
             end
 
-            return true
+            -- New amount didn't fit; restore the original balance so money isn't
+            -- silently destroyed, and report failure.
+            if original > 0 then
+                ws.currency.AddToInventory(inventory, original)
+            end
+
+            return false
         end
     end
 end
@@ -445,10 +464,10 @@ end
 -- ============================================================================
 
 if SERVER then
-    util.AddNetworkString("ixCurrencySplit")
-    util.AddNetworkString("ixCurrencySplitConfirm")
+    util.AddNetworkString("wsCurrencySplit")
+    util.AddNetworkString("wsCurrencySplitConfirm")
 
-    net.Receive("ixCurrencySplitConfirm", function(len, client)
+    net.Receive("wsCurrencySplitConfirm", function(len, client)
         local itemID = net.ReadUInt(32)
         local splitAmount = net.ReadUInt(16)
 
@@ -458,7 +477,7 @@ if SERVER then
         local inventory = character:GetInventory()
         if not inventory then return end
 
-        local item = ix.item.instances[itemID]
+        local item = ws.item.instances[itemID]
         if not item then
             client:Notify("Item not found.")
             return
@@ -483,7 +502,7 @@ if SERVER then
         end
 
         -- Find an empty slot for the new stack
-        local emptySlots = ix.currency.FindEmptySlots(inventory, 1)
+        local emptySlots = ws.currency.FindEmptySlots(inventory, 1)
         if #emptySlots < 1 then
             client:Notify("Not enough inventory space.")
             return
@@ -511,7 +530,7 @@ if SERVER then
 end
 
 if CLIENT then
-    net.Receive("ixCurrencySplit", function()
+    net.Receive("wsCurrencySplit", function()
         local itemID = net.ReadUInt(32)
         local quantity = net.ReadUInt(16)
         local currencyType = net.ReadString()
@@ -535,7 +554,7 @@ if CLIENT then
                     return
                 end
 
-                net.Start("ixCurrencySplitConfirm")
+                net.Start("wsCurrencySplitConfirm")
                     net.WriteUInt(itemID, 32)
                     net.WriteUInt(splitAmount, 16)
                 net.SendToServer()
@@ -546,7 +565,7 @@ if CLIENT then
         )
     end)
 
-    net.Receive("ixCurrencyMergeSelect", function()
+    net.Receive("wsCurrencyMergeSelect", function()
         local sourceItemID = net.ReadUInt(32)
         local stackCount = net.ReadUInt(8)
 
@@ -574,7 +593,7 @@ if CLIENT then
 
         for label, stackID in SortedPairs(options) do
             menu:AddOption(label, function()
-                net.Start("ixCurrencyMergeSelectConfirm")
+                net.Start("wsCurrencyMergeSelectConfirm")
                     net.WriteUInt(sourceItemID, 32)
                     net.WriteUInt(stackID, 32)
                 net.SendToServer()
@@ -592,12 +611,12 @@ end
 -- ============================================================================
 
 if SERVER then
-    util.AddNetworkString("ixCurrencyMergeAll")
-    util.AddNetworkString("ixCurrencyMergeSelect")
-    util.AddNetworkString("ixCurrencyMergeSelectConfirm")
+    util.AddNetworkString("wsCurrencyMergeAll")
+    util.AddNetworkString("wsCurrencyMergeSelect")
+    util.AddNetworkString("wsCurrencyMergeSelectConfirm")
 
     -- Merge all same-type currency stacks into this one
-    net.Receive("ixCurrencyMergeAll", function(len, client)
+    net.Receive("wsCurrencyMergeAll", function(len, client)
         local itemID = net.ReadUInt(32)
 
         local character = client:GetCharacter()
@@ -606,7 +625,7 @@ if SERVER then
         local inventory = character:GetInventory()
         if not inventory then return end
 
-        local item = ix.item.instances[itemID]
+        local item = ws.item.instances[itemID]
         if not item then
             client:Notify("Item not found.")
             return
@@ -623,7 +642,7 @@ if SERVER then
         end
 
         local currentQuantity = item:GetData("quantity", 1)
-        local maxStack = ix.currency.MAX_STACK
+        local maxStack = ws.currency.MAX_STACK
         local canAdd = maxStack - currentQuantity
 
         if canAdd <= 0 then
@@ -674,7 +693,7 @@ if SERVER then
 
     -- Handle merge select request (send list to client)
     --- Called from item function to initiate merge select
-    function ix.currency.SendMergeSelectList(client, item)
+    function ws.currency.SendMergeSelectList(client, item)
         local character = client:GetCharacter()
         if not character then return end
 
@@ -700,9 +719,9 @@ if SERVER then
         -- Sort by quantity descending
         table.sort(stacks, function(a, b) return a.quantity > b.quantity end)
 
-        local currencyType = item.uniqueID == ix.currency.CASH_ITEM and "cash" or "coins"
+        local currencyType = item.uniqueID == ws.currency.CASH_ITEM and "cash" or "coins"
 
-        net.Start("ixCurrencyMergeSelect")
+        net.Start("wsCurrencyMergeSelect")
             net.WriteUInt(item:GetID(), 32)
             net.WriteUInt(#stacks, 8)
             for _, stack in ipairs(stacks) do
@@ -714,7 +733,7 @@ if SERVER then
     end
 
     -- Handle merge select confirmation
-    net.Receive("ixCurrencyMergeSelectConfirm", function(len, client)
+    net.Receive("wsCurrencyMergeSelectConfirm", function(len, client)
         local sourceItemID = net.ReadUInt(32)
         local targetItemID = net.ReadUInt(32)
 
@@ -724,8 +743,8 @@ if SERVER then
         local inventory = character:GetInventory()
         if not inventory then return end
 
-        local sourceItem = ix.item.instances[sourceItemID]
-        local targetItem = ix.item.instances[targetItemID]
+        local sourceItem = ws.item.instances[sourceItemID]
+        local targetItem = ws.item.instances[targetItemID]
 
         if not sourceItem or not targetItem then
             client:Notify("Item not found.")
@@ -744,7 +763,7 @@ if SERVER then
 
         local sourceQuantity = sourceItem:GetData("quantity", 1)
         local targetQuantity = targetItem:GetData("quantity", 1)
-        local maxStack = ix.currency.MAX_STACK
+        local maxStack = ws.currency.MAX_STACK
 
         local canAdd = maxStack - sourceQuantity
         if canAdd <= 0 then
@@ -773,25 +792,25 @@ end
 -- ============================================================================
 
 if SERVER then
-    util.AddNetworkString("ixMoneyGive")
-    util.AddNetworkString("ixMoneyDestroy")
+    util.AddNetworkString("wsMoneyGive")
+    util.AddNetworkString("wsMoneyDestroy")
 
     -- Check if a currency item belongs to the player (main inventory or owned bag)
     local function IsOwnedCurrencyItem(item, character, inventory)
         local itemInvID = item.invID
         if itemInvID == inventory:GetID() then return true end
 
-        local itemInv = ix.item.inventories[itemInvID]
+        local itemInv = ws.item.inventories[itemInvID]
         return itemInv and itemInv:GetOwner() == character:GetID()
     end
 
-    net.Receive("ixMoneyGive", function(len, client)
+    net.Receive("wsMoneyGive", function(len, client)
         local itemID = net.ReadUInt(32)
         local amount = net.ReadUInt(32)
         local target = net.ReadEntity()
 
         -- Validate item
-        local item = ix.item.instances[itemID]
+        local item = ws.item.instances[itemID]
         if not item or not item.isCurrency then return end
 
         -- Validate giver
@@ -827,7 +846,7 @@ if SERVER then
             return
         end
 
-        local success = ix.currency.AddToInventory(targetInv, centsToGive)
+        local success = ws.currency.AddToInventory(targetInv, centsToGive)
         if not success then
             client:Notify("Target's inventory is full.")
             return
@@ -846,11 +865,11 @@ if SERVER then
         target:Notify("Received " .. moneyStr .. " from " .. client:Nick() .. ".")
     end)
 
-    net.Receive("ixMoneyDestroy", function(len, client)
+    net.Receive("wsMoneyDestroy", function(len, client)
         local itemID = net.ReadUInt(32)
         local amount = net.ReadUInt(32)
 
-        local item = ix.item.instances[itemID]
+        local item = ws.item.instances[itemID]
         if not item or not item.isCurrency then return end
         if not item.canDestroy then return end
 

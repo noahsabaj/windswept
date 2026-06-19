@@ -1,17 +1,17 @@
 
-util.AddNetworkString("ixAreaSync")
-util.AddNetworkString("ixAreaAdd")
-util.AddNetworkString("ixAreaRemove")
-util.AddNetworkString("ixAreaChanged")
+util.AddNetworkString("wsAreaSync")
+util.AddNetworkString("wsAreaAdd")
+util.AddNetworkString("wsAreaRemove")
+util.AddNetworkString("wsAreaChanged")
 
-util.AddNetworkString("ixAreaEditStart")
-util.AddNetworkString("ixAreaEditEnd")
+util.AddNetworkString("wsAreaEditStart")
+util.AddNetworkString("wsAreaEditEnd")
 
-ix.log.AddType("areaAdd", function(client, name)
+ws.log.AddType("areaAdd", function(client, name)
 	return string.format("%s has added area \"%s\".", client:Name(), tostring(name))
 end)
 
-ix.log.AddType("areaRemove", function(client, name)
+ws.log.AddType("areaRemove", function(client, name)
 	return string.format("%s has removed area \"%s\".", client:Name(), tostring(name))
 end)
 
@@ -20,10 +20,10 @@ local function SortVector(first, second)
 		Vector(math.max(first.x, second.x), math.max(first.y, second.y), math.max(first.z, second.z))
 end
 
-function ix.area.Create(name, type, startPosition, endPosition, bNoReplicate, properties)
+function ws.area.Create(name, type, startPosition, endPosition, bNoReplicate, properties)
 	local min, max = SortVector(startPosition, endPosition)
 
-	ix.area.stored[name] = {
+	ws.area.stored[name] = {
 		type = type or "area",
 		startPosition = min,
 		endPosition = max,
@@ -33,7 +33,7 @@ function ix.area.Create(name, type, startPosition, endPosition, bNoReplicate, pr
 
 	-- network to clients if needed
 	if (!bNoReplicate) then
-		net.Start("ixAreaAdd")
+		net.Start("wsAreaAdd")
 			net.WriteString(name)
 			net.WriteString(type)
 			net.WriteVector(startPosition)
@@ -43,12 +43,12 @@ function ix.area.Create(name, type, startPosition, endPosition, bNoReplicate, pr
 	end
 end
 
-function ix.area.Remove(name, bNoReplicate)
-	ix.area.stored[name] = nil
+function ws.area.Remove(name, bNoReplicate)
+	ws.area.stored[name] = nil
 
 	-- network to clients if needed
 	if (!bNoReplicate) then
-		net.Start("ixAreaRemove")
+		net.Start("wsAreaRemove")
 			net.WriteString(name)
 		net.Broadcast()
 	end

@@ -10,12 +10,12 @@ function PLUGIN:GetDefaultDoorInfo(door)
 	local owner = IsValid(door:GetDTEntity(0)) and door:GetDTEntity(0) or nil
 	local name = door:GetNetVar("title", door:GetNetVar("name", IsValid(owner) and L"dTitleOwned" or L"dTitle"))
 	local description = door:GetNetVar("ownable") and L("dIsOwnable") or L("dIsNotOwnable")
-	local color = ix.config.Get("color")
+	local color = ws.config.Get("color")
 	local factions = door:GetNetVar("factions")
 	local class = door:GetNetVar("class")
 
 	if (class) then
-		local classData = ix.class.list[class]
+		local classData = ws.class.list[class]
 
 		if (classData) then
 			if (classData.color) then
@@ -30,7 +30,7 @@ function PLUGIN:GetDefaultDoorInfo(door)
 		-- Build list of faction names
 		local names = {}
 		for _, factionIndex in ipairs(factions) do
-			local info = ix.faction.indices[factionIndex]
+			local info = ws.faction.indices[factionIndex]
 			if (info) then
 				table.insert(names, L2(info.name) or info.name)
 			end
@@ -82,7 +82,7 @@ function PLUGIN:DrawDoorInfo(door, width, position, angles, scale, clientPositio
 	surface.DrawText(info.name)
 
 	-- description
-	local lines = ix.util.WrapText(info.description, width, "ix3D2DSmallFont")
+	local lines = ws.util.WrapText(info.description, width, "ix3D2DSmallFont")
 	local y = nameHeight * 0.5 + 4
 
 	for i = 1, #lines do
@@ -96,7 +96,7 @@ function PLUGIN:DrawDoorInfo(door, width, position, angles, scale, clientPositio
 	end
 
 	-- background blur
-	ix.util.PushBlur(function()
+	ws.util.PushBlur(function()
 		cam.Start3D2D(position, angles, scale)
 			surface.SetDrawColor(11, 11, 11, math.max(alpha - 100, 0))
 			surface.DrawRect(-width * 0.5, -nameHeight * 0.5, width, y + nameHeight * 0.5 + 4)
@@ -173,9 +173,9 @@ function PLUGIN:PostDrawTranslucentRenderables(bDepth, bSkybox)
 	end
 end
 
-net.Receive("ixDoorMenu", function()
-	if (IsValid(ix.gui.door)) then
-		return ix.gui.door:Remove()
+net.Receive("wsDoorMenu", function()
+	if (IsValid(ws.gui.door)) then
+		return ws.gui.door:Remove()
 	end
 
 	local door = net.ReadEntity()
@@ -184,12 +184,12 @@ net.Receive("ixDoorMenu", function()
 	if (IsValid(door) and !table.IsEmpty(access)) then
 		local entity = net.ReadEntity()
 
-		ix.gui.door = vgui.Create("ixDoorMenu")
-		ix.gui.door:SetDoor(door, access, entity)
+		ws.gui.door = vgui.Create("wsDoorMenu")
+		ws.gui.door:SetDoor(door, access, entity)
 	end
 end)
 
-net.Receive("ixDoorPermission", function()
+net.Receive("wsDoorPermission", function()
 	local door = net.ReadEntity()
 
 	if (!IsValid(door)) then
@@ -199,7 +199,7 @@ net.Receive("ixDoorPermission", function()
 	local target = net.ReadEntity()
 	local access = net.ReadUInt(4)
 
-	local panel = door.ixPanel
+	local panel = door.wsPanel
 
 	if (IsValid(panel) and IsValid(target)) then
 		panel.access[target] = access

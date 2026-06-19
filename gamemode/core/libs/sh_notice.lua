@@ -1,17 +1,17 @@
 
 --- Notification helper functions
--- @module ix.notice
+-- @module ws.notice
 
 if (SERVER) then
-	util.AddNetworkString("ixNotify")
-	util.AddNetworkString("ixNotifyLocalized")
+	util.AddNetworkString("wsNotify")
+	util.AddNetworkString("wsNotifyLocalized")
 
 	--- Sends a notification to a specified recipient.
 	-- @realm server
 	-- @string message Message to notify
 	-- @player[opt=nil] recipient Player to be notified
-	function ix.util.Notify(message, recipient)
-		net.Start("ixNotify")
+	function ws.util.Notify(message, recipient)
+		net.Start("wsNotify")
 		net.WriteString(message)
 
 		if (recipient == nil) then
@@ -26,8 +26,8 @@ if (SERVER) then
 	-- @string message Message to notify
 	-- @player[opt=nil] recipient Player to be notified
 	-- @param ... Arguments to pass to the translated message
-	function ix.util.NotifyLocalized(message, recipient, ...)
-		net.Start("ixNotifyLocalized")
+	function ws.util.NotifyLocalized(message, recipient, ...)
+		net.Start("wsNotifyLocalized")
 		net.WriteString(message)
 		net.WriteTable({...})
 
@@ -48,7 +48,7 @@ if (SERVER) then
 		-- @realm shared
 		-- @string message Text to display in the notification
 		function playerMeta:Notify(message)
-			ix.util.Notify(message, self)
+			ws.util.Notify(message, self)
 		end
 
 		--- Displays a notification for this player with the given language phrase.
@@ -57,9 +57,9 @@ if (SERVER) then
 		-- @param ... Arguments to pass to the phrase
 		-- @usage client:NotifyLocalized("mapRestarting", 10)
 		-- -- displays "The map will restart in 10 seconds!" if the player's language is set to English
-		-- @see ix.lang
+		-- @see ws.lang
 		function playerMeta:NotifyLocalized(message, ...)
-			ix.util.NotifyLocalized(message, self, ...)
+			ws.util.NotifyLocalized(message, self, ...)
 		end
 
 		--- Displays a notification for this player in the chatbox.
@@ -68,7 +68,7 @@ if (SERVER) then
 		function playerMeta:ChatNotify(message)
 			local messageLength = message:utf8len()
 
-			ix.chat.Send(nil, "notice", message, false, {self}, {
+			ws.chat.Send(nil, "notice", message, false, {self}, {
 				bError = message:utf8sub(messageLength, messageLength) == "!"
 			})
 		end
@@ -83,34 +83,34 @@ if (SERVER) then
 
 			local messageLength = message:utf8len()
 
-			ix.chat.Send(nil, "notice", message, false, {self}, {
+			ws.chat.Send(nil, "notice", message, false, {self}, {
 				bError = message:utf8sub(messageLength, messageLength) == "!"
 			})
 		end
 	end
 else
 	-- Create a notification panel.
-	function ix.util.Notify(message)
-		if (ix.option.Get("chatNotices", false)) then
+	function ws.util.Notify(message)
+		if (ws.option.Get("chatNotices", false)) then
 			local messageLength = message:utf8len()
 
-			ix.chat.Send(LocalPlayer(), "notice", message, false, {
+			ws.chat.Send(LocalPlayer(), "notice", message, false, {
 				bError = message:utf8sub(messageLength, messageLength) == "!"
 			})
 
 			return
 		end
 
-		if (IsValid(ix.gui.notices)) then
-			ix.gui.notices:AddNotice(message)
+		if (IsValid(ws.gui.notices)) then
+			ws.gui.notices:AddNotice(message)
 		end
 
 		MsgC(Color(0, 255, 255), message .. "\n")
 	end
 
 	-- Creates a translated notification.
-	function ix.util.NotifyLocalized(message, ...)
-		ix.util.Notify(L(message, ...))
+	function ws.util.NotifyLocalized(message, ...)
+		ws.util.Notify(L(message, ...))
 	end
 
 	-- shortcut notify functions
@@ -119,13 +119,13 @@ else
 
 		function playerMeta:Notify(message)
 			if (self == LocalPlayer()) then
-				ix.util.Notify(message)
+				ws.util.Notify(message)
 			end
 		end
 
 		function playerMeta:NotifyLocalized(message, ...)
 			if (self == LocalPlayer()) then
-				ix.util.NotifyLocalized(message, ...)
+				ws.util.NotifyLocalized(message, ...)
 			end
 		end
 
@@ -133,7 +133,7 @@ else
 			if (self == LocalPlayer()) then
 				local messageLength = message:utf8len()
 
-				ix.chat.Send(LocalPlayer(), "notice", message, false, {
+				ws.chat.Send(LocalPlayer(), "notice", message, false, {
 					bError = message:utf8sub(messageLength, messageLength) == "!"
 				})
 			end
@@ -145,7 +145,7 @@ else
 
 				local messageLength = message:utf8len()
 
-				ix.chat.Send(LocalPlayer(), "notice", message, false, {
+				ws.chat.Send(LocalPlayer(), "notice", message, false, {
 					bError = message:utf8sub(messageLength, messageLength) == "!"
 				})
 			end
@@ -153,12 +153,12 @@ else
 	end
 
 	-- Receives a notification from the server.
-	net.Receive("ixNotify", function()
-		ix.util.Notify(net.ReadString())
+	net.Receive("wsNotify", function()
+		ws.util.Notify(net.ReadString())
 	end)
 
 	-- Receives a notification from the server.
-	net.Receive("ixNotifyLocalized", function()
-		ix.util.NotifyLocalized(net.ReadString(), unpack(net.ReadTable()))
+	net.Receive("wsNotifyLocalized", function()
+		ws.util.NotifyLocalized(net.ReadString(), unpack(net.ReadTable()))
 	end)
 end

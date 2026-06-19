@@ -18,7 +18,7 @@ if (CLIENT) then
 	local symbolPattern = "[~`!@#$%%%^&*()_%+%-={}%[%]|;:'\",%./<>?]"
 
 	function PLUGIN:LoadFonts(font, genericFont)
-		surface.CreateFont("ixTypingIndicator", {
+		surface.CreateFont("wsTypingIndicator", {
 			font = genericFont,
 			size = 128,
 			extended = true,
@@ -40,7 +40,7 @@ if (CLIENT) then
 		if (text == "") then
 			currentClass = nil
 
-			net.Start("ixTypeClass")
+			net.Start("wsTypeClass")
 				net.WriteString("")
 			net.SendToServer()
 
@@ -52,7 +52,7 @@ if (CLIENT) then
 		if (newClass != currentClass) then
 			currentClass = newClass
 
-			net.Start("ixTypeClass")
+			net.Start("wsTypeClass")
 				net.WriteString(currentClass or "")
 			net.SendToServer()
 		end
@@ -61,7 +61,7 @@ if (CLIENT) then
 	function PLUGIN:FinishChat()
 		currentClass = nil
 
-		net.Start("ixTypeClass")
+		net.Start("wsTypeClass")
 			net.WriteString("")
 		net.SendToServer()
 	end
@@ -72,17 +72,17 @@ if (CLIENT) then
 		if (!prefix:find(symbolPattern) and text:utf8len() > 1) then
 			return "ic"
 		else
-			local chatType = ix.chat.Parse(nil, text)
+			local chatType = ws.chat.Parse(nil, text)
 
 			if (chatType and chatType != "ic") then
-				return !ix.chat.classes[chatType].bNoIndicator and chatType or nil
+				return !ws.chat.classes[chatType].bNoIndicator and chatType or nil
 			end
 
 			-- some commands will have their own typing indicator, so we'll make sure we're actually typing out a command first
 			local start, _, commandName = text:find("/(%S+)%s")
 
 			if (start == 1) then
-				for uniqueID, command in pairs(ix.command.list) do
+				for uniqueID, command in pairs(ws.command.list) do
 					if (command.bNoIndicator) then
 						continue
 					end
@@ -125,28 +125,28 @@ if (CLIENT) then
 
 			if (!IsValid(v) or !v:Alive() or
 				(moveType != MOVETYPE_WALK and moveType != MOVETYPE_NONE) or
-				!v.ixChatClassText or
-				distance >= v.ixChatClassRange) then
+				!v.wsChatClassText or
+				distance >= v.wsChatClassRange) then
 				continue
 			end
 
-			local text = v.ixChatClassText
-			local range = v.ixChatClassRange
+			local text = v.wsChatClassText
+			local range = v.wsChatClassRange
 
-			local bAnimation = !ix.option.Get("disableAnimations", false)
+			local bAnimation = !ws.option.Get("disableAnimations", false)
 			local fraction
 
 			if (bAnimation) then
-				local bComplete = v.ixChatClassTween:update(FrameTime())
+				local bComplete = v.wsChatClassTween:update(FrameTime())
 
-				if (bComplete and !v.ixChatStarted) then
-					v.ixChatClassText = nil
-					v.ixChatClassRange = nil
+				if (bComplete and !v.wsChatStarted) then
+					v.wsChatClassText = nil
+					v.wsChatClassRange = nil
 
 					continue
 				end
 
-				fraction = v.ixChatClassAnimation
+				fraction = v.wsChatClassAnimation
 			else
 				fraction = 1
 			end
@@ -156,12 +156,12 @@ if (CLIENT) then
 			angle:RotateAroundAxis(angle:Right(), 90)
 
 			cam.Start3D2D(self:GetTypingIndicatorPosition(v), Angle(0, angle.y, 90), 0.05)
-				surface.SetFont("ixTypingIndicator")
+				surface.SetFont("wsTypingIndicator")
 
 				local _, textHeight = surface.GetTextSize(text)
 				local alpha = bAnimation and ((1 - math.min(distance, range) / range) * 255 * fraction) or 255
 
-				draw.SimpleTextOutlined(text, "ixTypingIndicator", 0,
+				draw.SimpleTextOutlined(text, "wsTypingIndicator", 0,
 					-textHeight * 0.5 * fraction,
 					ColorAlpha(textColor, alpha),
 					TEXT_ALIGN_CENTER,
@@ -172,7 +172,7 @@ if (CLIENT) then
 		end
 	end
 
-	net.Receive("ixTypeClass", function()
+	net.Receive("wsTypeClass", function()
 		local client = net.ReadEntity()
 
 		if (!IsValid(client) or client == LocalPlayer()) then
@@ -180,48 +180,48 @@ if (CLIENT) then
 		end
 
 		local newClass = net.ReadString()
-		local chatClass = ix.chat.classes[newClass]
+		local chatClass = ws.chat.classes[newClass]
 		local text
 		local range
 
 		if (chatClass) then
 			text = L(chatClass.indicator or "chatTyping")
-			range = chatClass.range or math.pow(ix.config.Get("chatRange", 280), 2)
+			range = chatClass.range or math.pow(ws.config.Get("chatRange", 280), 2)
 		elseif (newClass and newClass:sub(1, 1) == "@") then
 			text = L(newClass:sub(2))
-			range = math.pow(ix.config.Get("chatRange", 280), 2)
+			range = math.pow(ws.config.Get("chatRange", 280), 2)
 		end
 
-		if (ix.option.Get("disableAnimations", false)) then
-			client.ixChatClassText = text
-			client.ixChatClassRange = range
+		if (ws.option.Get("disableAnimations", false)) then
+			client.wsChatClassText = text
+			client.wsChatClassRange = range
 		else
-			client.ixChatClassAnimation = tonumber(client.ixChatClassAnimation) or 0
+			client.wsChatClassAnimation = tonumber(client.wsChatClassAnimation) or 0
 
-			if (text and !client.ixChatStarted) then
-				client.ixChatClassTween = ix.tween.new(PLUGIN.animationTime, client, {ixChatClassAnimation = 1}, "outCubic")
+			if (text and !client.wsChatStarted) then
+				client.wsChatClassTween = ws.tween.new(PLUGIN.animationTime, client, {wsChatClassAnimation = 1}, "outCubic")
 
-				client.ixChatClassText = text
-				client.ixChatClassRange = range
-				client.ixChatStarted = true
-			elseif (!text and client.ixChatStarted) then
-				client.ixChatClassTween = ix.tween.new(PLUGIN.animationTime, client, {ixChatClassAnimation = 0}, "inCubic")
-				client.ixChatStarted = nil
+				client.wsChatClassText = text
+				client.wsChatClassRange = range
+				client.wsChatStarted = true
+			elseif (!text and client.wsChatStarted) then
+				client.wsChatClassTween = ws.tween.new(PLUGIN.animationTime, client, {wsChatClassAnimation = 0}, "inCubic")
+				client.wsChatStarted = nil
 			end
 		end
 	end)
 else
-	util.AddNetworkString("ixTypeClass")
+	util.AddNetworkString("wsTypeClass")
 
 	function PLUGIN:PlayerSpawn(client)
-		net.Start("ixTypeClass")
+		net.Start("wsTypeClass")
 			net.WriteEntity(client)
 			net.WriteString("")
 		net.Broadcast()
 	end
 
-	net.Receive("ixTypeClass", function(length, client)
-		if ((client.ixNextTypeClass or 0) > RealTime()) then
+	net.Receive("wsTypeClass", function(length, client)
+		if ((client.wsNextTypeClass or 0) > RealTime()) then
 			return
 		end
 
@@ -229,7 +229,7 @@ else
 
 		-- send message to players in pvs only since they're the only ones who can see the indicator
 		-- we'll broadcast if the type class is empty because they might move out of pvs before the ending net message is sent
-		net.Start("ixTypeClass")
+		net.Start("wsTypeClass")
 		net.WriteEntity(client)
 		net.WriteString(newClass)
 
@@ -239,6 +239,6 @@ else
 			net.SendPVS(client:GetPos())
 		end
 
-		client.ixNextTypeClass = RealTime() + 0.2
+		client.wsNextTypeClass = RealTime() + 0.2
 	end)
 end

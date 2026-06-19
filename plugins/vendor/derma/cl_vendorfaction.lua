@@ -13,7 +13,7 @@ function PANEL:Init()
 	self.factions = {}
 	self.classes = {}
 
-	for k, v in ipairs(ix.faction.indices) do
+	for k, v in ipairs(ws.faction.indices) do
 		local panel = self.scroll:Add("DPanel")
 		panel:Dock(TOP)
 		panel:DockPadding(4, 4, 4, 4)
@@ -29,7 +29,7 @@ function PANEL:Init()
 
 		self.factions[v.uniqueID] = faction
 
-		for _, v2 in ipairs(ix.class.list) do
+		for _, v2 in ipairs(ws.class.list) do
 			if (v2.faction == k) then
 				local class = panel:Add("DCheckBoxLabel")
 				class:Dock(TOP)
@@ -57,4 +57,4 @@ function PANEL:Setup()
 	end
 end
 
-vgui.Register("ixVendorFactionEditor", PANEL, "DFrame")
+vgui.Register("wsVendorFactionEditor", PANEL, "DFrame")

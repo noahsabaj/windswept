@@ -1,14 +1,14 @@
 local playerMeta = FindMetaTable("Player")
 
--- ixData information for the player.
+-- wsData information for the player.
 do
 	if (SERVER) then
 		function playerMeta:GetData(key, default)
 			if (key == true) then
-				return self.ixData
+				return self.wsData
 			end
 
-			local data = self.ixData and self.ixData[key]
+			local data = self.wsData and self.wsData[key]
 
 			if (data == nil) then
 				return default
@@ -18,7 +18,7 @@ do
 		end
 	else
 		function playerMeta:GetData(key, default)
-			local data = ix.localData and ix.localData[key]
+			local data = ws.localData and ws.localData[key]
 
 			if (data == nil) then
 				return default
@@ -27,14 +27,14 @@ do
 			end
 		end
 
-		net.Receive("ixDataSync", function()
-			ix.localData = net.ReadTable()
-			ix.playTime = net.ReadUInt(32)
+		net.Receive("wsDataSync", function()
+			ws.localData = net.ReadTable()
+			ws.playTime = net.ReadUInt(32)
 		end)
 
-		net.Receive("ixData", function()
-			ix.localData = ix.localData or {}
-			ix.localData[net.ReadString()] = net.ReadType()
+		net.Receive("wsData", function()
+			ws.localData = ws.localData or {}
+			ws.localData[net.ReadString()] = net.ReadType()
 		end)
 	end
 end
@@ -47,16 +47,16 @@ do
 			return true
 		end
 
-		local data = ix.faction.indices[faction]
+		local data = ws.faction.indices[faction]
 
 		if (data) then
 			if (data.isDefault) then
 				return true
 			end
 
-			local ixData = self:GetData("whitelists", {})
+			local wsData = self:GetData("whitelists", {})
 
-			return ixData[Schema.folder] and ixData[Schema.folder][data.uniqueID] == true or false
+			return wsData[Schema.folder] and wsData[Schema.folder][data.uniqueID] == true or false
 		end
 
 		return false
@@ -81,7 +81,7 @@ do
 			local class = char:GetClass()
 
 			if (class) then
-				local classData = ix.class.list[class]
+				local classData = ws.class.list[class]
 
 				return classData
 			end
@@ -96,8 +96,8 @@ do
 
 		local entityMeta = FindMetaTable("Entity")
 
-		entityMeta.ixSetModel = entityMeta.ixSetModel or entityMeta.SetModel
-		playerMeta.ixSelectWeapon = playerMeta.ixSelectWeapon or playerMeta.SelectWeapon
+		entityMeta.wsSetModel = entityMeta.wsSetModel or entityMeta.SetModel
+		playerMeta.wsSelectWeapon = playerMeta.wsSelectWeapon or playerMeta.SelectWeapon
 
 		function entityMeta:SetModel(model)
 			local oldModel = self:GetModel()
@@ -112,7 +112,7 @@ do
 				net.Broadcast()
 			end
 
-			return self:ixSetModel(model)
+			return self:wsSetModel(model)
 		end
 
 		function playerMeta:SelectWeapon(className)
@@ -121,7 +121,7 @@ do
 				net.WriteString(className)
 			net.Broadcast()
 
-			return self:ixSelectWeapon(className)
+			return self:wsSelectWeapon(className)
 		end
 	else
 		net.Receive("PlayerModelChanged", function(length)

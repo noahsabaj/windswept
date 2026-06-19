@@ -220,7 +220,7 @@ function ITEM:AddAttachment(id)
 end
 
 function ITEM:RemoveAttachment(id, client)
-	local item = ix.item.instances[id]
+	local item = ws.item.instances[id]
 	local attachments = self:GetData("outfitAttachments", {})
 
 	if (item and attachments[id]) then
@@ -233,7 +233,7 @@ end
 
 ITEM:Hook("drop", function(item)
 	if (item:GetData("equipped")) then
-		local character = ix.char.loaded[item.owner]
+		local character = ws.char.loaded[item.owner]
 		local client = character and character:GetPlayer() or item:GetOwner()
 
 		item.player = client
@@ -267,7 +267,7 @@ ITEM.functions.Equip = {
 
 		for k, _ in char:GetInventory():Iter() do
 			if (k.id != item.id) then
-				local itemTable = ix.item.instances[k.id]
+				local itemTable = ws.item.instances[k.id]
 
 				if (itemTable.pacData and k.outfitCategory == item.outfitCategory and itemTable:GetData("equipped")) then
 					client:NotifyLocalized(item.equippedNotify or "outfitAlreadyEquipped")

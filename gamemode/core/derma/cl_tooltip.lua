@@ -1,39 +1,39 @@
 
---- Text container for `ixTooltip`.
--- Rows are the main way of interacting with `ixTooltip`s. These derive from
+--- Text container for `wsTooltip`.
+-- Rows are the main way of interacting with `wsTooltip`s. These derive from
 -- [DLabel](https://wiki.garrysmod.com/page/Category:DLabel) panels, which means that making use of this panel
 -- will be largely the same as any DLabel panel.
--- @panel ixTooltipRow
+-- @panel wsTooltipRow
 
 local animationTime = 1
 
 -- panel meta
 do
 	local PANEL = FindMetaTable("Panel")
-	local ixChangeTooltip = ChangeTooltip
-	local ixRemoveTooltip = RemoveTooltip
+	local wsChangeTooltip = ChangeTooltip
+	local wsRemoveTooltip = RemoveTooltip
 	local tooltip
 	local lastHover
 
 	function PANEL:SetHelixTooltip(callback)
 		self:SetMouseInputEnabled(true)
-		self.ixTooltip = callback
+		self.wsTooltip = callback
 	end
 
 	function ChangeTooltip(panel, ...) -- luacheck: globals ChangeTooltip
-		if (!panel.ixTooltip) then
-			return ixChangeTooltip(panel, ...)
+		if (!panel.wsTooltip) then
+			return wsChangeTooltip(panel, ...)
 		end
 
 		RemoveTooltip()
 
-		timer.Create("ixTooltip", 0.1, 1, function()
+		timer.Create("wsTooltip", 0.1, 1, function()
 			if (!IsValid(panel) or lastHover != panel) then
 				return
 			end
 
-			tooltip = vgui.Create("ixTooltip")
-			panel.ixTooltip(tooltip)
+			tooltip = vgui.Create("wsTooltip")
+			panel.wsTooltip(tooltip)
 			tooltip:SizeToContents()
 		end)
 
@@ -46,10 +46,10 @@ do
 			tooltip = nil
 		end
 
-		timer.Remove("ixTooltip")
+		timer.Remove("wsTooltip")
 		lastHover = nil
 
-		return ixRemoveTooltip()
+		return wsRemoveTooltip()
 	end
 end
 
@@ -61,7 +61,7 @@ AccessorFunc(PANEL, "maxWidth", "MaxWidth", FORCE_NUMBER)
 AccessorFunc(PANEL, "bNoMinimal", "MinimalHidden", FORCE_BOOL)
 
 function PANEL:Init()
-	self:SetFont("ixSmallFont")
+	self:SetFont("wsSmallFont")
 	self:SetText(L("unknown"))
 	self:SetTextColor(color_white)
 	self:SetTextInset(4, 0)
@@ -74,8 +74,8 @@ function PANEL:Init()
 end
 
 --- Whether or not this tooltip row should be displayed in a minimal format. This usually means no background and/or
--- smaller font. You probably won't need this if you're using regular `ixTooltipRow` panels, but you should take into
--- account if you're creating your own panels that derive from `ixTooltipRow`.
+-- smaller font. You probably won't need this if you're using regular `wsTooltipRow` panels, but you should take into
+-- account if you're creating your own panels that derive from `wsTooltipRow`.
 -- @realm client
 -- @treturn bool True if this tooltip row should be displayed in a minimal format
 function PANEL:IsMinimal()
@@ -88,9 +88,9 @@ end
 -- unless you set the font/colors manually.
 -- @realm client
 function PANEL:SetImportant()
-	self:SetFont("ixSmallTitleFont")
+	self:SetFont("wsSmallTitleFont")
 	self:SetExpensiveShadow(1, color_black)
-	self:SetBackgroundColor(ix.config.Get("color"))
+	self:SetBackgroundColor(ws.config.Get("color"))
 end
 
 --- Sets the background color of this row. This should be used sparingly to avoid overwhelming players with a
@@ -142,7 +142,7 @@ function PANEL:PaintBackground(width, height)
 end
 
 --- Called when the foreground of this row should be painted. If you are overriding this in a subclassed panel,
--- make sure you call `ixTooltipRow:PaintBackground` at the *beginning* of your function to make its style
+-- make sure you call `wsTooltipRow:PaintBackground` at the *beginning* of your function to make its style
 -- consistent with the rest of the framework.
 -- @realm client
 -- @number width Width of the panel
@@ -151,13 +151,13 @@ function PANEL:Paint(width, height)
 	self:PaintBackground(width, height)
 end
 
-vgui.Register("ixTooltipRow", PANEL, "DLabel")
+vgui.Register("wsTooltipRow", PANEL, "DLabel")
 
 --- Generic information panel.
 -- Tooltips are used extensively throughout Helix: for item information, character displays, entity status, etc.
 -- The tooltip system can be used on any panel or entity you would like to show standardized information for. Tooltips
--- consist of the parent container panel (`ixTooltip`), which is filled with rows of information (usually
--- `ixTooltipRow`, but can be any docked panel if non-text information needs to be shown, like an item's size).
+-- consist of the parent container panel (`wsTooltip`), which is filled with rows of information (usually
+-- `wsTooltipRow`, but can be any docked panel if non-text information needs to be shown, like an item's size).
 --
 -- Tooltips can be added to panel with `panel:SetHelixTooltip()`. An example taken from the scoreboard:
 -- 	panel:SetHelixTooltip(function(tooltip)
@@ -169,7 +169,7 @@ vgui.Register("ixTooltipRow", PANEL, "DLabel")
 --
 -- 		tooltip:SizeToContents()
 -- 	end)
--- @panel ixTooltip
+-- @panel wsTooltip
 DEFINE_BASECLASS("Panel")
 PANEL = {}
 
@@ -183,7 +183,7 @@ AccessorFunc(PANEL, "bArrowFollowEntity", "ArrowFollowEntity", FORCE_BOOL)
 function PANEL:Init()
 	self.fraction = 0
 	self.mousePadding = 16
-	self.arrowColor = ix.config.Get("color")
+	self.arrowColor = ws.config.Get("color")
 	self.bHideArrowWhenRaised = true
 	self.bArrowFollowEntity = true
 	self.bMinimal = false
@@ -210,7 +210,7 @@ end
 --- Whether or not this tooltip should be displayed in a minimal format.
 -- @realm client
 -- @treturn bool True if this tooltip should be displayed in a minimal format
--- @see ixTooltipRow:IsMinimal
+-- @see wsTooltipRow:IsMinimal
 function PANEL:IsMinimal()
 	return self.bMinimal
 end
@@ -223,19 +223,19 @@ function PANEL:Add(...)
 	return panel
 end
 
---- Creates a new `ixTooltipRow` panel and adds it to the bottom of this tooltip.
+--- Creates a new `wsTooltipRow` panel and adds it to the bottom of this tooltip.
 -- @realm client
 -- @string id Name of the new row. This is used to reorder rows if needed
 -- @treturn panel Created row
 function PANEL:AddRow(id)
-	local panel = self:Add("ixTooltipRow")
+	local panel = self:Add("wsTooltipRow")
 	panel.id = id
 	panel:SetZPos(#self:GetChildren() * 10)
 
 	return panel
 end
 
---- Creates a new `ixTooltipRow` and adds it after the row with the given `id`. The order of the rows is set via
+--- Creates a new `wsTooltipRow` and adds it after the row with the given `id`. The order of the rows is set via
 -- setting the Z position of the panels, as this is how VGUI handles ordering with docked panels.
 -- @realm client
 -- @string after Name of the row to insert after
@@ -265,7 +265,7 @@ function PANEL:SetEntity(entity)
 	end
 
 	-- don't show entity tooltips if we have an entity menu open
-	if (IsValid(ix.menu.panel)) then
+	if (IsValid(ws.menu.panel)) then
 		self:Remove()
 		return
 	end
@@ -386,7 +386,7 @@ function PANEL:Think()
 	end
 end
 
---- Returns an `ixTooltipRow` corresponding to the given name.
+--- Returns an `wsTooltipRow` corresponding to the given name.
 -- @realm client
 -- @string id Name of the row
 -- @treturn[1] panel Corresponding row
@@ -437,7 +437,7 @@ function PANEL:Remove()
 	})
 end
 
-vgui.Register("ixTooltip", PANEL, "Panel")
+vgui.Register("wsTooltip", PANEL, "Panel")
 
 -- legacy tooltip row
 
@@ -445,15 +445,15 @@ PANEL = {}
 
 function PANEL:Init()
 	self.bMinimal = true
-	self.ixAlpha = 0 -- to avoid conflicts if we're animating a non-tooltip panel
+	self.wsAlpha = 0 -- to avoid conflicts if we're animating a non-tooltip panel
 
 	self:SetExpensiveShadow(1, color_black)
 	self:SetContentAlignment(5)
 end
 
 function PANEL:SetImportant()
-	self:SetFont("ixMinimalTitleFont")
-	self:SetBackgroundColor(ix.config.Get("color"))
+	self:SetFont("wsMinimalTitleFont")
+	self:SetBackgroundColor(ws.config.Get("color"))
 end
 
 -- background color will affect text instead in minimal tooltips
@@ -468,10 +468,10 @@ end
 function PANEL:PaintBackground()
 end
 
-vgui.Register("ixTooltipMinimalRow", PANEL, "ixTooltipRow")
+vgui.Register("wsTooltipMinimalRow", PANEL, "wsTooltipRow")
 
 -- legacy tooltip
-DEFINE_BASECLASS("ixTooltip")
+DEFINE_BASECLASS("wsTooltip")
 PANEL = {}
 
 function PANEL:Init()
@@ -497,7 +497,7 @@ function PANEL:Add(...)
 end
 
 function PANEL:AddRow(id)
-	local panel = self:Add("ixTooltipMinimalRow")
+	local panel = self:Add("wsTooltipMinimalRow")
 	panel.id = id
 	panel:SetZPos(#self:GetChildren() * 10)
 
@@ -536,13 +536,13 @@ function PANEL:SizeToContents()
 	local count = table.Count(children)
 
 	for _, v in ipairs(children) do
-		v.ixAlpha = v.ixAlpha or 0
+		v.wsAlpha = v.wsAlpha or 0
 
 		v:CreateAnimation((animationTime / count) * i, {
 			easing = "inSine",
-			target = {ixAlpha = 255},
+			target = {wsAlpha = 255},
 			Think = function(animation, panel)
-				panel:SetAlpha(panel.ixAlpha)
+				panel:SetAlpha(panel.wsAlpha)
 			end
 		})
 
@@ -571,12 +571,12 @@ function PANEL:Remove()
 	local count = table.Count(children)
 
 	for _, v in ipairs(children) do
-		v.ixAlpha = v.ixAlpha or 255
+		v.wsAlpha = v.wsAlpha or 255
 
 		v:CreateAnimation(duration / count * i, {
-			target = {ixAlpha = 0},
+			target = {wsAlpha = 0},
 			Think = function(animation, panel)
-				panel:SetAlpha(panel.ixAlpha)
+				panel:SetAlpha(panel.wsAlpha)
 			end
 		})
 
@@ -591,4 +591,4 @@ function PANEL:Remove()
 	})
 end
 
-vgui.Register("ixTooltipMinimal", PANEL, "ixTooltip")
+vgui.Register("wsTooltipMinimal", PANEL, "wsTooltip")

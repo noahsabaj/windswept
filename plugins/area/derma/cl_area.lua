@@ -17,7 +17,7 @@ function PANEL:Init()
 
 	self.label = self:Add("DLabel")
 	self.label:Dock(FILL)
-	self.label:SetFont("ixMediumLightFont")
+	self.label:SetFont("wsMediumLightFont")
 	self.label:SetTextColor(color_white)
 	self.label:SetExpensiveShadow(1, color_black)
 	self.label:SetText("Area")
@@ -130,7 +130,7 @@ end
 function PANEL:OnRemove()
 end
 
-vgui.Register("ixAreaEntry", PANEL, "Panel")
+vgui.Register("wsAreaEntry", PANEL, "Panel")
 
 -- main panel
 PANEL = {}
@@ -144,17 +144,17 @@ function PANEL:Init()
 	self:ParentToHUD()
 
 	self.entries = {}
-	ix.gui.area = self
+	ws.gui.area = self
 end
 
 function PANEL:AddEntry(entry, color)
-	color = color or ix.config.Get("color")
+	color = color or ws.config.Get("color")
 
 	local id = #self.entries + 1
 	local panel = entry
 
 	if (isstring(entry)) then
-		panel = self:Add("ixAreaEntry")
+		panel = self:Add("wsAreaEntry")
 		panel:SetText(entry)
 	end
 
@@ -179,4 +179,4 @@ function PANEL:GetEntries()
 	return self.entries
 end
 
-vgui.Register("ixArea", PANEL, "Panel")
+vgui.Register("wsArea", PANEL, "Panel")

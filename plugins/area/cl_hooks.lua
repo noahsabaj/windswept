@@ -2,7 +2,7 @@
 local PLUGIN = PLUGIN
 
 local function DrawTextBackground(x, y, text, font, backgroundColor, padding)
-	font = font or "ixSubTitleFont"
+	font = font or "wsSubTitleFont"
 	padding = padding or 8
 	backgroundColor = backgroundColor or Color(88, 88, 88, 255)
 
@@ -10,7 +10,7 @@ local function DrawTextBackground(x, y, text, font, backgroundColor, padding)
 	local textWidth, textHeight = surface.GetTextSize(text)
 	local width, height = textWidth + padding * 2, textHeight + padding * 2
 
-	ix.util.DrawBlurAt(x, y, width, height)
+	ws.util.DrawBlurAt(x, y, width, height)
 	surface.SetDrawColor(0, 0, 0, 40)
 	surface.DrawRect(x, y, width, height)
 
@@ -32,7 +32,7 @@ function PLUGIN:ChatboxCreated()
 		self.panel:Remove()
 	end
 
-	self.panel = vgui.Create("ixArea")
+	self.panel = vgui.Create("wsArea")
 end
 
 function PLUGIN:ChatboxPositionChanged(x, y, width, height)
@@ -45,13 +45,13 @@ function PLUGIN:ChatboxPositionChanged(x, y, width, height)
 end
 
 function PLUGIN:ShouldDrawCrosshair()
-	if (ix.area.bEditing) then
+	if (ws.area.bEditing) then
 		return true
 	end
 end
 
 function PLUGIN:PlayerBindPress(client, bind, bPressed)
-	if (!ix.area.bEditing) then
+	if (!ws.area.bEditing) then
 		return
 	end
 
@@ -70,38 +70,38 @@ function PLUGIN:PlayerBindPress(client, bind, bPressed)
 end
 
 function PLUGIN:HUDPaint()
-	if (!ix.area.bEditing) then
+	if (!ws.area.bEditing) then
 		return
 	end
 
 	local id = LocalPlayer():GetArea()
-	local area = ix.area.stored[id]
+	local area = ws.area.stored[id]
 	local height = ScrH()
 
 	local y = 64
-	y = y + DrawTextBackground(64, y, L("areaEditMode"), nil, ix.config.Get("color"))
+	y = y + DrawTextBackground(64, y, L("areaEditMode"), nil, ws.config.Get("color"))
 
 	if (!self.editStart) then
-		y = y + DrawTextBackground(64, y, L("areaEditTip"), "ixSmallTitleFont")
-		DrawTextBackground(64, y, L("areaRemoveTip"), "ixSmallTitleFont")
+		y = y + DrawTextBackground(64, y, L("areaEditTip"), "wsSmallTitleFont")
+		DrawTextBackground(64, y, L("areaRemoveTip"), "wsSmallTitleFont")
 	else
-		DrawTextBackground(64, y, L("areaFinishTip"), "ixSmallTitleFont")
+		DrawTextBackground(64, y, L("areaFinishTip"), "wsSmallTitleFont")
 	end
 
 	if (area) then
-		DrawTextBackground(64, height - 64 - ScreenScale(12), id, "ixSmallTitleFont", area.properties.color)
+		DrawTextBackground(64, height - 64 - ScreenScale(12), id, "wsSmallTitleFont", area.properties.color)
 	end
 end
 
 function PLUGIN:PostDrawTranslucentRenderables(bDepth, bSkybox)
-	if (bSkybox or !ix.area.bEditing) then
+	if (bSkybox or !ws.area.bEditing) then
 		return
 	end
 
 	-- draw all areas
-	for k, v in pairs(ix.area.stored) do
+	for k, v in pairs(ws.area.stored) do
 		local center, min, max = self:GetLocalAreaPosition(v.startPosition, v.endPosition)
-		local color = ColorAlpha(v.properties.color or ix.config.Get("color"), 255)
+		local color = ColorAlpha(v.properties.color or ws.config.Get("color"), 255)
 
 		render.DrawWireframeBox(center, angle_zero, min, max, color)
 
@@ -149,7 +149,7 @@ function PLUGIN:EditClick()
 	elseif (self.editStart and !self.editProperties) then
 		self.editProperties = true
 
-		local panel = vgui.Create("ixAreaEdit")
+		local panel = vgui.Create("wsAreaEdit")
 		panel:MakePopup()
 	end
 end
@@ -160,7 +160,7 @@ function PLUGIN:EditReload()
 	end
 
 	local id = LocalPlayer():GetArea()
-	local area = ix.area.stored[id]
+	local area = ws.area.stored[id]
 
 	if (!area) then
 		return
@@ -169,7 +169,7 @@ function PLUGIN:EditReload()
 	Derma_Query(L("areaDeleteConfirm", id), L("areaDelete"),
 		L("no"), nil,
 		L("yes"), function()
-			net.Start("ixAreaRemove")
+			net.Start("wsAreaRemove")
 				net.WriteString(id)
 			net.SendToServer()
 		end
@@ -177,50 +177,50 @@ function PLUGIN:EditReload()
 end
 
 function PLUGIN:ShouldDisplayArea(id)
-	if (ix.area.bEditing) then
+	if (ws.area.bEditing) then
 		return false
 	end
 end
 
 function PLUGIN:OnAreaChanged(oldID, newID)
 	local client = LocalPlayer()
-	client.ixArea = newID
+	client.wsArea = newID
 
-	local area = ix.area.stored[newID]
+	local area = ws.area.stored[newID]
 
 	if (!area) then
-		client.ixInArea = false
+		client.wsInArea = false
 		return
 	end
 
-	client.ixInArea = true
+	client.wsInArea = true
 
 	if (hook.Run("ShouldDisplayArea", newID) == false or !area.properties.display) then
 		return
 	end
 
-	local format = newID .. (ix.option.Get("24hourTime", false) and ", %H:%M." or ", %I:%M %p.")
-	format = ix.date.GetFormatted(format)
+	local format = newID .. (ws.option.Get("24hourTime", false) and ", %H:%M." or ", %I:%M %p.")
+	format = ws.date.GetFormatted(format)
 
 	self.panel:AddEntry(format, area.properties.color)
 end
 
-net.Receive("ixAreaEditStart", function()
+net.Receive("wsAreaEditStart", function()
 	PLUGIN:StartEditing()
 end)
 
-net.Receive("ixAreaEditEnd", function()
+net.Receive("wsAreaEditEnd", function()
 	PLUGIN:StopEditing()
 end)
 
-net.Receive("ixAreaAdd", function()
+net.Receive("wsAreaAdd", function()
 	local name = net.ReadString()
 	local type = net.ReadString()
 	local startPosition, endPosition = net.ReadVector(), net.ReadVector()
 	local properties = net.ReadTable()
 
 	if (name != "") then
-		ix.area.stored[name] = {
+		ws.area.stored[name] = {
 			type = type,
 			startPosition = startPosition,
 			endPosition = endPosition,
@@ -229,15 +229,15 @@ net.Receive("ixAreaAdd", function()
 	end
 end)
 
-net.Receive("ixAreaRemove", function()
+net.Receive("wsAreaRemove", function()
 	local name = net.ReadString()
 
-	if (ix.area.stored[name]) then
-		ix.area.stored[name] = nil
+	if (ws.area.stored[name]) then
+		ws.area.stored[name] = nil
 	end
 end)
 
-net.Receive("ixAreaSync", function()
+net.Receive("wsAreaSync", function()
 	local length = net.ReadUInt(32)
 	local data = net.ReadData(length)
 	local uncompressed = util.Decompress(data)
@@ -248,10 +248,10 @@ net.Receive("ixAreaSync", function()
 	end
 
 	-- Set the list of texts to the ones provided by the server.
-	ix.area.stored = util.JSONToTable(uncompressed)
+	ws.area.stored = util.JSONToTable(uncompressed)
 end)
 
-net.Receive("ixAreaChanged", function()
+net.Receive("wsAreaChanged", function()
 	local oldID, newID = net.ReadString(), net.ReadString()
 
 	hook.Run("OnAreaChanged", oldID, newID)

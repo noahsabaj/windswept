@@ -6,9 +6,9 @@ Classes are temporary assignments for characters - analogous to a "job" in a fac
 in your schema, and have "police recruit" and "police chief" as different classes in your faction. Anyone can join a class in
 their faction by default, but you can restrict this as you need with `CLASS.CanSwitchTo`.
 ]]
--- @module ix.class
+-- @module ws.class
 
---- Class definition table returned by `ix.class.Get`.
+--- Class definition table returned by `ws.class.Get`.
 -- @realm shared
 -- @tab class Class definition table.
 -- Default keys:
@@ -24,32 +24,32 @@ their faction by default, but you can restrict this as you need with `CLASS.CanS
 
 
 if (SERVER) then
-	util.AddNetworkString("ixClassUpdate")
-	util.AddNetworkString("ixClassListSync")
-	util.AddNetworkString("ixClassCreated")
-	util.AddNetworkString("ixClassUpdated")
-	util.AddNetworkString("ixClassDeleted")
+	util.AddNetworkString("wsClassUpdate")
+	util.AddNetworkString("wsClassListSync")
+	util.AddNetworkString("wsClassCreated")
+	util.AddNetworkString("wsClassUpdated")
+	util.AddNetworkString("wsClassDeleted")
 end
 
-ix.class = ix.class or {}
-ix.class.list = {}
-ix.class.byDatabaseID = {}
+ws.class = ws.class or {}
+ws.class.list = {}
+ws.class.byDatabaseID = {}
 
-local charMeta = ix.meta.character
+local charMeta = ws.meta.character
 
 --- Loads classes from a directory.
 -- @realm shared
 -- @internal
 -- @string directory The path to the class files.
-function ix.class.LoadFromDir(directory)
+function ws.class.LoadFromDir(directory)
 	for _, v in ipairs(file.Find(directory.."/*.lua", "LUA")) do
 		-- Get the name without the "sh_" prefix and ".lua" suffix.
 		local niceName = v:sub(4, -5)
 		-- Determine a numeric identifier for this class.
-		local index = #ix.class.list + 1
+		local index = #ws.class.list + 1
 		local halt
 
-		for _, v2 in ipairs(ix.class.list) do
+		for _, v2 in ipairs(ws.class.list) do
 			if (v2.uniqueID == niceName) then
 				halt = true
 
@@ -77,7 +77,7 @@ function ix.class.LoadFromDir(directory)
 				CLASS.plugin = PLUGIN.uniqueID
 			end
 
-			ix.util.Include(directory.."/"..v, "shared")
+			ws.util.Include(directory.."/"..v, "shared")
 
 			-- Why have a class without a faction?
 			if (!CLASS.faction or !team.Valid(CLASS.faction)) then
@@ -98,7 +98,7 @@ function ix.class.LoadFromDir(directory)
 			CLASS.createdAt = os.time()
 			CLASS.updatedAt = os.time()
 
-			ix.class.list[index] = CLASS
+			ws.class.list[index] = CLASS
 		CLASS = nil
 	end
 end
@@ -111,14 +111,14 @@ end
 -- @treturn string The reason why the player cannot switch (if applicable).
 -- @usage -- Check if a player can join class ID 2.
 -- -- For our example, they can't- because they are in the wrong faction.
--- local canJoin, reason = ix.class.CanSwitchTo(player, 2)
+-- local canJoin, reason = ws.class.CanSwitchTo(player, 2)
 -- if (!canJoin) then
 --     print("Player cannot join class: "..reason)
 -- end
 -- > Player cannot join class: not correct team
-function ix.class.CanSwitchTo(client, class)
+function ws.class.CanSwitchTo(client, class)
 	-- Get the class table by its numeric identifier.
-	local info = ix.class.list[class]
+	local info = ws.class.list[class]
 
 	-- See if the class exists.
 	if (!info) then
@@ -141,7 +141,7 @@ function ix.class.CanSwitchTo(client, class)
 	end
 
 	if (info.limit > 0) then
-		if (#ix.class.GetPlayers(info.index) >= info.limit) then
+		if (#ws.class.GetPlayers(info.index) >= info.limit) then
 			return false, "class is full"
 		end
 	end
@@ -159,10 +159,10 @@ end
 -- @tparam number identifier Numeric class identifier.
 -- @treturn table|nil Class definition table (see `class` table docs).
 -- @usage -- Print the name of class ID 1
--- print(ix.class.Get(1).name)
+-- print(ws.class.Get(1).name)
 -- > Citizen
-function ix.class.Get(identifier)
-	return ix.class.list[identifier]
+function ws.class.Get(identifier)
+	return ws.class.list[identifier]
 end
 
 --- Retrieves all players currently assigned to a specific class.
@@ -170,13 +170,13 @@ end
 -- @number class Index of the class
 -- @treturn table Numerically indexed table of players in the class, or an empty table if none are found.
 -- @usage -- Print all players in class ID 1
--- for _, ply in ipairs(ix.class.GetPlayers(1)) do
+-- for _, ply in ipairs(ws.class.GetPlayers(1)) do
 --     print(ply:GetName())
 -- end
 -- > Player1
 -- > Player2
 -- > etc
-function ix.class.GetPlayers(class)
+function ws.class.GetPlayers(class)
 	local players = {}
 
 	for _, v in player.Iterator() do
@@ -194,10 +194,10 @@ end
 -- @realm shared
 -- @number factionID Faction team ID
 -- @treturn table Array of class data tables for this faction
-function ix.class.GetByFaction(factionID)
+function ws.class.GetByFaction(factionID)
 	local classes = {}
 
-	for _, classData in pairs(ix.class.list) do
+	for _, classData in pairs(ws.class.list) do
 		if classData.faction == factionID then
 			table.insert(classes, classData)
 		end
@@ -211,10 +211,10 @@ end
 -- @number factionID Faction team ID
 -- @number rank Target rank (0-255)
 -- @treturn table Array of class data tables at this rank
-function ix.class.GetByRank(factionID, rank)
+function ws.class.GetByRank(factionID, rank)
 	local classes = {}
 
-	for _, classData in pairs(ix.class.list) do
+	for _, classData in pairs(ws.class.list) do
 		if classData.faction == factionID and classData.rank == rank then
 			table.insert(classes, classData)
 		end
@@ -228,7 +228,7 @@ end
 -- @number factionID Faction team ID
 -- @number rank Target rank (0-255)
 -- @treturn table Array of {player, character} tables
-function ix.class.GetPlayersAtRank(factionID, rank)
+function ws.class.GetPlayersAtRank(factionID, rank)
 	local results = {}
 
 	for _, ply in player.Iterator() do
@@ -236,7 +236,7 @@ function ix.class.GetPlayersAtRank(factionID, rank)
 			local char = ply:GetCharacter()
 			if char then
 				local classID = char:GetClass()
-				local classData = ix.class.Get(classID)
+				local classData = ws.class.Get(classID)
 				if classData and classData.rank == rank then
 					table.insert(results, {player = ply, character = char})
 				end
@@ -253,13 +253,13 @@ end
 -- @number factionID Faction team ID
 -- @number fromRank Starting rank to search down from
 -- @treturn number|nil The next rank with players, or nil if none found
-function ix.class.FindNextRankDown(factionID, fromRank)
+function ws.class.FindNextRankDown(factionID, fromRank)
 	-- Build sorted list of ranks with players
 	local ranksWithPlayers = {}
 
-	for _, classData in pairs(ix.class.list) do
+	for _, classData in pairs(ws.class.list) do
 		if classData.faction == factionID and classData.rank < fromRank and classData.rank > 0 then
-			local players = ix.class.GetPlayers(classData.index)
+			local players = ws.class.GetPlayers(classData.index)
 			if #players > 0 then
 				ranksWithPlayers[classData.rank] = true
 			end
@@ -281,8 +281,8 @@ end
 -- @realm shared
 -- @number databaseID Database row ID
 -- @treturn table|nil Class data table
-function ix.class.GetByDatabaseID(databaseID)
-	return ix.class.byDatabaseID[databaseID]
+function ws.class.GetByDatabaseID(databaseID)
+	return ws.class.byDatabaseID[databaseID]
 end
 
 if (SERVER) then
@@ -302,7 +302,7 @@ if (SERVER) then
 		local oldClass = self:GetClass()
 		local client = self:GetPlayer()
 
-		if (ix.class.CanSwitchTo(client, class)) then
+		if (ws.class.CanSwitchTo(client, class)) then
 			self:SetClass(class)
 			hook.Run("PlayerJoinedClass", client, class, oldClass)
 
@@ -331,7 +331,7 @@ if (SERVER) then
 
 		local goClass
 
-		for k, v in pairs(ix.class.list) do
+		for k, v in pairs(ws.class.list) do
 			if (v.faction == playerFaction and v.isDefault) then
 				goClass = k
 				break
@@ -349,8 +349,8 @@ if (SERVER) then
 	end
 
 	function GM:PlayerJoinedClass(client, class, oldClass)
-		local info = ix.class.list[class]
-		local info2 = ix.class.list[oldClass]
+		local info = ws.class.list[class]
+		local info2 = ws.class.list[oldClass]
 
 		if (info.OnSet) then
 			info:OnSet(client)
@@ -360,7 +360,7 @@ if (SERVER) then
 			info2:OnLeave(client)
 		end
 
-		net.Start("ixClassUpdate")
+		net.Start("wsClassUpdate")
 			net.WriteEntity(client)
 		net.Broadcast()
 	end
@@ -369,19 +369,19 @@ if (SERVER) then
 	-- @realm server
 	-- @tparam table data Class data table with: faction, name, description, rank, pay, permissions, createdBy
 	-- @treturn table|nil Created class data, or nil on failure
-	function ix.class.Create(data)
+	function ws.class.Create(data)
 		if not data.faction or not data.name then
 			return nil
 		end
 
 		local now = os.time()
-		local index = #ix.class.list + 1
+		local index = #ws.class.list + 1
 
 		-- Generate uniqueID from name
 		local uniqueID = string.lower(string.gsub(data.name, "%s+", "_"))
 
 		-- Get faction data for team ID
-		local factionData = ix.faction.teams[data.faction]
+		local factionData = ws.faction.teams[data.faction]
 		if not factionData then
 			return nil
 		end
@@ -426,10 +426,10 @@ if (SERVER) then
 		query:Callback(function(result, status, lastID)
 			if lastID then
 				classData.id = lastID
-				ix.class.byDatabaseID[lastID] = classData
+				ws.class.byDatabaseID[lastID] = classData
 
 				-- Network to clients
-				net.Start("ixClassCreated")
+				net.Start("wsClassCreated")
 					net.WriteTable(classData)
 				net.Broadcast()
 			end
@@ -437,7 +437,7 @@ if (SERVER) then
 		query:Execute()
 
 		-- Add to memory immediately
-		ix.class.list[index] = classData
+		ws.class.list[index] = classData
 
 		return classData
 	end
@@ -447,8 +447,8 @@ if (SERVER) then
 	-- @number databaseID Database row ID of the class
 	-- @tparam table updates Table of fields to update
 	-- @treturn bool Success
-	function ix.class.Update(databaseID, updates)
-		local classData = ix.class.byDatabaseID[databaseID]
+	function ws.class.Update(databaseID, updates)
+		local classData = ws.class.byDatabaseID[databaseID]
 		if not classData then
 			return false
 		end
@@ -496,7 +496,7 @@ if (SERVER) then
 		query:Execute()
 
 		-- Network to clients
-		net.Start("ixClassUpdated")
+		net.Start("wsClassUpdated")
 			net.WriteUInt(databaseID, 32)
 			net.WriteTable(updates)
 		net.Broadcast()
@@ -508,8 +508,8 @@ if (SERVER) then
 	-- @realm server
 	-- @number databaseID Database row ID of the class
 	-- @treturn bool Success
-	function ix.class.Delete(databaseID)
-		local classData = ix.class.byDatabaseID[databaseID]
+	function ws.class.Delete(databaseID)
+		local classData = ws.class.byDatabaseID[databaseID]
 		if not classData then
 			return false
 		end
@@ -520,14 +520,14 @@ if (SERVER) then
 		end
 
 		-- Check for members
-		local members = ix.class.GetPlayers(classData.index)
+		local members = ws.class.GetPlayers(classData.index)
 		if #members > 0 then
 			return false
 		end
 
 		-- Remove from memory
-		ix.class.list[classData.index] = nil
-		ix.class.byDatabaseID[databaseID] = nil
+		ws.class.list[classData.index] = nil
+		ws.class.byDatabaseID[databaseID] = nil
 
 		-- Remove from database
 		local query = mysql:Delete("ix_faction_classes")
@@ -535,7 +535,7 @@ if (SERVER) then
 		query:Execute()
 
 		-- Network to clients
-		net.Start("ixClassDeleted")
+		net.Start("wsClassDeleted")
 			net.WriteUInt(databaseID, 32)
 		net.Broadcast()
 
@@ -544,15 +544,15 @@ if (SERVER) then
 
 	--- Loads all classes from the database.
 	-- @realm server
-	function ix.class.LoadFromDatabase()
+	function ws.class.LoadFromDatabase()
 		local query = mysql:Select("ix_faction_classes")
 		query:Callback(function(result)
 			if not result then return end
 
 			for _, row in ipairs(result) do
-				local factionData = ix.faction.teams[row.faction]
+				local factionData = ws.faction.teams[row.faction]
 				if factionData then
-					local index = #ix.class.list + 1
+					local index = #ws.class.list + 1
 
 					local classData = {
 						id = row.id,
@@ -577,15 +577,15 @@ if (SERVER) then
 						return true
 					end
 
-					ix.class.list[index] = classData
-					ix.class.byDatabaseID[row.id] = classData
+					ws.class.list[index] = classData
+					ws.class.byDatabaseID[row.id] = classData
 				end
 			end
 
 			print("[Helix] Loaded " .. #result .. " classes from database")
 
 			-- Sync to all connected clients
-			ix.class.SyncToClients()
+			ws.class.SyncToClients()
 		end)
 		query:Execute()
 	end
@@ -593,10 +593,10 @@ if (SERVER) then
 	--- Syncs the class list to all clients.
 	-- @realm server
 	-- @player[opt] client Specific client to sync to, or nil for all
-	function ix.class.SyncToClients(client)
+	function ws.class.SyncToClients(client)
 		-- Prepare class data for networking (strip functions)
 		local syncData = {}
-		for index, classData in pairs(ix.class.list) do
+		for index, classData in pairs(ws.class.list) do
 			syncData[index] = {
 				id = classData.id,
 				index = classData.index,
@@ -613,7 +613,7 @@ if (SERVER) then
 			}
 		end
 
-		net.Start("ixClassListSync")
+		net.Start("wsClassListSync")
 			net.WriteTable(syncData)
 		if client then
 			net.Send(client)
@@ -625,7 +625,7 @@ end
 
 -- Client-side network receivers
 if CLIENT then
-	net.Receive("ixClassListSync", function()
+	net.Receive("wsClassListSync", function()
 		local syncData = net.ReadTable()
 
 		for index, classData in pairs(syncData) do
@@ -634,14 +634,14 @@ if CLIENT then
 				return true
 			end
 
-			ix.class.list[index] = classData
+			ws.class.list[index] = classData
 			if classData.id then
-				ix.class.byDatabaseID[classData.id] = classData
+				ws.class.byDatabaseID[classData.id] = classData
 			end
 		end
 	end)
 
-	net.Receive("ixClassCreated", function()
+	net.Receive("wsClassCreated", function()
 		local classData = net.ReadTable()
 
 		-- Add CanSwitchTo function
@@ -649,17 +649,17 @@ if CLIENT then
 			return true
 		end
 
-		ix.class.list[classData.index] = classData
+		ws.class.list[classData.index] = classData
 		if classData.id then
-			ix.class.byDatabaseID[classData.id] = classData
+			ws.class.byDatabaseID[classData.id] = classData
 		end
 	end)
 
-	net.Receive("ixClassUpdated", function()
+	net.Receive("wsClassUpdated", function()
 		local databaseID = net.ReadUInt(32)
 		local updates = net.ReadTable()
 
-		local classData = ix.class.byDatabaseID[databaseID]
+		local classData = ws.class.byDatabaseID[databaseID]
 		if classData then
 			for key, value in pairs(updates) do
 				if key == "classLimit" then
@@ -671,13 +671,13 @@ if CLIENT then
 		end
 	end)
 
-	net.Receive("ixClassDeleted", function()
+	net.Receive("wsClassDeleted", function()
 		local databaseID = net.ReadUInt(32)
 
-		local classData = ix.class.byDatabaseID[databaseID]
+		local classData = ws.class.byDatabaseID[databaseID]
 		if classData then
-			ix.class.list[classData.index] = nil
-			ix.class.byDatabaseID[databaseID] = nil
+			ws.class.list[classData.index] = nil
+			ws.class.byDatabaseID[databaseID] = nil
 		end
 	end)
 end

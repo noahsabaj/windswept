@@ -5,13 +5,13 @@ Entity menu manipulation.
 The `menu` library allows you to open up a context menu of arbitrary options whose callbacks will be ran when they are selected
 from the panel that shows up for the player.
 ]]
--- @module ix.menu
+-- @module ws.menu
 
---- You'll need to pass a table of options to `ix.menu.Open` to populate the menu. This table consists of strings as its keys
+--- You'll need to pass a table of options to `ws.menu.Open` to populate the menu. This table consists of strings as its keys
 -- and functions as its values. These correspond to the text displayed in the menu and the callback to run, respectively.
 --
 -- Example usage:
--- 	ix.menu.Open({
+-- 	ws.menu.Open({
 -- 		Drink = function()
 -- 			print("Drink option selected!")
 -- 		end,
@@ -23,7 +23,7 @@ from the panel that shows up for the player.
 -- @realm client
 -- @table MenuOptionsStructure
 
-ix.menu = ix.menu or {}
+ws.menu = ws.menu or {}
 
 if (CLIENT) then
 	--- Opens up a context menu for the given entity.
@@ -31,12 +31,12 @@ if (CLIENT) then
 	-- @tparam MenuOptionsStructure options Data describing what options to display
 	-- @entity[opt] entity Entity to send commands to
 	-- @treturn boolean Whether or not the menu opened successfully. It will fail when there is already a menu open.
-	function ix.menu.Open(options, entity)
-		if (IsValid(ix.menu.panel)) then
+	function ws.menu.Open(options, entity)
+		if (IsValid(ws.menu.panel)) then
 			return false
 		end
 
-		local panel = vgui.Create("ixEntityMenu")
+		local panel = vgui.Create("wsEntityMenu")
 		panel:SetEntity(entity)
 		panel:SetOptions(options)
 
@@ -46,8 +46,8 @@ if (CLIENT) then
 	--- Checks whether or not an entity menu is currently open.
 	-- @realm client
 	-- @treturn boolean Whether or not an entity menu is open
-	function ix.menu.IsOpen()
-		return IsValid(ix.menu.panel)
+	function ws.menu.IsOpen()
+		return IsValid(ws.menu.panel)
 	end
 
 	--- Notifies the server of an option that was chosen for the given entity.
@@ -55,9 +55,9 @@ if (CLIENT) then
 	-- @entity entity Entity to call option on
 	-- @string choice Option that was chosen
 	-- @param data Extra data to send to the entity
-	function ix.menu.NetworkChoice(entity, choice, data)
+	function ws.menu.NetworkChoice(entity, choice, data)
 		if (IsValid(entity)) then
-			net.Start("ixEntityMenuSelect")
+			net.Start("wsEntityMenuSelect")
 				net.WriteEntity(entity)
 				net.WriteString(choice)
 				net.WriteType(data)
@@ -65,9 +65,9 @@ if (CLIENT) then
 		end
 	end
 else
-	util.AddNetworkString("ixEntityMenuSelect")
+	util.AddNetworkString("wsEntityMenuSelect")
 
-	net.Receive("ixEntityMenuSelect", function(length, client)
+	net.Receive("wsEntityMenuSelect", function(length, client)
 		local entity = net.ReadEntity()
 		local option = net.ReadString()
 		local data = net.ReadType()

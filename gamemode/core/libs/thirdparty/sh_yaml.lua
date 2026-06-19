@@ -602,4 +602,4 @@ end
 
 exports.Dump = table_print
 
-ix.yaml = exports
+ws.yaml = exports

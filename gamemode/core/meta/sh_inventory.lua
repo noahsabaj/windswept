@@ -24,7 +24,7 @@ You may be looking for the following common functions:
 ]]
 -- @classmod Inventory
 
-local META = ix.meta.inventory or ix.middleclass("ix_inventory")
+local META = ws.meta.inventory or ws.middleclass("ix_inventory")
 
 META.slots = META.slots or {}
 META.w = META.w or 4
@@ -35,7 +35,7 @@ META.receivers = META.receivers or {}
 --- Returns a string representation of this inventory
 -- @realm shared
 -- @treturn string String representation
--- @usage print(ix.item.inventories[1])
+-- @usage print(ws.item.inventories[1])
 -- > "inventory[1]"
 function META:__tostring()
 	return "inventory["..(self.id or 0).."]"
@@ -321,7 +321,7 @@ function META:FindEmptySlot(w, h, onlyMain)
 		end
 
 		for _, invID in ipairs(bags) do
-			local bagInv = ix.item.inventories[invID]
+			local bagInv = ws.item.inventories[invID]
 
 			if (bagInv) then
 				local bx, by = bagInv:FindEmptySlot(w, h)
@@ -377,7 +377,7 @@ function META:Remove(id, bNoReplication, bNoDelete, bTransferring)
 		local receivers = self:GetReceivers()
 
 		if (istable(receivers)) then
-			net.Start("ixInventoryRemove")
+			net.Start("wsInventoryRemove")
 				net.WriteUInt(id, 32)
 				net.WriteUInt(self:GetID(), 32)
 			net.Send(receivers)
@@ -385,11 +385,11 @@ function META:Remove(id, bNoReplication, bNoDelete, bTransferring)
 
 		-- we aren't removing the item - we're transferring it to another inventory
 		if (!bTransferring) then
-			hook.Run("InventoryItemRemoved", self, ix.item.instances[id])
+			hook.Run("InventoryItemRemoved", self, ws.item.instances[id])
 		end
 
 		if (!bNoDelete) then
-			local item = ix.item.instances[id]
+			local item = ws.item.instances[id]
 
 			if (item and item.OnRemoved) then
 				item:OnRemoved()
@@ -399,7 +399,7 @@ function META:Remove(id, bNoReplication, bNoDelete, bTransferring)
 				query:Where("item_id", id)
 			query:Execute()
 
-			ix.item.instances[id] = nil
+			ws.item.instances[id] = nil
 		end
 	end
 
@@ -460,7 +460,7 @@ end
 -- @bool onlyMain Whether or not to exclude bags that are present from the search.
 -- @treturn number The amount of `Item`s this inventory has.
 -- @usage local curHighest, winner = 0, false
--- for client, character in ix.util.GetCharacters() do
+-- for client, character in ws.util.GetCharacters() do
 --  local itemCount = character:GetInventory():GetItemCount('water', false)
 --  if itemCount > curHighest then
 --   curHighest = itemCount
@@ -530,8 +530,8 @@ end
 --- Get a table of `Item`s by their specific Database ID.
 -- It's important to note that while in 99% of cases,
 -- items will have a unique Database ID, developers or random GMod weirdness could
--- cause a second item with the same ID to appear, even though, `ix.item.instances` will only store one of those.
--- The inventory only stores a reference to the `ix.item.instance` ID, not the memory reference itself.
+-- cause a second item with the same ID to appear, even though, `ws.item.instances` will only store one of those.
+-- The inventory only stores a reference to the `ws.item.instance` ID, not the memory reference itself.
 -- @realm shared
 -- @number id The ID to search for.
 -- @bool onlyMain Whether or not to exclude bags that are present from the search.
@@ -566,7 +566,7 @@ function META:GetItems(onlyMain)
 				local isBag = (((v2.base == "base_bags") or v2.isBag) and v2.data.id)
 
 				if (isBag and isBag != self:GetID() and onlyMain != true) then
-					local bagInv = ix.item.inventories[isBag]
+					local bagInv = ws.item.inventories[isBag]
 
 					if (bagInv) then
 						local bagItems = bagInv:GetItems()
@@ -762,7 +762,7 @@ if (SERVER) then
 		local receivers = self:GetReceivers()
 		local sendData = item and item.data and !table.IsEmpty(item.data) and item.data or {}
 
-		net.Start("ixInventorySet")
+		net.Start("wsInventorySet")
 			net.WriteUInt(self:GetID(), 32)
 			net.WriteUInt(x, 6)
 			net.WriteUInt(y, 6)
@@ -831,7 +831,7 @@ if (SERVER) then
 		end
 
 		local client = self.GetOwner and self:GetOwner() or nil
-		local item = isnumber(uniqueID) and ix.item.instances[uniqueID] or ix.item.list[uniqueID]
+		local item = isnumber(uniqueID) and ws.item.instances[uniqueID] or ws.item.list[uniqueID]
 		local targetInv = self
 		local bagInv
 
@@ -856,7 +856,7 @@ if (SERVER) then
 				return false, "itemOwned"
 			end
 
-			if (hook.Run("CanTransferItem", item, ix.item.inventories[0], targetInv) == false) then
+			if (hook.Run("CanTransferItem", item, ws.item.inventories[0], targetInv) == false) then
 				return false, "notAllowed"
 			end
 
@@ -890,7 +890,7 @@ if (SERVER) then
 					query:Execute()
 				end
 
-				hook.Run("InventoryItemAdded", ix.item.inventories[oldInvID], targetInv, item)
+				hook.Run("InventoryItemAdded", ws.item.inventories[oldInvID], targetInv, item)
 
 				return x, y, targetInv:GetID()
 			else
@@ -905,7 +905,7 @@ if (SERVER) then
 				targetInv = bagInv
 			end
 
-			if (hook.Run("CanTransferItem", item, ix.item.inventories[0], targetInv) == false) then
+			if (hook.Run("CanTransferItem", item, ws.item.inventories[0], targetInv) == false) then
 				return false, "notAllowed"
 			end
 
@@ -923,7 +923,7 @@ if (SERVER) then
 				local playerID
 
 				if (self.owner) then
-					local character = ix.char.loaded[self.owner]
+					local character = ws.char.loaded[self.owner]
 
 					if (character) then
 						characterID = character.id
@@ -931,7 +931,7 @@ if (SERVER) then
 					end
 				end
 
-				ix.item.Instance(targetInv:GetID(), uniqueID, data, x, y, function(newItem)
+				ws.item.Instance(targetInv:GetID(), uniqueID, data, x, y, function(newItem)
 					newItem.gridX = x
 					newItem.gridY = y
 
@@ -973,7 +973,7 @@ if (SERVER) then
 			end
 		end
 
-		net.Start("ixInventorySync")
+		net.Start("wsInventorySync")
 			net.WriteTable(slots)
 			net.WriteUInt(self:GetID(), 32)
 			net.WriteUInt(self.w, 6)
@@ -988,4 +988,4 @@ if (SERVER) then
 	end
 end
 
-ix.meta.inventory = META
+ws.meta.inventory = META

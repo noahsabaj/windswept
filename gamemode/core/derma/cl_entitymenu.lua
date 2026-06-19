@@ -3,7 +3,7 @@ local animationTime = 1
 local padding = 32
 
 -- entity menu button
-DEFINE_BASECLASS("ixMenuButton")
+DEFINE_BASECLASS("wsMenuButton")
 local PANEL = {}
 
 AccessorFunc(PANEL, "callback", "Callback")
@@ -15,7 +15,7 @@ end
 
 function PANEL:DoClick()
 	local bStatus = true
-	local parent = ix.menu.panel
+	local parent = ws.menu.panel
 	local entity = parent:GetEntity()
 
 	if (parent.bClosing) then
@@ -27,7 +27,7 @@ function PANEL:DoClick()
 	end
 
 	if (bStatus != false) then
-		ix.menu.NetworkChoice(entity, self.originalText, bStatus)
+		ws.menu.NetworkChoice(entity, self.originalText, bStatus)
 	end
 
 	parent:Remove()
@@ -38,7 +38,7 @@ function PANEL:SetText(text)
 	BaseClass.SetText(self, text)
 end
 
-vgui.Register("ixEntityMenuButton", PANEL, "ixMenuButton")
+vgui.Register("wsEntityMenuButton", PANEL, "wsMenuButton")
 
 -- entity menu list
 DEFINE_BASECLASS("EditablePanel")
@@ -49,7 +49,7 @@ function PANEL:Init()
 end
 
 function PANEL:AddOption(text, callback)
-	local panel = self:Add("ixEntityMenuButton")
+	local panel = self:Add("wsEntityMenuButton")
 	panel:SetText(text)
 	panel:SetCallback(callback)
 	panel:Dock(TOP)
@@ -101,7 +101,7 @@ function PANEL:PaintManual()
 	end
 end
 
-vgui.Register("ixEntityMenuList", PANEL, "EditablePanel")
+vgui.Register("wsEntityMenuList", PANEL, "EditablePanel")
 
 -- entity menu
 DEFINE_BASECLASS("EditablePanel")
@@ -112,22 +112,22 @@ AccessorFunc(PANEL, "bClosing", "IsClosing", FORCE_BOOL)
 AccessorFunc(PANEL, "desiredHeight", "DesiredHeight", FORCE_NUMBER)
 
 function PANEL:Init()
-	if (IsValid(ix.menu.panel)) then
+	if (IsValid(ws.menu.panel)) then
 		self:Remove()
 		return
 	end
 
 	-- close entity tooltip if it's open
-	if (IsValid(ix.gui.entityInfo)) then
-		ix.gui.entityInfo:Remove()
+	if (IsValid(ws.gui.entityInfo)) then
+		ws.gui.entityInfo:Remove()
 	end
 
-	ix.menu.panel = self
+	ws.menu.panel = self
 
 	self:SetSize(ScrW(), ScrH())
 	self:SetPos(0, 0)
 
-	self.list = self:Add("ixEntityMenuList")
+	self.list = self:Add("wsEntityMenuList")
 	self.list:SetPaintedManually(true)
 
 	self.desiredHeight = 0
@@ -190,7 +190,7 @@ function PANEL:Paint(width, height) -- luacheck: ignore 312
 	render.SetScissorRect(0, y, width, y + height, true)
 		if (IsValid(entity)) then
 			cam.Start3D()
-				ix.util.ResetStencilValues()
+				ws.util.ResetStencilValues()
 				render.SetStencilEnable(true)
 				cam.IgnoreZ(true)
 					render.SetStencilWriteMask(29)
@@ -208,20 +208,20 @@ function PANEL:Paint(width, height) -- luacheck: ignore 312
 					render.SetStencilPassOperation(STENCIL_KEEP)
 
 					cam.Start2D()
-						ix.util.DrawBlur(self, 10)
+						ws.util.DrawBlur(self, 10)
 					cam.End2D()
 				cam.IgnoreZ(false)
 				render.SetStencilEnable(false)
 			cam.End3D()
 		else
-			ix.util.DrawBlur(self, 10)
+			ws.util.DrawBlur(self, 10)
 		end
 	render.SetScissorRect(0, 0, 0, 0, false)
 	DisableClipping(false)
 
 	-- scissor again because 3d rendering messes with the clipping apparently?
 	render.SetScissorRect(0, y, width, y + height, true)
-		surface.SetDrawColor(ix.config.Get("color"))
+		surface.SetDrawColor(ws.config.Get("color"))
 		surface.DrawRect(ScrW() * 0.5, y + padding, 1, height - padding * 2)
 
 		self.list:PaintManual()
@@ -268,10 +268,10 @@ function PANEL:Remove()
 		end,
 
 		OnComplete = function(animation, panel)
-			ix.menu.panel = nil
+			ws.menu.panel = nil
 			BaseClass.Remove(self)
 		end
 	})
 end
 
-vgui.Register("ixEntityMenu", PANEL, "EditablePanel")
+vgui.Register("wsEntityMenu", PANEL, "EditablePanel")

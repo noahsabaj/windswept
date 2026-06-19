@@ -10,8 +10,8 @@ PLUGIN.description = "PAC3 integration for item parts."
 
 if (!pace) then return end
 
-ix.pac = ix.pac or {}
-ix.pac.list = ix.pac.list or {}
+ws.pac = ws.pac or {}
+ws.pac.list = ws.pac.list or {}
 
 CAMI.RegisterPrivilege({
 	Name = "Helix - Manage PAC",
@@ -19,8 +19,8 @@ CAMI.RegisterPrivilege({
 })
 
 -- this stores pac3 part information to plugin's table'
-function ix.pac.RegisterPart(id, outfit)
-	ix.pac.list[id] = outfit
+function ws.pac.RegisterPart(id, outfit)
+	ws.pac.list[id] = outfit
 end
 
 -- Fixing the PAC3's default stuffs to fit on Helix.
@@ -62,9 +62,9 @@ function meta:GetParts()
 end
 
 if (SERVER) then
-	util.AddNetworkString("ixPartWear")
-	util.AddNetworkString("ixPartRemove")
-	util.AddNetworkString("ixPartReset")
+	util.AddNetworkString("wsPartWear")
+	util.AddNetworkString("wsPartRemove")
+	util.AddNetworkString("wsPartReset")
 
 	function meta:AddPart(uniqueID, item)
 		if (!pac) then return end
@@ -72,7 +72,7 @@ if (SERVER) then
 		local curParts = self:GetParts()
 
 		-- wear the parts.
-		net.Start("ixPartWear")
+		net.Start("wsPartWear")
 			net.WriteEntity(self)
 			net.WriteString(uniqueID)
 		net.Broadcast()
@@ -88,7 +88,7 @@ if (SERVER) then
 		local curParts = self:GetParts()
 
 		-- remove the parts.
-		net.Start("ixPartRemove")
+		net.Start("wsPartRemove")
 			net.WriteEntity(self)
 			net.WriteString(uniqueID)
 		net.Broadcast()
@@ -101,7 +101,7 @@ if (SERVER) then
 	function meta:ResetParts()
 		if (!pac) then return end
 
-		net.Start("ixPartReset")
+		net.Start("wsPartReset")
 			net.WriteEntity(self)
 			net.WriteTable(self:GetParts())
 		net.Broadcast()
@@ -130,8 +130,8 @@ if (SERVER) then
 	end
 
 	function PLUGIN:PlayerSwitchWeapon(client, oldWeapon, newWeapon)
-		local oldItem = IsValid(oldWeapon) and oldWeapon.ixItem
-		local newItem = IsValid(newWeapon) and newWeapon.ixItem
+		local oldItem = IsValid(oldWeapon) and oldWeapon.wsItem
+		local newItem = IsValid(newWeapon) and newWeapon.wsItem
 
 		if (oldItem and oldItem.isWeapon and oldItem:GetData("equipped") and oldItem.pacData) then
 			oldItem:WearPAC(client)
@@ -165,8 +165,8 @@ if (SERVER) then
 	end
 else
 	local function AttachPart(client, uniqueID)
-		local itemTable = ix.item.list[uniqueID]
-		local pacData = ix.pac.list[uniqueID]
+		local itemTable = ws.item.list[uniqueID]
+		local pacData = ws.pac.list[uniqueID]
 
 		if (pacData) then
 			if (itemTable and itemTable.pacAdjust) then
@@ -189,8 +189,8 @@ else
 	end
 
 	local function RemovePart(client, uniqueID)
-		local itemTable = ix.item.list[uniqueID]
-		local pacData = ix.pac.list[uniqueID]
+		local itemTable = ws.item.list[uniqueID]
+		local pacData = ws.pac.list[uniqueID]
 
 		if (pacData) then
 			if (itemTable and itemTable.pacAdjust) then
@@ -229,7 +229,7 @@ else
 		end
 	end)
 
-	net.Receive("ixPartWear", function(length)
+	net.Receive("wsPartWear", function(length)
 		if (!pac) then return end
 
 		local wearer = net.ReadEntity()
@@ -242,7 +242,7 @@ else
 		AttachPart(wearer, uid)
 	end)
 
-	net.Receive("ixPartRemove", function(length)
+	net.Receive("wsPartRemove", function(length)
 		if (!pac) then return end
 
 		local wearer = net.ReadEntity()
@@ -255,7 +255,7 @@ else
 		RemovePart(wearer, uid)
 	end)
 
-	net.Receive("ixPartReset", function(length)
+	net.Receive("wsPartReset", function(length)
 		if (!pac) then return end
 
 		local wearer = net.ReadEntity()
@@ -347,11 +347,11 @@ else
 end
 
 function PLUGIN:InitializedPlugins()
-	local items = ix.item.list
+	local items = ws.item.list
 
 	for _, v in pairs(items) do
 		if (v.pacData) then
-			ix.pac.list[v.uniqueID] = v.pacData
+			ws.pac.list[v.uniqueID] = v.pacData
 		end
 	end
 end

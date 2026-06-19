@@ -192,7 +192,7 @@ function PANEL:Paint(width, height)
 			previous = curparent
 		end
 
-		ix.util.ResetStencilValues()
+		ws.util.ResetStencilValues()
 		render.SetStencilEnable(true)
 			render.SetStencilWriteMask(30)
 			render.SetStencilTestMask(30)
@@ -240,7 +240,7 @@ function PANEL:OnRemove()
 	self.activeCharacter:Remove()
 end
 
-vgui.Register("ixCharMenuCarousel", PANEL, "Panel")
+vgui.Register("wsCharMenuCarousel", PANEL, "Panel")
 
 -- character load panel
 PANEL = {}
@@ -274,7 +274,7 @@ function PANEL:Init()
 	controlList:Dock(LEFT)
 	controlList:SetSize(halfWidth, halfHeight)
 
-	local back = controlList:Add("ixMenuButton")
+	local back = controlList:Add("wsMenuButton")
 	back:Dock(BOTTOM)
 	back:SetText("return")
 	back:SizeToContents()
@@ -283,7 +283,7 @@ function PANEL:Init()
 		parent.mainPanel:Undim()
 	end
 
-	self.characterList = controlList:Add("ixCharMenuButtonList")
+	self.characterList = controlList:Add("wsCharMenuButtonList")
 	self.characterList.buttons = {}
 	self.characterList:Dock(FILL)
 
@@ -295,20 +295,20 @@ function PANEL:Init()
 	infoButtons:Dock(BOTTOM)
 	infoButtons:SetTall(back:GetTall()) -- hmm...
 
-	local continueButton = infoButtons:Add("ixMenuButton")
+	local continueButton = infoButtons:Add("wsMenuButton")
 	continueButton:Dock(FILL)
 	continueButton:SetText("choose")
 	continueButton:SetContentAlignment(6)
 	continueButton:SizeToContents()
 	continueButton.DoClick = function()
 		self:SlideDown(self.animationTime, function()
-			net.Start("ixCharacterChoose")
+			net.Start("wsCharacterChoose")
 				net.WriteUInt(self.character:GetID(), 32)
 			net.SendToServer()
 		end, true)
 	end
 
-	local deleteButton = infoButtons:Add("ixMenuButton")
+	local deleteButton = infoButtons:Add("wsMenuButton")
 	deleteButton:Dock(LEFT)
 	deleteButton:SetText("delete")
 	deleteButton:SetContentAlignment(5)
@@ -319,7 +319,7 @@ function PANEL:Init()
 		self:SetActiveSubpanel("delete")
 	end
 
-	self.carousel = infoPanel:Add("ixCharMenuCarousel")
+	self.carousel = infoPanel:Add("wsCharMenuCarousel")
 	self.carousel:Dock(FILL)
 
 	-- character deletion panel
@@ -338,7 +338,7 @@ function PANEL:Init()
 	deleteInfo:SetSize(parent:GetWide() * 0.5, parent:GetTall())
 	deleteInfo:Dock(LEFT)
 
-	local deleteReturn = deleteInfo:Add("ixMenuButton")
+	local deleteReturn = deleteInfo:Add("wsMenuButton")
 	deleteReturn:Dock(BOTTOM)
 	deleteReturn:SetText("no")
 	deleteReturn:SizeToContents()
@@ -346,7 +346,7 @@ function PANEL:Init()
 		self:SetActiveSubpanel("main")
 	end
 
-	local deleteConfirm = self.delete:Add("ixMenuButton")
+	local deleteConfirm = self.delete:Add("wsMenuButton")
 	deleteConfirm:Dock(BOTTOM)
 	deleteConfirm:SetText("yes")
 	deleteConfirm:SetContentAlignment(6)
@@ -359,12 +359,12 @@ function PANEL:Init()
 		self:Populate(id)
 		self:SetActiveSubpanel("main")
 
-		net.Start("ixCharacterDelete")
+		net.Start("wsCharacterDelete")
 			net.WriteUInt(id, 32)
 		net.SendToServer()
 	end
 
-	self.deleteModel = deleteInfo:Add("ixModelPanel")
+	self.deleteModel = deleteInfo:Add("wsModelPanel")
 	self.deleteModel:Dock(FILL)
 	self.deleteModel:SetModel(errorModel)
 	self.deleteModel:SetFOV(modelFOV)
@@ -375,14 +375,14 @@ function PANEL:Init()
 	deleteNag:Dock(BOTTOM)
 
 	local deleteTitle = deleteNag:Add("DLabel")
-	deleteTitle:SetFont("ixTitleFont")
+	deleteTitle:SetFont("wsTitleFont")
 	deleteTitle:SetText(L("areYouSure"):utf8upper())
-	deleteTitle:SetTextColor(ix.config.Get("color"))
+	deleteTitle:SetTextColor(ws.config.Get("color"))
 	deleteTitle:SizeToContents()
 	deleteTitle:Dock(TOP)
 
 	local deleteText = deleteNag:Add("DLabel")
-	deleteText:SetFont("ixMenuButtonFont")
+	deleteText:SetFont("wsMenuButtonFont")
 	deleteText:SetText(L("deleteConfirm"))
 	deleteText:SetTextColor(color_white)
 	deleteText:SetContentAlignment(7)
@@ -393,7 +393,7 @@ function PANEL:Init()
 end
 
 function PANEL:OnCharacterDeleted(character)
-	if (self.bActive and #ix.characters == 0) then
+	if (self.bActive and #ws.characters == 0) then
 		self:SlideDown()
 	end
 end
@@ -405,9 +405,9 @@ function PANEL:Populate(ignoreID)
 	local bSelected
 
 	-- loop backwards to preserve order since we're docking to the bottom
-	for i = 1, #ix.characters do
-		local id = ix.characters[i]
-		local character = ix.char.loaded[id]
+	for i = 1, #ws.characters do
+		local id = ws.characters[i]
+		local character = ws.char.loaded[id]
 
 		if (!character or character:GetID() == ignoreID) then
 			continue
@@ -416,7 +416,7 @@ function PANEL:Populate(ignoreID)
 		-- All players use same gray color (no faction color metagaming)
 		local color = Color(200, 200, 200)
 
-		local button = self.characterList:Add("ixMenuSelectionButton")
+		local button = self.characterList:Add("wsMenuSelectionButton")
 		button:SetBackgroundColor(color)
 		button:SetText(character:GetName())
 		button:SizeToContents()
@@ -471,4 +471,4 @@ function PANEL:Paint(width, height)
 	derma.SkinFunc("PaintCharacterLoadBackground", self, width, height)
 end
 
-vgui.Register("ixCharMenuLoad", PANEL, "ixCharMenuPanel")
+vgui.Register("wsCharMenuLoad", PANEL, "wsCharMenuPanel")

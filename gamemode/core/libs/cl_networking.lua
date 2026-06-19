@@ -2,36 +2,36 @@
 local entityMeta = FindMetaTable("Entity")
 local playerMeta = FindMetaTable("Player")
 
-ix.net = ix.net or {}
-ix.net.globals = ix.net.globals or {}
+ws.net = ws.net or {}
+ws.net.globals = ws.net.globals or {}
 
-net.Receive("ixGlobalVarSet", function()
-	ix.net.globals[net.ReadString()] = net.ReadType()
+net.Receive("wsGlobalVarSet", function()
+	ws.net.globals[net.ReadString()] = net.ReadType()
 end)
 
-net.Receive("ixNetVarSet", function()
+net.Receive("wsNetVarSet", function()
 	local index = net.ReadUInt(16)
 
-	ix.net[index] = ix.net[index] or {}
-	ix.net[index][net.ReadString()] = net.ReadType()
+	ws.net[index] = ws.net[index] or {}
+	ws.net[index][net.ReadString()] = net.ReadType()
 end)
 
-net.Receive("ixNetVarDelete", function()
-	ix.net[net.ReadUInt(16)] = nil
+net.Receive("wsNetVarDelete", function()
+	ws.net[net.ReadUInt(16)] = nil
 end)
 
-net.Receive("ixLocalVarSet", function()
+net.Receive("wsLocalVarSet", function()
 	local key = net.ReadString()
 	local var = net.ReadType()
 
-	ix.net[LocalPlayer():EntIndex()] = ix.net[LocalPlayer():EntIndex()] or {}
-	ix.net[LocalPlayer():EntIndex()][key] = var
+	ws.net[LocalPlayer():EntIndex()] = ws.net[LocalPlayer():EntIndex()] or {}
+	ws.net[LocalPlayer():EntIndex()][key] = var
 
 	hook.Run("OnLocalVarSet", key, var)
 end)
 
 function GetNetVar(key, default) -- luacheck: globals GetNetVar
-	local value = ix.net.globals[key]
+	local value = ws.net.globals[key]
 
 	return value != nil and value or default
 end
@@ -39,8 +39,8 @@ end
 function entityMeta:GetNetVar(key, default)
 	local index = self:EntIndex()
 
-	if (ix.net[index] and ix.net[index][key] != nil) then
-		return ix.net[index][key]
+	if (ws.net[index] and ws.net[index][key] != nil) then
+		return ws.net[index][key]
 	end
 
 	return default

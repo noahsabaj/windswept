@@ -6,32 +6,32 @@ PLUGIN.author = "`impulse"
 PLUGIN.description = "Replaces the chatbox to enable customization, autocomplete, and useful info."
 
 if (CLIENT) then
-	ix.chat.history = ix.chat.history or {} -- array of strings the player has entered into the chatbox
-	ix.chat.currentCommand = ""
-	ix.chat.currentArguments = {}
+	ws.chat.history = ws.chat.history or {} -- array of strings the player has entered into the chatbox
+	ws.chat.currentCommand = ""
+	ws.chat.currentArguments = {}
 
-	ix.option.Add("chatNotices", ix.type.bool, false, {
+	ws.option.Add("chatNotices", ws.type.bool, false, {
 		category = "chat"
 	})
 
-	ix.option.Add("chatTimestamps", ix.type.bool, false, {
+	ws.option.Add("chatTimestamps", ws.type.bool, false, {
 		category = "chat"
 	})
 
-	ix.option.Add("chatFontScale", ix.type.number, 1, {
+	ws.option.Add("chatFontScale", ws.type.number, 1, {
 		category = "chat", min = 0.1, max = 2, decimals = 2,
 		OnChanged = function()
-			hook.Run("LoadFonts", ix.config.Get("font"), ix.config.Get("genericFont"))
+			hook.Run("LoadFonts", ws.config.Get("font"), ws.config.Get("genericFont"))
 			PLUGIN:CreateChat()
 		end
 	})
 
-	ix.option.Add("chatOutline", ix.type.bool, false, {
+	ws.option.Add("chatOutline", ws.type.bool, false, {
 		category = "chat"
 	})
 
 	-- tabs and their respective filters
-	ix.option.Add("chatTabs", ix.type.string, "", {
+	ws.option.Add("chatTabs", ws.type.string, "", {
 		category = "chat",
 		hidden = function()
 			return true
@@ -39,7 +39,7 @@ if (CLIENT) then
 	})
 
 	-- chatbox size and position
-	ix.option.Add("chatPosition", ix.type.string, "", {
+	ws.option.Add("chatPosition", ws.type.string, "", {
 		category = "chat",
 		hidden = function()
 			return true
@@ -51,9 +51,9 @@ if (CLIENT) then
 			self.panel:Remove()
 		end
 
-		self.panel = vgui.Create("ixChatbox")
-		self.panel:SetupTabs(util.JSONToTable(ix.option.Get("chatTabs", "")))
-		self.panel:SetupPosition(util.JSONToTable(ix.option.Get("chatPosition", "")))
+		self.panel = vgui.Create("wsChatbox")
+		self.panel:SetupTabs(util.JSONToTable(ws.option.Get("chatTabs", "")))
+		self.panel:SetupPosition(util.JSONToTable(ws.option.Get("chatPosition", "")))
 
 		hook.Run("ChatboxCreated")
 	end
@@ -73,14 +73,14 @@ if (CLIENT) then
 			tabs[id] = panel:GetFilter()
 		end
 
-		ix.option.Set("chatTabs", util.TableToJSON(tabs))
+		ws.option.Set("chatTabs", util.TableToJSON(tabs))
 	end
 
 	function PLUGIN:SavePosition()
 		local x, y = self.panel:GetPos()
 		local width, height = self.panel:GetSize()
 
-		ix.option.Set("chatPosition", util.TableToJSON({x, y, width, height}))
+		ws.option.Set("chatPosition", util.TableToJSON({x, y, width, height}))
 	end
 
 	function PLUGIN:InitPostEntity()
@@ -98,11 +98,11 @@ if (CLIENT) then
 	end
 
 	function PLUGIN:OnPauseMenuShow()
-		if (!IsValid(ix.gui.chat) or !ix.gui.chat:GetActive()) then
+		if (!IsValid(ws.gui.chat) or !ws.gui.chat:GetActive()) then
 			return
 		end
 
-		ix.gui.chat:SetActive(false)
+		ws.gui.chat:SetActive(false)
 
 		return false
 	end
@@ -124,7 +124,7 @@ if (CLIENT) then
 	end
 
 	-- luacheck: globals chat
-	chat.ixAddText = chat.ixAddText or chat.AddText
+	chat.wsAddText = chat.wsAddText or chat.AddText
 
 	function chat.AddText(...)
 		if (IsValid(PLUGIN.panel)) then
@@ -149,20 +149,20 @@ if (CLIENT) then
 		MsgC(unpack(text))
 	end
 else
-	util.AddNetworkString("ixChatMessage")
+	util.AddNetworkString("wsChatMessage")
 
-	net.Receive("ixChatMessage", function(length, client)
+	net.Receive("wsChatMessage", function(length, client)
 		local text = net.ReadString()
 
-		if ((client.ixNextChat or 0) < CurTime() and isstring(text) and text:find("%S")) then
-			local maxLength = ix.config.Get("chatMax")
+		if ((client.wsNextChat or 0) < CurTime() and isstring(text) and text:find("%S")) then
+			local maxLength = ws.config.Get("chatMax")
 
 			if (text:utf8len() > maxLength) then
 				text = text:utf8sub(0, maxLength)
 			end
 
 			hook.Run("PlayerSay", client, text)
-			client.ixNextChat = CurTime() + 0.5
+			client.wsNextChat = CurTime() + 0.5
 		end
 	end)
 end

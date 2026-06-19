@@ -9,25 +9,25 @@ interval, and during specific events (e.g when the owning player switches away f
 
 They contain all information that is not persistent with the player; names, descriptions, model, currency, etc. For the most
 part, you'll want to keep all information stored on the character since it will probably be different or change if the
-player switches to another character. An easy way to do this is to use `ix.char.RegisterVar` to easily create accessor functions
+player switches to another character. An easy way to do this is to use `ws.char.RegisterVar` to easily create accessor functions
 for variables that automatically save to the character object.
 ]]
 -- @classmod Character
 
-local CHAR = ix.meta.character or {}
+local CHAR = ws.meta.character or {}
 CHAR.__index = CHAR
 CHAR.id = CHAR.id or 0
 CHAR.vars = CHAR.vars or {}
 
 -- @todo not this
-if (!ix.db) then
-	ix.util.Include("../libs/sv_database.lua")
+if (!ws.db) then
+	ws.util.Include("../libs/sv_database.lua")
 end
 
 --- Returns a string representation of this character
 -- @realm shared
 -- @treturn string String representation
--- @usage print(ix.char.loaded[1])
+-- @usage print(ws.char.loaded[1])
 -- > "character[1]"
 function CHAR:__tostring()
 	return "character["..(self.id or 0).."]"
@@ -37,7 +37,7 @@ end
 -- @realm shared
 -- @char other Character to compare to
 -- @treturn bool Whether or not this character is equal to the given character
--- @usage print(ix.char.loaded[1] == ix.char.loaded[2])
+-- @usage print(ws.char.loaded[1] == ws.char.loaded[2])
 -- > false
 function CHAR:__eq(other)
 	return self:GetID() == other:GetID()
@@ -54,7 +54,7 @@ if (SERVER) then
 	--- Saves this character's info to the database.
 	-- @realm server
 	-- @func[opt=nil] callback Function to call when the save has completed.
-	-- @usage ix.char.loaded[1]:Save(function()
+	-- @usage ws.char.loaded[1]:Save(function()
 	-- 	print("done!")
 	-- end)
 	-- > done! -- after a moment
@@ -75,7 +75,7 @@ if (SERVER) then
 				local prevValues = self._savedVars or {}
 				local hasChanges = false
 
-				for k, v in pairs(ix.char.vars) do
+				for k, v in pairs(ws.char.vars) do
 					if (v.field and self.vars[k] != nil and !v.bSaveLoadInitialOnly) then
 						local value = self.vars[k]
 						local serialized = istable(value) and util.TableToJSON(value) or tostring(value)
@@ -126,12 +126,12 @@ if (SERVER) then
 			local data = {}
 
 			for k, v in pairs(self.vars) do
-				if (ix.char.vars[k] != nil and !ix.char.vars[k].bNoNetworking) then
+				if (ws.char.vars[k] != nil and !ws.char.vars[k].bNoNetworking) then
 					data[k] = v
 				end
 			end
 
-			net.Start("ixCharacterInfo")
+			net.Start("wsCharacterInfo")
 				net.WriteTable(data)
 				net.WriteUInt(self:GetID(), 32)
 				net.WriteUInt(self.player:EntIndex(), 8)
@@ -139,13 +139,13 @@ if (SERVER) then
 		else
 			local data = {}
 
-			for k, v in pairs(ix.char.vars) do
+			for k, v in pairs(ws.char.vars) do
 				if (!v.bNoNetworking and !v.isLocal) then
 					data[k] = self.vars[k]
 				end
 			end
 
-			net.Start("ixCharacterInfo")
+			net.Start("wsCharacterInfo")
 				net.WriteTable(data)
 				net.WriteUInt(self:GetID(), 32)
 				net.WriteUInt(self.player:EntIndex(), 8)
@@ -197,9 +197,9 @@ if (SERVER) then
 
 			local id = self:GetID()
 
-			hook.Run("CharacterLoaded", ix.char.loaded[id])
+			hook.Run("CharacterLoaded", ws.char.loaded[id])
 
-			net.Start("ixCharacterLoaded")
+			net.Start("wsCharacterLoaded")
 				net.WriteUInt(id, 32)
 			net.Send(client)
 
@@ -220,7 +220,7 @@ if (SERVER) then
 
 		-- Return the player to the character menu.
 		if (self and self.steamID == steamID) then
-			net.Start("ixCharacterKick")
+			net.Start("wsCharacterKick")
 				net.WriteBool(isCurrentChar)
 			net.Send(client)
 
@@ -250,15 +250,15 @@ end
 
 -- Global SteamID64 -> Player lookup cache for O(1) GetPlayer() lookups
 -- Populated by player connect/disconnect hooks
-ix.char.playerBySteamID = ix.char.playerBySteamID or {}
+ws.char.playerBySteamID = ws.char.playerBySteamID or {}
 
 -- Hook to update lookup table (runs in Helix core after this file loads)
-hook.Add("PlayerAuthed", "ixCharPlayerLookup", function(client, steamID, uniqueID)
-	ix.char.playerBySteamID[client:SteamID64()] = client
+hook.Add("PlayerAuthed", "wsCharPlayerLookup", function(client, steamID, uniqueID)
+	ws.char.playerBySteamID[client:SteamID64()] = client
 end)
 
-hook.Add("PlayerDisconnected", "ixCharPlayerLookup", function(client)
-	ix.char.playerBySteamID[client:SteamID64()] = nil
+hook.Add("PlayerDisconnected", "wsCharPlayerLookup", function(client)
+	ws.char.playerBySteamID[client:SteamID64()] = nil
 end)
 
 --- Returns the player that owns this character.
@@ -279,7 +279,7 @@ function CHAR:GetPlayer()
 		return self.player
 	-- Search for which player owns this character using O(1) lookup.
 	elseif (self.steamID) then
-		local client = ix.char.playerBySteamID[self.steamID]
+		local client = ws.char.playerBySteamID[self.steamID]
 		if (IsValid(client)) then
 			self.player = client
 			return client
@@ -288,16 +288,16 @@ function CHAR:GetPlayer()
 end
 
 -- Sets up a new character variable.
-function ix.char.RegisterVar(key, data)
+function ws.char.RegisterVar(key, data)
 	-- Store information for the variable.
-	ix.char.vars[key] = data
-	data.index = data.index or table.Count(ix.char.vars)
+	ws.char.vars[key] = data
+	data.index = data.index or table.Count(ws.char.vars)
 
 	local upperName = key:sub(1, 1):upper() .. key:sub(2)
 
 	if (SERVER) then
 		if (data.field) then
-			ix.db.AddToSchema("ix_characters", data.field, data.fieldType or ix.type.string)
+			ws.db.AddToSchema("ix_characters", data.field, data.fieldType or ws.type.string)
 		end
 
 		-- Provide functions to change the variable if allowed.
@@ -316,7 +316,7 @@ function ix.char.RegisterVar(key, data)
 					local oldVar = self.vars[key]
 					self.vars[key] = value
 
-					net.Start("ixCharacterVarChanged")
+					net.Start("wsCharacterVarChanged")
 						net.WriteUInt(self:GetID(), 32)
 						net.WriteString(key)
 						net.WriteType(value)
@@ -330,7 +330,7 @@ function ix.char.RegisterVar(key, data)
 					local oldVar = self.vars[key]
 					self.vars[key] = value
 
-					net.Start("ixCharacterVarChanged")
+					net.Start("wsCharacterVarChanged")
 						net.WriteUInt(self:GetID(), 32)
 						net.WriteString(key)
 						net.WriteType(value)
@@ -356,8 +356,8 @@ function ix.char.RegisterVar(key, data)
 			end
 
 			if (default == nil) then
-				return ix.char.vars[key] and (istable(ix.char.vars[key].default) and table.Copy(ix.char.vars[key].default)
-					or ix.char.vars[key].default)
+				return ws.char.vars[key] and (istable(ws.char.vars[key].default) and table.Copy(ws.char.vars[key].default)
+					or ws.char.vars[key].default)
 			end
 
 			return default
@@ -386,5 +386,5 @@ function ix.char.RegisterVar(key, data)
 	CHAR.vars[key] = data.default
 end
 
--- Allows access to the character metatable using ix.meta.character
-ix.meta.character = CHAR
+-- Allows access to the character metatable using ws.meta.character
+ws.meta.character = CHAR

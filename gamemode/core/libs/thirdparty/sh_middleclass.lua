@@ -180,4 +180,4 @@ end
 
 setmetatable(middleclass, { __call = function(_, ...) return middleclass.class(...) end })
 
-ix.middleclass = middleclass
+ws.middleclass = middleclass

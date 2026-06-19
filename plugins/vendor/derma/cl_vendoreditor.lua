@@ -2,10 +2,10 @@
 local PANEL = {}
 
 function PANEL:Init()
-	local entity = ix.gui.vendor.entity
+	local entity = ws.gui.vendor.entity
 
 	self:SetSize(320, 480)
-	self:MoveLeftOf(ix.gui.vendor, 8)
+	self:MoveLeftOf(ws.gui.vendor, 8)
 	self:MakePopup()
 	self:CenterVertical()
 	self:SetTitle(L"vendorEditor")
@@ -98,7 +98,7 @@ function PANEL:Init()
 		if (this.noSend) then
 			this.noSend = nil
 		else
-			timer.Create("ixVendorScale", 1, 1, function()
+			timer.Create("wsVendorScale", 1, 1, function()
 				if (IsValid(self) and IsValid(self.sellScale)) then
 					value = self.sellScale:GetValue()
 
@@ -116,14 +116,14 @@ function PANEL:Init()
 	self.faction:SetTextColor(color_white)
 	self.faction:DockMargin(0, 4, 0, 0)
 	self.faction.DoClick = function(this)
-		if (IsValid(ix.gui.editorFaction)) then
-			ix.gui.editorFaction:Remove()
+		if (IsValid(ws.gui.editorFaction)) then
+			ws.gui.editorFaction:Remove()
 		end
 
-		ix.gui.editorFaction = vgui.Create("ixVendorFactionEditor")
-		ix.gui.editorFaction.updateVendor = self.updateVendor
-		ix.gui.editorFaction.entity = entity
-		ix.gui.editorFaction:Setup()
+		ws.gui.editorFaction = vgui.Create("wsVendorFactionEditor")
+		ws.gui.editorFaction.updateVendor = self.updateVendor
+		ws.gui.editorFaction.entity = entity
+		ws.gui.editorFaction:Setup()
 	end
 
 	self.searchBar = self:Add("DTextEntry")
@@ -178,7 +178,7 @@ function PANEL:Init()
 				self:updateVendor("mode", {uniqueID, VENDOR_SELLONLY})
 			end):SetImage("icon16/cog_add.png")
 
-			local itemTable = ix.item.list[uniqueID]
+			local itemTable = ws.item.list[uniqueID]
 
 			-- Set the price of the item.
 			menu:AddOption(L"price", function()
@@ -239,12 +239,12 @@ function PANEL:Init()
 end
 
 function PANEL:ReloadItemList(filter)
-	local entity = ix.gui.vendor.entity
+	local entity = ws.gui.vendor.entity
 	self.lines = {}
 
 	self.items:Clear()
 
-	for k, v in SortedPairs(ix.item.list) do
+	for k, v in SortedPairs(ws.item.list) do
 		local itemName = v.GetName and v:GetName() or L(v.name)
 
 		if (filter and !itemName:lower():find(filter:lower(), 1, false)) then
@@ -267,20 +267,20 @@ function PANEL:ReloadItemList(filter)
 end
 
 function PANEL:OnRemove()
-	if (IsValid(ix.gui.vendor)) then
-		ix.gui.vendor:Remove()
+	if (IsValid(ws.gui.vendor)) then
+		ws.gui.vendor:Remove()
 	end
 
-	if (IsValid(ix.gui.editorFaction)) then
-		ix.gui.editorFaction:Remove()
+	if (IsValid(ws.gui.editorFaction)) then
+		ws.gui.editorFaction:Remove()
 	end
 end
 
 function PANEL:updateVendor(key, value)
-	net.Start("ixVendorEdit")
+	net.Start("wsVendorEdit")
 		net.WriteString(key)
 		net.WriteType(value)
 	net.SendToServer()
 end
 
-vgui.Register("ixVendorEditor", PANEL, "DFrame")
+vgui.Register("wsVendorEditor", PANEL, "DFrame")

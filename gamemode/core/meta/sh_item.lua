@@ -6,7 +6,7 @@ Items are objects that are contained inside of an `Inventory`, or as standalone 
 usually have functionality that provides more gameplay aspects to the schema. For example, the zipties in the HL2 RP schema
 allow a player to tie up and search a player.
 
-For an item to have an actual presence, they need to be instanced (usually with `ix.item.Instance`). Items describe the
+For an item to have an actual presence, they need to be instanced (usually with `ws.item.Instance`). Items describe the
 properties, while instances are a clone of these properties that can have their own unique data (e.g an ID card will have the
 same name but different numerical IDs). You can think of items as the class, while instances are objects of the `Item` class.
 
@@ -165,7 +165,7 @@ item bases.
 -- @field[type=table,opt] functions List of all item functions that this item has. See `ItemFunctionStructure` on how to define
 -- new item functions
 
-local ITEM = ix.meta.item or {}
+local ITEM = ws.meta.item or {}
 ITEM.__index = ITEM
 ITEM.name = "Undefined"
 ITEM.description = ITEM.description or "An item that is undefined."
@@ -175,7 +175,7 @@ ITEM.uniqueID = "undefined"
 --- Returns a string representation of this item.
 -- @realm shared
 -- @treturn string String representation
--- @usage print(ix.item.instances[1])
+-- @usage print(ws.item.instances[1])
 -- > "item[1]"
 function ITEM:__tostring()
 	return "item["..self.uniqueID.."]["..self.id.."]"
@@ -185,7 +185,7 @@ end
 -- @realm shared
 -- @item other Item to compare to
 -- @treturn bool Whether or not this item is equal to the given item
--- @usage print(ix.item.instances[1] == ix.item.instances[2])
+-- @usage print(ws.item.instances[1] == ws.item.instances[2])
 -- > false
 function ITEM:__eq(other)
 	return self:GetID() == other:GetID()
@@ -297,7 +297,7 @@ end
 -- @realm shared
 -- @treturn player Player owning this item
 function ITEM:GetOwner()
-	local inventory = ix.item.inventories[self.invID]
+	local inventory = ws.item.inventories[self.invID]
 
 	if (inventory) then
 		return inventory.GetOwner and inventory:GetOwner()
@@ -321,18 +321,18 @@ end
 
 if (SERVER) then
 	-- Pending network syncs: itemID -> {changes = {key = value}, receivers = player/table, item = ITEM}
-	ix.item.pendingNetSync = ix.item.pendingNetSync or {}
+	ws.item.pendingNetSync = ws.item.pendingNetSync or {}
 	-- Pending database saves: itemID -> ITEM
-	ix.item.pendingDBSave = ix.item.pendingDBSave or {}
+	ws.item.pendingDBSave = ws.item.pendingDBSave or {}
 	-- Whether flush timers are scheduled
-	ix.item.netSyncScheduled = false
-	ix.item.dbSaveScheduled = false
+	ws.item.netSyncScheduled = false
+	ws.item.dbSaveScheduled = false
 
 	-- Flush all pending network syncs (called after current frame)
-	function ix.item.FlushNetSync()
-		local pending = ix.item.pendingNetSync
-		ix.item.pendingNetSync = {}
-		ix.item.netSyncScheduled = false
+	function ws.item.FlushNetSync()
+		local pending = ws.item.pendingNetSync
+		ws.item.pendingNetSync = {}
+		ws.item.netSyncScheduled = false
 
 		for itemID, data in pairs(pending) do
 			local item = data.item
@@ -353,7 +353,7 @@ if (SERVER) then
 			end
 
 			if (receivers and table.Count(changes) > 0) then
-				net.Start("ixInventoryDataBatch")
+				net.Start("wsInventoryDataBatch")
 					net.WriteUInt(itemID, 32)
 					net.WriteTable(changes)
 				net.Send(receivers)
@@ -362,13 +362,13 @@ if (SERVER) then
 	end
 
 	-- Flush all pending database saves (called after short delay)
-	function ix.item.FlushDBSave()
-		local pending = ix.item.pendingDBSave
-		ix.item.pendingDBSave = {}
-		ix.item.dbSaveScheduled = false
+	function ws.item.FlushDBSave()
+		local pending = ws.item.pendingDBSave
+		ws.item.pendingDBSave = {}
+		ws.item.dbSaveScheduled = false
 
 		for itemID, item in pairs(pending) do
-			if (item and item.data and ix.db) then
+			if (item and item.data and ws.db) then
 				local query = mysql:Update("ix_items")
 					query:Update("data", util.TableToJSON(item.data))
 					query:Where("item_id", itemID)
@@ -378,13 +378,13 @@ if (SERVER) then
 	end
 
 	-- Queue a network sync for an item (batches within same frame)
-	function ix.item.QueueNetSync(item, key, value, receivers)
+	function ws.item.QueueNetSync(item, key, value, receivers)
 		local itemID = item:GetID()
-		local pending = ix.item.pendingNetSync[itemID]
+		local pending = ws.item.pendingNetSync[itemID]
 
 		if (!pending) then
 			pending = {changes = {}, item = item, receivers = receivers}
-			ix.item.pendingNetSync[itemID] = pending
+			ws.item.pendingNetSync[itemID] = pending
 		end
 
 		pending.changes[key] = value
@@ -395,39 +395,39 @@ if (SERVER) then
 		end
 
 		-- Schedule flush for end of frame (only once)
-		if (!ix.item.netSyncScheduled) then
-			ix.item.netSyncScheduled = true
-			timer.Simple(0, ix.item.FlushNetSync)
+		if (!ws.item.netSyncScheduled) then
+			ws.item.netSyncScheduled = true
+			timer.Simple(0, ws.item.FlushNetSync)
 		end
 	end
 
 	-- Queue a database save for an item (batches within 0.1s window)
-	function ix.item.QueueDBSave(item)
+	function ws.item.QueueDBSave(item)
 		local itemID = item:GetID()
-		ix.item.pendingDBSave[itemID] = item
+		ws.item.pendingDBSave[itemID] = item
 
 		-- Schedule flush with short delay (only once)
-		if (!ix.item.dbSaveScheduled) then
-			ix.item.dbSaveScheduled = true
-			timer.Create("ixItemDBFlush", 0.1, 1, ix.item.FlushDBSave)
+		if (!ws.item.dbSaveScheduled) then
+			ws.item.dbSaveScheduled = true
+			timer.Create("wsItemDBFlush", 0.1, 1, ws.item.FlushDBSave)
 		end
 	end
 
 	-- Force flush all pending syncs immediately (for critical moments)
 	-- Call this before item transfers, character saves, or disconnects
-	function ix.item.ForceFlushAll()
+	function ws.item.ForceFlushAll()
 		-- Cancel scheduled timers
-		timer.Remove("ixItemDBFlush")
+		timer.Remove("wsItemDBFlush")
 
 		-- Flush immediately
-		ix.item.FlushNetSync()
-		ix.item.FlushDBSave()
+		ws.item.FlushNetSync()
+		ws.item.FlushDBSave()
 	end
 
 	-- Force flush a specific item immediately
-	function ix.item.ForceFlushItem(itemID)
+	function ws.item.ForceFlushItem(itemID)
 		-- Flush pending network sync for this item
-		local netPending = ix.item.pendingNetSync[itemID]
+		local netPending = ws.item.pendingNetSync[itemID]
 		if (netPending) then
 			local changes = netPending.changes
 			local receivers = netPending.receivers
@@ -446,35 +446,35 @@ if (SERVER) then
 			end
 
 			if (receivers and table.Count(changes) > 0) then
-				net.Start("ixInventoryDataBatch")
+				net.Start("wsInventoryDataBatch")
 					net.WriteUInt(itemID, 32)
 					net.WriteTable(changes)
 				net.Send(receivers)
 			end
 
-			ix.item.pendingNetSync[itemID] = nil
+			ws.item.pendingNetSync[itemID] = nil
 		end
 
 		-- Flush pending database save for this item
-		local dbPending = ix.item.pendingDBSave[itemID]
-		if (dbPending and dbPending.data and ix.db) then
+		local dbPending = ws.item.pendingDBSave[itemID]
+		if (dbPending and dbPending.data and ws.db) then
 			local query = mysql:Update("ix_items")
 				query:Update("data", util.TableToJSON(dbPending.data))
 				query:Where("item_id", itemID)
 			query:Execute()
 
-			ix.item.pendingDBSave[itemID] = nil
+			ws.item.pendingDBSave[itemID] = nil
 		end
 	end
 
 	-- Ensure all pending data is saved when character saves
-	hook.Add("CharacterPreSave", "ixItemFlushOnSave", function(character)
-		ix.item.ForceFlushAll()
+	hook.Add("CharacterPreSave", "wsItemFlushOnSave", function(character)
+		ws.item.ForceFlushAll()
 	end)
 
 	-- Ensure all pending data is saved when player disconnects
-	hook.Add("PlayerDisconnected", "ixItemFlushOnDisconnect", function(client)
-		ix.item.ForceFlushAll()
+	hook.Add("PlayerDisconnected", "wsItemFlushOnDisconnect", function(client)
+		ws.item.ForceFlushAll()
 	end)
 end
 
@@ -506,7 +506,7 @@ function ITEM:SetData(key, value, receivers, noSave, noCheckEntity)
 		-- Queue network sync for items in inventories (invID > 0)
 		-- World items use entity netvar above, so skip net message to avoid duplicate sync
 		if (self.invID > 0) then
-			local inventory = ix.item.inventories[self.invID]
+			local inventory = ws.item.inventories[self.invID]
 			local targetReceivers = receivers
 
 			if (receivers != false) then
@@ -514,14 +514,14 @@ function ITEM:SetData(key, value, receivers, noSave, noCheckEntity)
 
 				if (targetReceivers) then
 					-- Queue instead of immediate send - batches multiple SetData calls
-					ix.item.QueueNetSync(self, key, value, targetReceivers)
+					ws.item.QueueNetSync(self, key, value, targetReceivers)
 				end
 			end
 		end
 
 		-- Queue database save instead of immediate query
-		if (!noSave and ix.db) then
-			ix.item.QueueDBSave(self)
+		if (!noSave and ws.db) then
+			ws.item.QueueDBSave(self)
 		end
 	end
 end
@@ -588,7 +588,7 @@ end
 -- @bool bNoDelete Whether or not the item should not be fully deleted
 -- @treturn bool Whether the item was successfully deleted or not
 function ITEM:Remove(bNoReplication, bNoDelete)
-	local inv = ix.item.inventories[self.invID]
+	local inv = ws.item.inventories[self.invID]
 	local bFailed = false
 
 	if (self.invID > 0 and inv) then
@@ -610,7 +610,7 @@ function ITEM:Remove(bNoReplication, bNoDelete)
 
 		if (bFailed) then
 			local items = {}
-			for _, v in pairs(ix.item.instances) do
+			for _, v in pairs(ws.item.instances) do
 				if (v.invID == self.invID and v.id != self.id) then
 					items[#items + 1] = v
 				end
@@ -628,10 +628,10 @@ function ITEM:Remove(bNoReplication, bNoDelete)
 		end
 	else
 		-- @todo definition probably isn't needed
-		inv = ix.item.inventories[self.invID]
+		inv = ws.item.inventories[self.invID]
 
 		if (inv) then
-			ix.item.inventories[self.invID][self.id] = nil
+			ws.item.inventories[self.invID][self.id] = nil
 		end
 	end
 
@@ -648,7 +648,7 @@ function ITEM:Remove(bNoReplication, bNoDelete)
 			if (bFailed) then
 				inv:Sync(receivers)
 			else
-				net.Start("ixInventoryRemove")
+				net.Start("wsInventoryRemove")
 					net.WriteUInt(self.id, 32)
 					net.WriteUInt(self.invID, 32)
 				net.Send(receivers)
@@ -656,7 +656,7 @@ function ITEM:Remove(bNoReplication, bNoDelete)
 		end
 
 		if (!bNoDelete) then
-			local item = ix.item.instances[self.id]
+			local item = ws.item.instances[self.id]
 
 			if (inv and inv.owner) then
 				hook.Run("InventoryItemRemoved", inv, item)
@@ -670,7 +670,7 @@ function ITEM:Remove(bNoReplication, bNoDelete)
 				query:Where("item_id", self.id)
 			query:Execute()
 
-			ix.item.instances[self.id] = nil
+			ws.item.instances[self.id] = nil
 		end
 	end
 
@@ -685,7 +685,7 @@ if (SERVER) then
 		local id = self:GetID()
 
 		for _, v in ipairs(ents.FindByClass("ix_item")) do
-			if (v.ixItemID == id) then
+			if (v.wsItemID == id) then
 				return v
 			end
 		end
@@ -698,7 +698,7 @@ if (SERVER) then
 	-- @treturn entity The spawned entity
 	function ITEM:Spawn(position, angles)
 		-- Check if the item has been created before.
-		if (ix.item.instances[self.id]) then
+		if (ws.item.instances[self.id]) then
 			local client
 
 			-- Spawn the actual item entity.
@@ -717,9 +717,9 @@ if (SERVER) then
 			entity:SetPos(position)
 
 			if (IsValid(client)) then
-				entity.ixSteamID = client:SteamID()
-				entity.ixCharID = client:GetCharacter():GetID()
-				entity:SetNetVar("owner", entity.ixCharID)
+				entity.wsSteamID = client:SteamID()
+				entity.wsCharID = client:GetCharacter():GetID()
+				entity:SetNetVar("owner", entity.wsCharID)
 			end
 
 			hook.Run("OnItemSpawned", entity)
@@ -746,10 +746,10 @@ if (SERVER) then
 
 		-- Force flush any pending data changes before transferring
 		-- This ensures the item's current state is saved before it changes hands
-		ix.item.ForceFlushItem(self:GetID())
+		ws.item.ForceFlushItem(self:GetID())
 
-		local inventory = ix.item.inventories[invID]
-		local curInv = ix.item.inventories[self.invID or 0]
+		local inventory = ws.item.inventories[invID]
+		local curInv = ws.item.inventories[self.invID or 0]
 
 		if (curInv and !IsValid(client)) then
 			client = curInv.GetOwner and curInv:GetOwner() or nil
@@ -826,7 +826,7 @@ if (SERVER) then
 						return true
 					elseif (self.invID > 0 and prevID == 0) then
 						-- we are transferring this item from the world to an inventory
-						ix.item.inventories[0][self.id] = nil
+						ws.item.inventories[0][self.id] = nil
 
 						if (self.OnTransferred) then
 							self:OnTransferred(curInv, inventory)
@@ -848,7 +848,7 @@ if (SERVER) then
 					query:Where("item_id", self.id)
 				query:Execute()
 
-				inventory = ix.item.inventories[0]
+				inventory = ws.item.inventories[0]
 				inventory[self:GetID()] = self
 
 				if (self.OnTransferred) then
@@ -871,4 +871,4 @@ if (SERVER) then
 	end
 end
 
-ix.meta.item = ITEM
+ws.meta.item = ITEM

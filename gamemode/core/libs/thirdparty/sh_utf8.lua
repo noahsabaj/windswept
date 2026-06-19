@@ -54,7 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -- UTF8-tail   = %x80-BF
 --
 
-ix.util.Include("data/sh_utf8_casemap.lua")
+ws.util.Include("data/sh_utf8_casemap.lua")
 
 -- returns the number of bytes used by the UTF-8 character at byte i in s
 -- also doubles as a UTF-8 character validator

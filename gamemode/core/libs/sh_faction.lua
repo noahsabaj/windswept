@@ -1,10 +1,10 @@
 
 --- Helper library for loading/getting faction information.
--- @module ix.faction
+-- @module ws.faction
 
-ix.faction = ix.faction or {}
-ix.faction.teams = ix.faction.teams or {}
-ix.faction.indices = ix.faction.indices or {}
+ws.faction = ws.faction or {}
+ws.faction.teams = ws.faction.teams or {}
+ws.faction.indices = ws.faction.indices or {}
 
 local CITIZEN_MODELS = {
 	"models/humans/group01/male_01.mdl",
@@ -34,16 +34,16 @@ local CITIZEN_MODELS = {
 --- Loads factions from a directory.
 -- @realm shared
 -- @string directory The path to the factions files.
-function ix.faction.LoadFromDir(directory)
+function ws.faction.LoadFromDir(directory)
 	for _, v in ipairs(file.Find(directory.."/*.lua", "LUA")) do
 		local niceName = v:sub(4, -5)
 
-		FACTION = ix.faction.teams[niceName] or {index = table.Count(ix.faction.teams) + 1, isDefault = false}
+		FACTION = ws.faction.teams[niceName] or {index = table.Count(ws.faction.teams) + 1, isDefault = false}
 			if (PLUGIN) then
 				FACTION.plugin = PLUGIN.uniqueID
 			end
 
-			ix.util.Include(directory.."/"..v, "shared")
+			ws.util.Include(directory.."/"..v, "shared")
 
 			if (!FACTION.name) then
 				FACTION.name = "Unknown"
@@ -74,8 +74,8 @@ function ix.faction.LoadFromDir(directory)
 				end
 			end
 
-			ix.faction.indices[FACTION.index] = FACTION
-			ix.faction.teams[niceName] = FACTION
+			ws.faction.indices[FACTION.index] = FACTION
+			ws.faction.teams[niceName] = FACTION
 		FACTION = nil
 	end
 end
@@ -84,18 +84,18 @@ end
 -- @realm shared
 -- @param identifier Index or name of the faction
 -- @treturn table Faction table
--- @usage print(ix.faction.Get(Entity(1):Team()).name)
+-- @usage print(ws.faction.Get(Entity(1):Team()).name)
 -- > "Citizen"
-function ix.faction.Get(identifier)
-	return ix.faction.indices[identifier] or ix.faction.teams[identifier]
+function ws.faction.Get(identifier)
+	return ws.faction.indices[identifier] or ws.faction.teams[identifier]
 end
 
 --- Retrieves a faction index.
 -- @realm shared
 -- @string uniqueID Unique ID of the faction
 -- @treturn number Faction index
-function ix.faction.GetIndex(uniqueID)
-	for k, v in ipairs(ix.faction.indices) do
+function ws.faction.GetIndex(uniqueID)
+	for k, v in ipairs(ws.faction.indices) do
 		if (v.uniqueID == uniqueID) then
 			return k
 		end
@@ -106,14 +106,14 @@ end
 -- @realm shared
 -- @param identifier Faction index or uniqueID
 -- @treturn table Array of subordinate faction data tables
-function ix.faction.GetSubordinates(identifier)
-	local parentFaction = ix.faction.Get(identifier)
+function ws.faction.GetSubordinates(identifier)
+	local parentFaction = ws.faction.Get(identifier)
 	if not parentFaction then return {} end
 
 	local subordinates = {}
 	local parentUniqueID = parentFaction.uniqueID
 
-	for _, factionData in pairs(ix.faction.teams) do
+	for _, factionData in pairs(ws.faction.teams) do
 		if factionData.subordinateOf == parentUniqueID then
 			table.insert(subordinates, factionData)
 		end
@@ -126,13 +126,13 @@ end
 -- @realm shared
 -- @param identifier Faction index or uniqueID
 -- @treturn table|nil Parent faction data table, or nil if none
-function ix.faction.GetParent(identifier)
-	local faction = ix.faction.Get(identifier)
+function ws.faction.GetParent(identifier)
+	local faction = ws.faction.Get(identifier)
 	if not faction or not faction.subordinateOf then
 		return nil
 	end
 
-	return ix.faction.teams[faction.subordinateOf]
+	return ws.faction.teams[faction.subordinateOf]
 end
 
 --- Checks if a faction can appoint the leader of another faction.
@@ -142,9 +142,9 @@ end
 -- @param appointerFaction Faction index or uniqueID of the appointer
 -- @param targetFaction Faction index or uniqueID of the faction to appoint to
 -- @treturn bool Whether the appointer can appoint the target faction's leader
-function ix.faction.CanAppoint(appointerFaction, targetFaction)
-	local appointer = ix.faction.Get(appointerFaction)
-	local target = ix.faction.Get(targetFaction)
+function ws.faction.CanAppoint(appointerFaction, targetFaction)
+	local appointer = ws.faction.Get(appointerFaction)
+	local target = ws.faction.Get(targetFaction)
 
 	if not appointer or not target then
 		return false
@@ -162,11 +162,11 @@ end
 -- @realm shared
 -- @param identifier Faction index or uniqueID
 -- @treturn table|nil Anchor class data table, or nil if none found
-function ix.faction.GetAnchorClass(identifier)
-	local faction = ix.faction.Get(identifier)
+function ws.faction.GetAnchorClass(identifier)
+	local faction = ws.faction.Get(identifier)
 	if not faction then return nil end
 
-	for _, classData in pairs(ix.class.list) do
+	for _, classData in pairs(ws.class.list) do
 		if classData.faction == faction.index and classData.rank == 255 then
 			return classData
 		end
@@ -179,11 +179,11 @@ end
 -- @realm shared
 -- @param identifier Faction index or uniqueID
 -- @treturn table|nil Default class data table, or nil if none found
-function ix.faction.GetDefaultClass(identifier)
-	local faction = ix.faction.Get(identifier)
+function ws.faction.GetDefaultClass(identifier)
+	local faction = ws.faction.Get(identifier)
 	if not faction then return nil end
 
-	for _, classData in pairs(ix.class.list) do
+	for _, classData in pairs(ws.class.list) do
 		if classData.faction == faction.index and classData.isDefault then
 			return classData
 		end
@@ -197,22 +197,22 @@ if (CLIENT) then
 	-- @realm client
 	-- @number faction Index of the faction
 	-- @treturn bool Whether or not the faction requires a whitelist
-	function ix.faction.HasWhitelist(faction)
+	function ws.faction.HasWhitelist(faction)
 		-- Factionless is always allowed
 		if (faction == nil) then
 			return true
 		end
 
-		local data = ix.faction.indices[faction]
+		local data = ws.faction.indices[faction]
 
 		if (data) then
 			if (data.isDefault) then
 				return true
 			end
 
-			local ixData = ix.localData and ix.localData.whitelists or {}
+			local wsData = ws.localData and ws.localData.whitelists or {}
 
-			return ixData[Schema.folder] and ixData[Schema.folder][data.uniqueID] == true or false
+			return wsData[Schema.folder] and wsData[Schema.folder][data.uniqueID] == true or false
 		end
 
 		return false

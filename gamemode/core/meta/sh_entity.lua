@@ -53,7 +53,7 @@ if (SERVER) then
 	-- @treturn[1] Entity This door's partner
 	-- @treturn[2] nil If the door does not have a partner
 	function meta:GetDoorPartner()
-		return self.ixPartner
+		return self.wsPartner
 	end
 
 	--- Returns the entity that is blocking this door from opening.
@@ -77,8 +77,8 @@ if (SERVER) then
 			return
 		end
 
-		if (IsValid(self.ixDummy)) then
-			self.ixDummy:Remove()
+		if (IsValid(self.wsDummy)) then
+			self.wsDummy:Remove()
 		end
 
 		velocity = velocity or VectorRand()*100
@@ -107,7 +107,7 @@ if (SERVER) then
 				self:SetNoDraw(false)
 				self:DrawShadow(true)
 				self.ignoreUse = false
-				self.ixIsMuted = false
+				self.wsIsMuted = false
 
 				for _, v in ents.Iterator() do
 					if (v:GetParent() == self) then
@@ -130,8 +130,8 @@ if (SERVER) then
 		self:SetNoDraw(true)
 		self:DrawShadow(false)
 		self.ignoreUse = true
-		self.ixDummy = dummy
-		self.ixIsMuted = true
+		self.wsDummy = dummy
+		self.wsIsMuted = true
 		self:DeleteOnRemove(dummy)
 
 		for _, v in ipairs(self:GetBodyGroups() or {}) do
@@ -155,7 +155,7 @@ if (SERVER) then
 		local uniqueID2 = "doorOpener"..self:EntIndex()
 
 		timer.Create(uniqueID2, 1, 0, function()
-			if (IsValid(self) and IsValid(self.ixDummy)) then
+			if (IsValid(self) and IsValid(self.wsDummy)) then
 				self:Fire("open")
 			else
 				timer.Remove(uniqueID2)
@@ -188,7 +188,7 @@ if (SERVER) then
 else
 	-- Returns the door's slave entity.
 	function meta:GetDoorPartner()
-		local owner = self:GetOwner() or self.ixDoorOwner
+		local owner = self:GetOwner() or self.wsDoorOwner
 
 		if (IsValid(owner) and owner:IsDoor()) then
 			return owner
@@ -196,7 +196,7 @@ else
 
 		for _, v in ipairs(ents.FindByClass("prop_door_rotating")) do
 			if (v:GetOwner() == self) then
-				self.ixDoorOwner = v
+				self.wsDoorOwner = v
 
 				return v
 			end
