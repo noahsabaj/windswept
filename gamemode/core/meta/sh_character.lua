@@ -2,7 +2,7 @@
 --[[--
 Contains information about a player's current game state.
 
-Characters are a fundamental object type in Helix. They are distinct from players, where players are the representation of a
+Characters are a fundamental object type in Windswept. They are distinct from players, where players are the representation of a
 person's existence in the server that owns a character, and their character is their currently selected persona. All the
 characters that a player owns will be loaded into memory once they connect to the server. Characters are saved during a regular
 interval, and during specific events (e.g when the owning player switches away from one character to another).
@@ -69,7 +69,7 @@ if (SERVER) then
 
 		if (shouldSave != false) then
 			-- Run a query to save the character to the database.
-			local query = mysql:Update("ix_characters")
+			local query = mysql:Update("ws_characters")
 				-- Update all character vars
 				-- Optimization: Cache previous values and only update changed fields
 				local prevValues = self._savedVars or {}
@@ -252,7 +252,7 @@ end
 -- Populated by player connect/disconnect hooks
 ws.char.playerBySteamID = ws.char.playerBySteamID or {}
 
--- Hook to update lookup table (runs in Helix core after this file loads)
+-- Hook to update lookup table (runs in Windswept core after this file loads)
 hook.Add("PlayerAuthed", "wsCharPlayerLookup", function(client, steamID, uniqueID)
 	ws.char.playerBySteamID[client:SteamID64()] = client
 end)
@@ -297,7 +297,7 @@ function ws.char.RegisterVar(key, data)
 
 	if (SERVER) then
 		if (data.field) then
-			ws.db.AddToSchema("ix_characters", data.field, data.fieldType or ws.type.string)
+			ws.db.AddToSchema("ws_characters", data.field, data.fieldType or ws.type.string)
 		end
 
 		-- Provide functions to change the variable if allowed.

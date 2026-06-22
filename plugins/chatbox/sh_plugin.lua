@@ -151,10 +151,25 @@ if (CLIENT) then
 else
 	util.AddNetworkString("wsChatMessage")
 
-	net.Receive("wsChatMessage", function(length, client)
-		local text = net.ReadString()
-
-		if ((client.wsNextChat or 0) < CurTime() and isstring(text) and text:find("%S")) then
+	-- client->server chat submission. Single-string payload, no item/target/money.
+	-- The inline wsNextChat cooldown (0.5s, only charged on ACCEPTED messages) becomes
+	-- def.rateLimit, which ws.action charges only after onValidate passes -- so an empty
+	-- message still doesn't burn the cooldown, matching the original. The whitespace/string
+	-- gate moves to onValidate so a blank submission is rejected before the cooldown is set.
+	-- NOTE: "wsChatMessage" is also used server->client in sh_chatbox.lua (server net.Start +
+	-- client net.Receive); that is a different realm/direction sharing the net name and is
+	-- unaffected -- ws.action only registers the SERVER-realm receive that lived here.
+	ws.action.Register("wsChatMessage", {
+		rateLimit = 0.5,
+		read = function() return net.ReadString() end,
+		onValidate = function(client, ctx)
+			local text = ctx.data
+			if (not isstring(text) or not text:find("%S")) then
+				return false
+			end
+		end,
+		run = function(client, ctx)
+			local text = ctx.data
 			local maxLength = ws.config.Get("chatMax")
 
 			if (text:utf8len() > maxLength) then
@@ -162,7 +177,6 @@ else
 			end
 
 			hook.Run("PlayerSay", client, text)
-			client.wsNextChat = CurTime() + 0.5
 		end
-	end)
+	})
 end

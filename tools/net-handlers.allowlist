@@ -1,0 +1,154 @@
+# net-handlers.allowlist — baseline for the net-handler guard gate (tools/check-net-handlers.sh)
+#
+# Every raw net.Receive("LITERAL") site in windswept/ + windswept-colony/ (excluding thirdparty)
+# must have its netstring listed here, or the gate fails. This is a RATCHET: new client->server
+# handlers must go through ws.action.Register (the SWEP analogue is ws.weapon.NetReceive) — those
+# wrappers use a variable netstring, so they never appear as net.Receive("LITERAL") and never need
+# listing. A raw net.Receive only belongs here when it genuinely can't use a primitive:
+#   - server->client RECEIVERS (the trusted direction; the bulk of this list) — cl_* sync/notify/UI-open
+#   - pre-character (no character yet, so ws.access checks don't apply): wsCharacterChoose/Create/Delete
+#   - the slot-coordinate move: wsInventoryMove
+#   - player-field sessions (authorize via client.wsX, not ent:GetUser()): wsShipmentUse/Close, wsVendor* (C->S)
+#   - two-phase approval-token auth (not active-weapon): wsCameraPhotoData
+#   - intrinsic-guard SWEP with no payload: wsZipTieUse
+# Other pre-existing C->S handlers here (document/container/knockout/storage/wallet/currency/radio-voice/
+# recognize/suicide/signature/bag) predate this gate; migrating them is future work, not a regression.
+#
+# To add a handler: prefer ws.action.Register. If a raw net.Receive is genuinely correct, add its
+# netstring below (keep sorted) so the addition is a conscious, reviewable line in the diff.
+# Generated baseline: 2026-06-21. One netstring per line; '#' comments and blank lines ignored.
+
+PlayerModelChanged
+PlayerSelectWeapon
+PlayerVehicle
+wsActEnter
+wsActLeave
+wsActionBar
+wsActionBarReset
+wsAreaAdd
+wsAreaChanged
+wsAreaEditEnd
+wsAreaEditStart
+wsAreaRemove
+wsAreaSync
+wsAttributeUpdate
+wsBagDrop
+wsBusinessBuy
+wsBusinessResponse
+wsCameraApprovePhoto
+wsCameraFlashEffect
+wsCameraFlashToggled
+wsCameraPhotoData
+wsCharacterAuthFailed
+wsCharacterAuthed
+wsCharacterChoose
+wsCharacterCreate
+wsCharacterData
+wsCharacterDelete
+wsCharacterInfo
+wsCharacterKick
+wsCharacterLoadFailure
+wsCharacterLoaded
+wsCharacterMenu
+wsCharacterVar
+wsCharacterVarChanged
+wsChatMessage
+wsClassCreated
+wsClassDeleted
+wsClassListSync
+wsClassUpdate
+wsClassUpdated
+wsConfigList
+wsConfigPluginToggle
+wsConfigSet
+wsConfigUnloadedList
+wsContainerPassword
+wsContainerRename
+wsCurrencyMergeAll
+wsCurrencyMergeSelect
+wsCurrencySplit
+wsData
+wsDataSync
+wsDateSync
+wsDocumentData
+wsDocumentWrite
+wsDoorMenu
+wsDoorPermission
+wsDoorsSync
+wsGlobalVarSet
+wsInventoryAction
+wsInventoryData
+wsInventoryDataBatch
+wsInventoryMove
+wsInventoryRemove
+wsInventorySet
+wsInventorySync
+wsKnockoutEnd
+wsKnockoutGiveUp
+wsKnockoutLoot
+wsKnockoutRevive
+wsKnockoutStart
+wsKnockoutTimerSync
+wsLocalVarSet
+wsLocksmithOpen
+wsLocksmithResult
+wsLogStream
+wsMapSceneAdd
+wsMapSceneAddPair
+wsMapSceneRemove
+wsMapSceneRemovePair
+wsMapSceneSync
+wsNetVarDelete
+wsNetVarSet
+wsNotify
+wsNotifyLocalized
+wsPanelAdd
+wsPanelList
+wsPanelRemove
+wsPartRemove
+wsPartReset
+wsPartWear
+wsPermadeathReady
+wsPermadeathScreen
+wsPhotoAlbumViewData
+wsPhotoAlbumViewFromGround
+wsPhotoData
+wsPhotoViewFromGround
+wsPlayerDeath
+wsRadioVoiceStart
+wsRadioVoiceStop
+wsRadioVolume
+wsRadioVolumeSet
+wsRecognizeDone
+wsRecognizeMenu
+wsSequenceReset
+wsSequenceSet
+wsShipmentClose
+wsShipmentOpen
+wsShipmentUse
+wsSignatureSave
+wsStationaryRadioOpen
+wsStorageClose
+wsStorageExpired
+wsStorageMoneyGive
+wsStorageMoneyTake
+wsStorageMoneyUpdate
+wsStorageOpen
+wsStringRequest
+wsSuicideExecute
+wsTextAdd
+wsTextList
+wsTextRemove
+wsTypeClass
+wsTypewriterOpen
+wsVendorAddItem
+wsVendorClose
+wsVendorEdit
+wsVendorEditFinish
+wsVendorEditor
+wsVendorMoney
+wsVendorOpen
+wsVendorStock
+wsVoiceAmplitude
+wsWalletGive
+wsZipTieUse

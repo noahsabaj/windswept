@@ -45,10 +45,10 @@ function PANEL:Init()
 
 	self.vendorSell.DoClick = function(this)
 		if (IsValid(self.activeSell)) then
-			net.Start("wsVendorTrade")
+			ws.action.Send("wsVendorTrade", nil, self.entity, function()
 				net.WriteString(self.activeSell.item)
 				net.WriteBool(false)
-			net.SendToServer()
+			end)
 		end
 	end
 
@@ -61,10 +61,10 @@ function PANEL:Init()
 	self.vendorBuy:SetTextColor(color_white)
 	self.vendorBuy.DoClick = function(this)
 		if (IsValid(self.activeBuy)) then
-			net.Start("wsVendorTrade")
+			ws.action.Send("wsVendorTrade", nil, self.entity, function()
 				net.WriteString(self.activeBuy.item)
 				net.WriteBool(true)
-			net.SendToServer()
+			end)
 		end
 	end
 
@@ -243,7 +243,7 @@ function PANEL:Setup(uniqueID)
 		self.name:SetText(item:GetName())
 		self.itemName = item:GetName()
 
-		self.click:SetHelixTooltip(function(tooltip)
+		self.click:SetWindsweptTooltip(function(tooltip)
 			ws.hud.PopulateItemTooltip(tooltip, item)
 
 			local entity = ws.gui.vendor.entity

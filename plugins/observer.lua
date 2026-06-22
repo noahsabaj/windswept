@@ -4,7 +4,7 @@ PLUGIN.author = "Chessnut"
 PLUGIN.description = "Adds on to the no-clip mode to prevent intrusion."
 
 CAMI.RegisterPrivilege({
-	Name = "Helix - Observer",
+	Name = "Windswept - Observer",
 	MinAccess = "admin"
 })
 
@@ -12,7 +12,7 @@ ws.option.Add("observerTeleportBack", ws.type.bool, true, {
 	bNetworked = true,
 	category = "observer",
 	hidden = function()
-		return !CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Observer", nil)
+		return !CAMI.PlayerHasAccess(LocalPlayer(), "Windswept - Observer", nil)
 	end
 })
 
@@ -20,7 +20,7 @@ if (CLIENT) then
 	ws.option.Add("observerESP", ws.type.bool, true, {
 		category = "observer",
 		hidden = function()
-			return !CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Observer", nil)
+			return !CAMI.PlayerHasAccess(LocalPlayer(), "Windswept - Observer", nil)
 		end
 	})
 
@@ -32,7 +32,7 @@ if (CLIENT) then
 		local client = LocalPlayer()
 
 		if (ws.option.Get("observerESP", true) and client:GetMoveType() == MOVETYPE_NOCLIP and
-			!client:InVehicle() and CAMI.PlayerHasAccess(client, "Helix - Observer", nil)) then
+			!client:InVehicle() and CAMI.PlayerHasAccess(client, "Windswept - Observer", nil)) then
 			local scrW, scrH = ScrW(), ScrH()
 
 			for _, v in player.Iterator() do
@@ -124,7 +124,7 @@ else
 	end)
 
 	function PLUGIN:CanPlayerEnterObserver(client)
-		if (CAMI.PlayerHasAccess(client, "Helix - Observer", nil)) then
+		if (CAMI.PlayerHasAccess(client, "Windswept - Observer", nil)) then
 			return true
 		end
 	end
@@ -136,49 +136,59 @@ else
 	end
 
 	function PLUGIN:PlayerNoClip(client, state)
-		if (hook.Run("CanPlayerEnterObserver", client)) then
-			if (state) then
-				client.wsObsData = {client:GetPos(), client:EyeAngles()}
-
-				-- Hide them so they are not visible.
-				client:SetNoDraw(true)
-				client:SetNotSolid(true)
-				client:DrawWorldModel(false)
-				client:DrawShadow(false)
-				client:GodEnable()
-				client:SetNoTarget(true)
-
-				hook.Run("OnPlayerObserve", client, state)
-			else
-				if (client.wsObsData) then
-					-- Move they player back if they want.
-					if (ws.option.Get(client, "observerTeleportBack", true)) then
-						local position, angles = client.wsObsData[1], client.wsObsData[2]
-
-						-- Do it the next frame since the player can not be moved right now.
-						timer.Simple(0, function()
-							client:SetPos(position)
-							client:SetEyeAngles(angles)
-							client:SetVelocity(Vector(0, 0, 0))
-						end)
-					end
-
-					client.wsObsData = nil
-				end
-
-				-- Make the player visible again.
-				client:SetNoDraw(false)
-				client:SetNotSolid(false)
-				client:DrawWorldModel(true)
-				client:DrawShadow(true)
-				client:GodDisable()
-				client:SetNoTarget(false)
-
-				hook.Run("OnPlayerObserve", client, state)
+		if (state) then
+			-- Only the *enter* branch is gated on current observer access. (fw-plugins-world-10)
+			if (!hook.Run("CanPlayerEnterObserver", client)) then
+				return
 			end
+
+			client.wsObsData = {client:GetPos(), client:EyeAngles()}
+
+			-- Hide them so they are not visible.
+			client:SetNoDraw(true)
+			client:SetNotSolid(true)
+			client:DrawWorldModel(false)
+			client:DrawShadow(false)
+			client:GodEnable()
+			client:SetNoTarget(true)
+
+			hook.Run("OnPlayerObserve", client, state)
 
 			return true
 		end
+
+		-- Always run exit/cleanup when leaving noclip with stored observer data,
+		-- regardless of current observer access (it may have been revoked while
+		-- they were observing). (fw-plugins-world-10)
+		if (!client.wsObsData) then
+			return
+		end
+
+		-- Move they player back if they want.
+		if (ws.option.Get(client, "observerTeleportBack", true)) then
+			local position, angles = client.wsObsData[1], client.wsObsData[2]
+
+			-- Do it the next frame since the player can not be moved right now.
+			timer.Simple(0, function()
+				client:SetPos(position)
+				client:SetEyeAngles(angles)
+				client:SetVelocity(Vector(0, 0, 0))
+			end)
+		end
+
+		client.wsObsData = nil
+
+		-- Make the player visible again.
+		client:SetNoDraw(false)
+		client:SetNotSolid(false)
+		client:DrawWorldModel(true)
+		client:DrawShadow(true)
+		client:GodDisable()
+		client:SetNoTarget(false)
+
+		hook.Run("OnPlayerObserve", client, state)
+
+		return true
 	end
 
 	function PLUGIN:OnPlayerObserve(client, state)

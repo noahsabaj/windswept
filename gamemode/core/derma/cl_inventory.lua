@@ -391,7 +391,7 @@ function PANEL:SetInventory(inventory, bFitParent)
 						x, y, item.width, item.height, item:GetSkin())
 
 					if (IsValid(icon)) then
-						icon:SetHelixTooltip(function(tooltip)
+						icon:SetWindsweptTooltip(function(tooltip)
 							ws.hud.PopulateItemTooltip(tooltip, item)
 						end)
 

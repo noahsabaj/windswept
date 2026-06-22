@@ -631,9 +631,9 @@ function GM:PreGamemodeLoaded()
 end
 
 function GM:PostGamemodeLoaded()
-	baseclass.Set("ix_character", ws.meta.character)
-	baseclass.Set("ix_inventory", ws.meta.inventory)
-	baseclass.Set("ix_item", ws.meta.item)
+	baseclass.Set("ws_character", ws.meta.character)
+	baseclass.Set("ws_inventory", ws.meta.inventory)
+	baseclass.Set("ws_item", ws.meta.item)
 end
 
 if (SERVER) then

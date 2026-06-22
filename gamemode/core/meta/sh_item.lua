@@ -16,7 +16,7 @@ specify how instances of the item behave. This includes default values for basic
 to more advanced things by overriding extra methods from an item base. See `ItemStructure` for information on how to define
 a basic item class.
 
-Item classes in this folder are automatically loaded by Helix when the server starts up.
+Item classes in this folder are automatically loaded by Windswept when the server starts up.
 
 ## Item bases
 If many items share the same functionality (i.e a can of soda and a bottle of water can both be consumed), then you might want
@@ -29,7 +29,7 @@ For example, for a bottled water item to use the consumable base, it must be pla
 This also means that you cannot place items into subfolders as you wish, since the framework will try to use an item base that
 doesn't exist.
 
-The default item bases that come with Helix are:
+The default item bases that come with Windswept are:
 
   - `ammo` - provides ammo to any items with the `weapons` base
   - `bags` - holds an inventory that other items can be stored inside of
@@ -45,7 +45,7 @@ Requiring players to interact with items in order for them to do something is qu
 mechanism to allow players to right-click items and show a list of available options. Item functions are defined in your item
 class file in the `ITEM.functions` table. See `ItemFunctionStructure` on how to define them.
 
-Helix comes with `drop`, `take`, and `combine` item functions by default that allows items to be dropped from a player's
+Windswept comes with `drop`, `take`, and `combine` item functions by default that allows items to be dropped from a player's
 inventory, picked up from the world, and combining items together. These can be overridden by defining an item function
 in your item class file with the same name. See the `bags` base for example usage of the `combine` item function.
 
@@ -113,7 +113,7 @@ use to customize the functionality and appearance of the item function. An examp
 
 --[[--
 Changing the way an item's icon is rendered is done by modifying the location and angle of the model, as well as the FOV of the
-camera. You can tweak the values in code, or use the `ix_dev_icon` console command to visually position the model and camera. An
+camera. You can tweak the values in code, or use the `ws_dev_icon` console command to visually position the model and camera. An
 example entry for an item's icon is below:
 
 	ITEM.iconCam = {
@@ -335,7 +335,6 @@ if (SERVER) then
 		ws.item.netSyncScheduled = false
 
 		for itemID, data in pairs(pending) do
-			local item = data.item
 			local changes = data.changes
 			local receivers = data.receivers
 
@@ -361,6 +360,17 @@ if (SERVER) then
 		end
 	end
 
+	-- Write a single item's data row to the DB. Shared by FlushDBSave/ForceFlushItem so the
+	-- UPDATE logic lives in exactly one place. (fw-persistence-db-6)
+	function ws.item.WriteItemDataRow(itemID, item)
+		if (item and item.data and ws.db) then
+			local query = mysql:Update("ws_items")
+				query:Update("data", util.TableToJSON(item.data))
+				query:Where("item_id", itemID)
+			query:Execute()
+		end
+	end
+
 	-- Flush all pending database saves (called after short delay)
 	function ws.item.FlushDBSave()
 		local pending = ws.item.pendingDBSave
@@ -368,12 +378,7 @@ if (SERVER) then
 		ws.item.dbSaveScheduled = false
 
 		for itemID, item in pairs(pending) do
-			if (item and item.data and ws.db) then
-				local query = mysql:Update("ix_items")
-					query:Update("data", util.TableToJSON(item.data))
-					query:Where("item_id", itemID)
-				query:Execute()
-			end
+			ws.item.WriteItemDataRow(itemID, item)
 		end
 	end
 
@@ -457,12 +462,8 @@ if (SERVER) then
 
 		-- Flush pending database save for this item
 		local dbPending = ws.item.pendingDBSave[itemID]
-		if (dbPending and dbPending.data and ws.db) then
-			local query = mysql:Update("ix_items")
-				query:Update("data", util.TableToJSON(dbPending.data))
-				query:Where("item_id", itemID)
-			query:Execute()
-
+		if (dbPending) then
+			ws.item.WriteItemDataRow(itemID, dbPending) -- (fw-persistence-db-6)
 			ws.item.pendingDBSave[itemID] = nil
 		end
 	end
@@ -507,7 +508,7 @@ function ITEM:SetData(key, value, receivers, noSave, noCheckEntity)
 		-- World items use entity netvar above, so skip net message to avoid duplicate sync
 		if (self.invID > 0) then
 			local inventory = ws.item.inventories[self.invID]
-			local targetReceivers = receivers
+			local targetReceivers
 
 			if (receivers != false) then
 				targetReceivers = receivers or (inventory and inventory.GetReceivers and inventory:GetReceivers()) or self:GetOwner()
@@ -666,7 +667,12 @@ function ITEM:Remove(bNoReplication, bNoDelete)
 				item:OnRemoved()
 			end
 
-			local query = mysql:Delete("ix_items")
+			-- Drop any queued saves/syncs for this id so a later flush can't UPDATE the row
+			-- we're about to delete (or net-sync a dead item). (fw-persistence-db-6)
+			ws.item.pendingDBSave[self.id] = nil
+			ws.item.pendingNetSync[self.id] = nil
+
+			local query = mysql:Delete("ws_items")
 				query:Where("item_id", self.id)
 			query:Execute()
 
@@ -684,7 +690,7 @@ if (SERVER) then
 	function ITEM:GetEntity()
 		local id = self:GetID()
 
-		for _, v in ipairs(ents.FindByClass("ix_item")) do
+		for _, v in ipairs(ents.FindByClass("ws_item")) do
 			if (v.wsItemID == id) then
 				return v
 			end
@@ -702,7 +708,7 @@ if (SERVER) then
 			local client
 
 			-- Spawn the actual item entity.
-			local entity = ents.Create("ix_item")
+			local entity = ents.Create("ws_item")
 			entity:Spawn()
 			entity:SetAngles(angles or Angle(0, 0, 0))
 			entity:SetItem(self.id)
@@ -755,28 +761,11 @@ if (SERVER) then
 			client = curInv.GetOwner and curInv:GetOwner() or nil
 		end
 
-		-- check if this item doesn't belong to another one of this player's characters
-		local itemPlayerID = self:GetPlayerID()
-		local itemCharacterID = self:GetCharacterID()
-
-		if (!self.bAllowMultiCharacterInteraction and IsValid(client) and client:GetCharacter()) then
-			local playerID = client:SteamID64()
-			local characterID = client:GetCharacter():GetID()
-
-			if (itemPlayerID and itemCharacterID) then
-				if (itemPlayerID == playerID and itemCharacterID != characterID) then
-					return false, "itemOwned"
-				end
-			else
-				self.characterID = characterID
-				self.playerID = playerID
-
-				local query = mysql:Update("ix_items")
-					query:Update("character_id", characterID)
-					query:Update("player_id", playerID)
-					query:Where("item_id", self:GetID())
-				query:Execute()
-			end
+		-- Single-character ownership; claim the item for this character if it's unowned.
+		-- (fw-character-item-10 — shared with PerformInventoryAction / inventory Add.)
+		local ownOK, ownReason = ws.access.EnsureItemOwnership(client, self, true)
+		if (!ownOK) then
+			return false, ownReason
 		end
 
 		if (hook.Run("CanTransferItem", self, curInv, inventory) == false) then
@@ -807,6 +796,14 @@ if (SERVER) then
 				end
 
 				if (!x or !y) then
+					return false, "noFit"
+				end
+
+				-- Validate the (possibly client-supplied) destination cells actually fit before
+				-- writing them. Add() writes slot pointers without re-checking, so without this a
+				-- crafted x,y could overwrite/orphan another item or land out of bounds.
+				-- (fw-character-item-1) (When x,y came from FindEmptySlot above this is a no-op.)
+				if (!targetInv:CanItemFit(x, y, self.width, self.height, self)) then
 					return false, "noFit"
 				end
 
@@ -843,7 +840,7 @@ if (SERVER) then
 				self.invID = 0
 				curInv:Remove(self.id, false, true)
 
-				local query = mysql:Update("ix_items")
+				local query = mysql:Update("ws_items")
 					query:Update("inventory_id", 0)
 					query:Where("item_id", self.id)
 				query:Execute()

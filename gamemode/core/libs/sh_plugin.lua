@@ -3,7 +3,7 @@ ws.plugin = ws.plugin or {}
 ws.plugin.list = ws.plugin.list or {}
 ws.plugin.unloaded = ws.plugin.unloaded or {}
 
-ws.util.Include("windswept/gamemode/core/meta/sh_tool.lua")
+ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/core/meta/sh_tool.lua")
 
 -- luacheck: globals HOOKS_CACHE
 HOOKS_CACHE = {}
@@ -248,7 +248,7 @@ function ws.plugin.Initialize()
 		ws.plugin.unloaded = ws.data.Get("unloaded", {}, true, true)
 	end
 
-	ws.plugin.LoadFromDir("windswept/plugins")
+	ws.plugin.LoadFromDir(ws.FRAMEWORK_FOLDER.."/plugins")
 
 	ws.plugin.Load("schema", engine.ActiveGamemode().."/schema")
 	hook.Run("InitializedSchema")
@@ -392,7 +392,7 @@ do
 						return errors, a, b, c, d, e, f
 					end
 				else
-					ErrorNoHalt(string.format("[Helix] hook.SafeRun error for plugin hook \"%s:%s\":\n\t%s\n%s\n",
+					ErrorNoHalt(string.format("[Windswept] hook.SafeRun error for plugin hook \"%s:%s\":\n\t%s\n%s\n",
 						tostring(k and k.uniqueID or nil), tostring(name), tostring(a), debug.traceback()))
 
 					errors[#errors + 1] = {
@@ -412,7 +412,7 @@ do
 					return errors, a, b, c, d, e, f
 				end
 			else
-				ErrorNoHalt(string.format("[Helix] hook.SafeRun error for schema hook \"%s\":\n\t%s\n%s\n",
+				ErrorNoHalt(string.format("[Windswept] hook.SafeRun error for schema hook \"%s\":\n\t%s\n%s\n",
 					tostring(name), tostring(a), debug.traceback()))
 
 				errors[#errors + 1] = {
@@ -428,7 +428,7 @@ do
 		if (bSuccess) then
 			return errors, a, b, c, d, e, f
 		else
-			ErrorNoHalt(string.format("[Helix] hook.SafeRun error for gamemode hook \"%s\":\n\t%s\n%s\n",
+			ErrorNoHalt(string.format("[Windswept] hook.SafeRun error for gamemode hook \"%s\":\n\t%s\n%s\n",
 				tostring(name), tostring(a), debug.traceback()))
 
 			errors[#errors + 1] = {

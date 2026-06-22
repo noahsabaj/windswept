@@ -1,6 +1,6 @@
 
 function GM:ForceDermaSkin()
-	return "helix"
+	return "windswept"
 end
 
 function GM:ScoreboardShow()
@@ -13,21 +13,21 @@ function GM:ScoreboardHide()
 end
 
 function GM:LoadFonts(font, genericFont)
-	surface.CreateFont("ix3D2DFont", {
+	surface.CreateFont("ws3D2DFont", {
 		font = font,
 		size = 128,
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ix3D2DMediumFont", {
+	surface.CreateFont("ws3D2DMediumFont", {
 		font = font,
 		size = 48,
 		extended = true,
 		weight = 100
 	})
 
-	surface.CreateFont("ix3D2DSmallFont", {
+	surface.CreateFont("ws3D2DSmallFont", {
 		font = font,
 		size = 24,
 		extended = true,
@@ -419,7 +419,7 @@ function GM:NetworkEntityCreated(entity)
 	end
 end
 
-local vignette = ws.util.GetMaterial("helix/gui/vignette.png")
+local vignette = ws.util.GetMaterial("windswept/gui/vignette.png")
 local vignetteAlphaGoal = 0
 local vignetteAlphaDelta = 0
 local vignetteTraceHeight = Vector(0, 0, 768)
@@ -900,7 +900,7 @@ function GM:ShowPlayerOptions(client, options)
 	end}
 end
 
-function GM:DrawHelixModelView(panel, ent)
+function GM:DrawWindsweptModelView(panel, ent)
 	if (ent.weapon and IsValid(ent.weapon)) then
 		ent.weapon:DrawModel()
 	end

@@ -1,3 +1,7 @@
+-- Defense-in-depth: this is a server-only library (touches persisted data); bail
+-- early if it is ever included in a client realm. (fw-core-security-10)
+if (!SERVER) then return end
+
 local playerMeta = FindMetaTable("Player")
 
 -- Player data (outside of characters) handling.
@@ -9,15 +13,17 @@ do
 		local name = self:SteamName()
 		local steamID64 = self:SteamID64()
 		local timestamp = math.floor(os.time())
-		local ip = self:IPAddress():match("%d+%.%d+%.%d+%.%d+")
+		-- Coalesce an unparseable address to a sentinel so we never store a nil
+		-- column value (which mysql adapters can mishandle). (fw-persistence-db-8)
+		local ip = self:IPAddress():match("%d+%.%d+%.%d+%.%d+") or "unknown"
 
-		local query = mysql:Select("ix_players")
+		local query = mysql:Select("ws_players")
 			query:Select("data")
 			query:Select("play_time")
 			query:Where("steamid", steamID64)
 			query:Callback(function(result)
 				if (IsValid(self) and istable(result) and #result > 0 and result[1].data) then
-					local updateQuery = mysql:Update("ix_players")
+					local updateQuery = mysql:Update("ws_players")
 						updateQuery:Update("last_join_time", timestamp)
 						updateQuery:Update("address", ip)
 						updateQuery:Where("steamid", steamID64)
@@ -30,7 +36,7 @@ do
 						callback(self.wsData)
 					end
 				else
-					local insertQuery = mysql:Insert("ix_players")
+					local insertQuery = mysql:Insert("ws_players")
 						insertQuery:Insert("steamid", steamID64)
 						insertQuery:Insert("steam_name", name)
 						insertQuery:Insert("play_time", 0)
@@ -53,7 +59,7 @@ do
 		local name = self:SteamName()
 		local steamID64 = self:SteamID64()
 
-		local query = mysql:Update("ix_players")
+		local query = mysql:Update("ws_players")
 			query:Update("steam_name", name)
 			query:Update("play_time", math.floor((self.wsPlayTime or 0) + (RealTime() - (self.wsJoinTime or RealTime() - 1))))
 			query:Update("data", util.TableToJSON(self.wsData))

@@ -29,9 +29,15 @@ function PLUGIN:PlayerLoadedCharacter(client, character, lastChar)
 			-- Check if the position was set.
 			if (position) then
 				if (position[3] and position[3]:lower() == game.GetMap():lower()) then
-					-- Restore the player to that position.
-					client:SetPos(position[1].x and position[1] or client:GetPos())
-					client:SetEyeAngles(position[2].p and position[2] or angle_zero)
+					-- Restore the player to that position. Validate types first so a
+					-- malformed/legacy entry can't error on a nil/non-vector deref. (fw-plugins-world-9)
+					if (isvector(position[1])) then
+						client:SetPos(position[1])
+					end
+
+					if (isangle(position[2])) then
+						client:SetEyeAngles(position[2])
+					end
 				end
 
 				-- Remove the position data since it is no longer needed.

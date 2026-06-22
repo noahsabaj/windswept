@@ -2,7 +2,8 @@
 --[[--
 Grants abilities to characters.
 
-Flags are a simple way of adding/removing certain abilities to players on a per-character basis. Helix comes with a few flags
+Flags are a simple way of adding/removing certain abilities to players on a per-character basis. Windswept comes
+with a few flags
 by default, for example to restrict spawning of props, usage of the physgun, etc. All flags will be listed in the
 `Flags` section of the `Help` menu. Flags are usually used when server validation is required to allow a player to do something
 on their character. However, it's usually preferable to use in-character methods over flags when possible (i.e restricting
@@ -97,10 +98,11 @@ do
 				local flag = flags[i]
 				local info = ws.flag.list[flag]
 
-				if (info) then
-					if (!self:HasFlags(flag)) then
-						addedFlags = addedFlags..flag
-					end
+				-- Only act (and fire the callback) when the flag actually changes from
+				-- not-present to present; firing on an already-held flag re-runs side
+				-- effects like re-Giving a weapon. (fw-faction-class-9)
+				if (info and !self:HasFlags(flag)) then
+					addedFlags = addedFlags..flag
 
 					if (info.callback) then
 						-- Pass the player and true (true for the flag being given.)
@@ -130,13 +132,18 @@ do
 				local flag = flags[i]
 				local info = ws.flag.list[flag]
 
-				-- Call the callback if the flag has been registered.
-				if (info and info.callback) then
-					-- Pass the player and false (false since the flag is being taken)
-					info.callback(self:GetPlayer(), false)
-				end
+				-- Only act (and fire the callback) when the character actually has the
+				-- flag being removed; firing on an absent flag re-runs StripWeapon and
+				-- the like. Use plain-text replacement (no Lua patterns) to match
+				-- HasFlags' literal find. (fw-faction-class-9)
+				if (self:HasFlags(flag)) then
+					if (info and info.callback) then
+						-- Pass the player and false (false since the flag is being taken)
+						info.callback(self:GetPlayer(), false)
+					end
 
-				newFlags = newFlags:gsub(flag, "")
+					newFlags = newFlags:gsub(flag:PatternSafe(), "")
+				end
 			end
 
 			if (newFlags != oldFlags) then

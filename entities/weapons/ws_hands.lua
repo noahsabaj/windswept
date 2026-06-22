@@ -73,7 +73,11 @@ if (CLIENT) then
 	end
 
 	hook.Add("CreateMove", "wsHandsCreateMove", function(cmd)
-		if (LocalPlayer():GetLocalVar("bIsHoldingObject", false) and cmd:KeyDown(IN_ATTACK2)) then
+		local client = LocalPlayer()
+
+		-- This per-frame hook can fire during the boot/spawn window before networking
+		-- defines GetLocalVar (or while LocalPlayer is still NULL); bail until both are ready.
+		if (IsValid(client) and client.GetLocalVar and client:GetLocalVar("bIsHoldingObject", false) and cmd:KeyDown(IN_ATTACK2)) then
 			cmd:ClearMovement()
 			local angle = RenderAngles()
 			angle.z = 0
@@ -117,19 +121,24 @@ function SWEP:OnReloaded()
 	self:DropObject()
 end
 
+-- Merged Holster (fw-items-entities-7): plays the holster viewmodel sequence on the
+-- client and drops the held object on the server. The former second definition (a
+-- server-only DropObject) used to shadow this one, leaving the holster animation dead.
 function SWEP:Holster()
 	if (!IsValid(self:GetOwner())) then
 		return
 	end
 
-	local viewModel = self:GetOwner():GetViewModel()
+	if (CLIENT) then
+		local viewModel = self:GetOwner():GetViewModel()
 
-	if (IsValid(viewModel)) then
-		viewModel:SetPlaybackRate(1)
-		viewModel:ResetSequence(ACT_VM_FISTS_HOLSTER)
-		if CLIENT then
+		if (IsValid(viewModel)) then
+			viewModel:SetPlaybackRate(1)
+			viewModel:ResetSequence(ACT_VM_FISTS_HOLSTER)
 			self.NextAllowedPlayRateChange = CurTime() + viewModel:SequenceDuration()
 		end
+	elseif (IsFirstTimePredicted()) then
+		self:DropObject()
 	end
 
 	return true
@@ -285,16 +294,25 @@ function SWEP:DropObject(bThrow)
 	self.lastPlayerAngles = nil
 	self:GetOwner():SetLocalVar("bIsHoldingObject", false)
 
-	self.constraint:Remove()
-	self.holdEntity:Remove()
+	-- Guard the constraint and held physics object: either can be gone if the held
+	-- entity/prop was removed mid-hold, so dereferencing them unconditionally errors. (fw-items-entities-6)
+	if (IsValid(self.constraint)) then
+		self.constraint:Remove()
+	end
+
+	if (IsValid(self.holdEntity)) then
+		self.holdEntity:Remove()
+	end
 
 	self.heldEntity:StopMotionController()
 	self.heldEntity:SetCollisionGroup(self.heldEntity.wsCollisionGroup or COLLISION_GROUP_NONE)
 
 	local physics = self:GetHeldPhysicsObject()
-	physics:EnableGravity(true)
-	physics:Wake()
-	physics:ClearGameFlag(FVPHYSICS_PLAYER_HELD)
+	if (IsValid(physics)) then
+		physics:EnableGravity(true)
+		physics:Wake()
+		physics:ClearGameFlag(FVPHYSICS_PLAYER_HELD)
+	end
 
 	if (bThrow) then
 		timer.Simple(0, function()
@@ -323,15 +341,6 @@ function SWEP:PlayPickupSound(surfaceProperty)
 	end
 
 	self:GetOwner():EmitSound(result, 75, 100, 40)
-end
-
-function SWEP:Holster()
-	if (!IsFirstTimePredicted() or CLIENT) then
-		return
-	end
-
-	self:DropObject()
-	return true
 end
 
 function SWEP:OnRemove()

@@ -139,7 +139,7 @@ if (CLIENT) then
 		local uncompressed = util.Decompress(data)
 
 		if (!uncompressed) then
-			ErrorNoHalt("[Helix] Unable to decompress map scene data!\n")
+			ErrorNoHalt("[Windswept] Unable to decompress map scene data!\n")
 			return
 		end
 
@@ -258,7 +258,7 @@ ws.command.Add("MapSceneRemove", {
 					net.Broadcast()
 				else
 					net.Start("wsMapSceneRemove")
-						net.WriteString(k)
+						net.WriteUInt(k, 16) -- match the client's ReadUInt(16); k is a sequential integer index (fw-plugins-world-4)
 					net.Broadcast()
 				end
 

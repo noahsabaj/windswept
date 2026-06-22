@@ -103,9 +103,9 @@ if (CLIENT) then
 	end
 
 	local function Recognize(level)
-		net.Start("wsRecognize")
+		ws.action.Send("wsRecognize", nil, nil, function()
 			net.WriteUInt(level, 2)
-		net.SendToServer()
+		end)
 	end
 
 	net.Receive("wsRecognizeMenu", function(length)
@@ -146,54 +146,62 @@ else
 		end
 	end
 
-	net.Receive("wsRecognize", function(length, client)
-		local level = net.ReadUInt(2)
+	ws.action.Register("wsRecognize", {
+		read = function() return net.ReadUInt(2) end,
+		-- Require a character before the GetCharacter():GetID() deref below; a crafted packet
+		-- from a characterless client would otherwise error. (fw-plugins-net-3)
+		onValidate = function(client, ctx)
+			return client:GetCharacter() != nil
+		end,
+		run = function(client, ctx)
+			local level = ctx.data
 
-		if (isnumber(level)) then
-			local targets = {}
+			if (isnumber(level)) then
+				local targets = {}
 
-			if (level < 1) then
-				local entity = client:GetEyeTraceNoCursor().Entity
+				if (level < 1) then
+					local entity = client:GetEyeTraceNoCursor().Entity
 
-				if (IsValid(entity) and entity:IsPlayer() and entity:GetCharacter()
-				and ws.chat.classes.ic:CanHear(client, entity)) then
-					targets[1] = entity
-				end
-			else
-				local class = "w"
-
-				if (level == 2) then
-					class = "ic"
-				elseif (level == 3) then
-					class = "y"
-				end
-
-				class = ws.chat.classes[class]
-
-				for _, v in player.Iterator() do
-					if (client != v and v:GetCharacter() and class:CanHear(client, v)) then
-						targets[#targets + 1] = v
+					if (IsValid(entity) and entity:IsPlayer() and entity:GetCharacter()
+					and ws.chat.classes.ic:CanHear(client, entity)) then
+						targets[1] = entity
 					end
-				end
-			end
+				else
+					local class = "w"
 
-			if (#targets > 0) then
-				local id = client:GetCharacter():GetID()
-				local i = 0
+					if (level == 2) then
+						class = "ic"
+					elseif (level == 3) then
+						class = "y"
+					end
 
-				for _, v in ipairs(targets) do
-					if (v:GetCharacter():Recognize(id)) then
-						i = i + 1
+					class = ws.chat.classes[class]
+
+					for _, v in player.Iterator() do
+						if (client != v and v:GetCharacter() and class:CanHear(client, v)) then
+							targets[#targets + 1] = v
+						end
 					end
 				end
 
-				if (i > 0) then
-					net.Start("wsRecognizeDone")
-					net.Send(client)
+				if (#targets > 0) then
+					local id = client:GetCharacter():GetID()
+					local i = 0
 
-					hook.Run("CharacterRecognized", client, id)
+					for _, v in ipairs(targets) do
+						if (v:GetCharacter():Recognize(id)) then
+							i = i + 1
+						end
+					end
+
+					if (i > 0) then
+						net.Start("wsRecognizeDone")
+						net.Send(client)
+
+						hook.Run("CharacterRecognized", client, id)
+					end
 				end
 			end
 		end
-	end)
+	})
 end

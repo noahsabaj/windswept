@@ -1,7 +1,8 @@
 
---- Top-level library containing all Helix libraries. A large majority of the framework is split into respective libraries that
--- reside within `ix`.
--- @module ix
+--- Top-level library containing all Windswept libraries. A large majority of the framework is split into
+-- respective libraries that
+-- reside within `ws`.
+-- @module ws
 
 --- A table of variable types that are used throughout the framework. It represents types as a table with the keys being the
 -- name of the type, and the values being some number value. **You should never directly use these number values!** Using the
@@ -86,12 +87,12 @@ ws.util.IncludeDir("core/derma")
 ws.util.IncludeDir("core/hooks")
 
 -- Include language and default base items.
-ws.lang.LoadFromDir("windswept/gamemode/languages")
-ws.item.LoadFromDir("windswept/gamemode/items")
+ws.lang.LoadFromDir(ws.FRAMEWORK_FOLDER.."/gamemode/languages")
+ws.item.LoadFromDir(ws.FRAMEWORK_FOLDER.."/gamemode/items")
 
 -- Called after the gamemode has loaded.
 function GM:Initialize()
-	-- Load all of the Helix plugins.
+	-- Load all of the Windswept plugins.
 	ws.plugin.Initialize()
 	-- Restore client options
 	ws.option.Load()
@@ -99,8 +100,8 @@ function GM:Initialize()
 	ws.config.Load()
 end
 
--- luacheck: globals IX_RELOADED
-IX_RELOADED = false
+-- luacheck: globals WS_RELOADED
+WS_RELOADED = false
 
 -- Called when a file has been modified.
 function GM:OnReloaded()
@@ -125,10 +126,10 @@ function GM:OnReloaded()
 		end
 	end
 
-	if (!IX_RELOADED) then
-		IX_RELOADED = true
+	if (!WS_RELOADED) then
+		WS_RELOADED = true
 
-		-- Load all of the Helix plugins.
+		-- Load all of the Windswept plugins.
 		ws.plugin.Initialize()
 		-- Restore the configurations from earlier if applicable.
 		ws.config.Load()
@@ -137,7 +138,7 @@ function GM:OnReloaded()
 	end
 end
 
--- Include default Helix chat commands.
+-- Include default Windswept chat commands.
 ws.util.Include("core/sh_commands.lua")
 
 if (SERVER and game.IsDedicated()) then

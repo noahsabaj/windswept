@@ -83,9 +83,9 @@ local function ExtractParams(p1,p2,p3)
 			if (rgba == nil) then
 				rgba = {}
 				local x = { "r", "g", "b", "a" }
-				n = 1
+				local n = 1
 				for k, v in string.gmatch(p2, "(%d+),?") do
-					rgba[ x[n] ] = k
+					rgba[ x[n] ] = math.Clamp(tonumber(k) or 0, 0, 255) -- (fw-derma-8)
 					n = n + 1
 				end
 			end
@@ -108,8 +108,8 @@ local function ExtractParams(p1,p2,p3)
 
 			local texture = Material(material)
 			local sizeData = string.Explode("x", p3 or "16x16")
-			w = tonumber(sizeData[1]) or 16
-			h = tonumber(sizeData[2]) or 16
+			local w = tonumber(sizeData[1]) or 16 -- (fw-derma-7)
+			local h = tonumber(sizeData[2]) or 16 -- (fw-derma-7)
 
 			if (texture) then
 				table.insert(blocks, {

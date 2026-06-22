@@ -1,7 +1,7 @@
 
 ENT.Type = "anim"
 ENT.PrintName = "Container"
-ENT.Category = "Helix"
+ENT.Category = "Windswept"
 ENT.Spawnable = false
 ENT.bNoPersist = true
 
@@ -52,11 +52,11 @@ if (SERVER) then
 			if (inventory) then
 				ws.item.inventories[index] = nil
 
-				local query = mysql:Delete("ix_items")
+				local query = mysql:Delete("ws_items")
 					query:Where("inventory_id", index)
 				query:Execute()
 
-				query = mysql:Delete("ix_inventories")
+				query = mysql:Delete("ws_inventories")
 					query:Where("inventory_id", index)
 				query:Execute()
 

@@ -222,7 +222,7 @@ LANGUAGE = {
 	vendorNoTrade = "Du er ikke i stand til å handle med denne leverandøren.",
 	vendorNoMoney = "Denne leverandøren ikke har råd til dette elementet.",
 	vendorNoStock = "Denne leverandøren har ikke at varen på lager.",
-	contentTitle = "Helix Innhold Mangler",
-	contentWarning = "Du har ikke Helix innhold montert. Dette kan føre til enkelte funksjoner mangler. \nVil du åpne Workshop side for Helix innhold?",
+	contentTitle = "Windswept Innhold Mangler",
+	contentWarning = "Du har ikke Windswept innhold montert. Dette kan føre til enkelte funksjoner mangler. \nVil du åpne Workshop side for Windswept innhold?",
 	flags = "Flagg"
 }

@@ -10,17 +10,46 @@ by the caller; RegisterCleanupHooks works correctly on both realms.
 
 ws.weapon = ws.weapon or {}
 
---- Wrap a net.Receive handler that validates the player's active weapon class,
--- then calls a method on it. Reduces 4-line boilerplate to 1 line per handler.
--- Callers must wrap in `if SERVER then` since net.Receive callbacks differ by realm.
+--- Wrap a net.Receive handler that validates the player's weapon class, then calls a method
+-- on it. Reduces the per-handler boilerplate to one line. This is the sanctioned shape for
+-- active-weapon client->server actions (the SWEP analogue of ws.action). Callers must wrap in
+-- `if SERVER then` since net.Receive callbacks differ by realm.
 -- @string netString The network string to listen for
--- @string weaponClass The expected SWEP class (e.g., "ix_key")
+-- @string weaponClass The expected SWEP class (e.g., "ws_key")
 -- @string methodName The SWEP method to call (e.g., "StartLock")
-function ws.weapon.NetReceive(netString, weaponClass, methodName)
+-- @tab[opt] opts Optional behaviour:
+--   read      function() -> ...   reads the client payload; its return values are passed to
+--                                 the method after the weapon: weapon:Method(read()...).
+--   rateLimit number              per-player minimum seconds between accepted calls (keyed by
+--                                 netString); rejected before the method runs so spam can't fire it.
+--   lookup    "active"(default)|"owned"  "owned" uses ply:GetWeapon(weaponClass) instead of
+--                                 GetActiveWeapon(), for weapons that act while holstered
+--                                 (e.g. a lantern that stays lit when not the held weapon).
+function ws.weapon.NetReceive(netString, weaponClass, methodName, opts)
     net.Receive(netString, function(len, ply)
-        local weapon = ply:GetActiveWeapon()
+        if not IsValid(ply) then return end
+
+        local weapon
+        if opts and opts.lookup == "owned" then
+            weapon = ply:GetWeapon(weaponClass)
+        else
+            weapon = ply:GetActiveWeapon()
+        end
         if not IsValid(weapon) or weapon:GetClass() ~= weaponClass then return end
-        weapon[methodName](weapon)
+
+        -- Per-player rate limit (keyed by netString). Checked before reading/dispatch, and
+        -- stamped here, so a spammed call is dropped before the method runs.
+        if opts and opts.rateLimit then
+            local key = "wsNext_" .. netString
+            if ply[key] and ply[key] > CurTime() then return end
+            ply[key] = CurTime() + opts.rateLimit
+        end
+
+        if opts and opts.read then
+            weapon[methodName](weapon, opts.read())
+        else
+            weapon[methodName](weapon)
+        end
     end)
 end
 
@@ -58,3 +87,4 @@ function ws.weapon.IsTargetValid(owner, currentTarget, savedTarget, maxDistance,
     end
     return true
 end
+

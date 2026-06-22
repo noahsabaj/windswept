@@ -15,7 +15,7 @@ do
 	local tooltip
 	local lastHover
 
-	function PANEL:SetHelixTooltip(callback)
+	function PANEL:SetWindsweptTooltip(callback)
 		self:SetMouseInputEnabled(true)
 		self.wsTooltip = callback
 	end
@@ -154,13 +154,13 @@ end
 vgui.Register("wsTooltipRow", PANEL, "DLabel")
 
 --- Generic information panel.
--- Tooltips are used extensively throughout Helix: for item information, character displays, entity status, etc.
+-- Tooltips are used extensively throughout Windswept: for item information, character displays, entity status, etc.
 -- The tooltip system can be used on any panel or entity you would like to show standardized information for. Tooltips
 -- consist of the parent container panel (`wsTooltip`), which is filled with rows of information (usually
 -- `wsTooltipRow`, but can be any docked panel if non-text information needs to be shown, like an item's size).
 --
--- Tooltips can be added to panel with `panel:SetHelixTooltip()`. An example taken from the scoreboard:
--- 	panel:SetHelixTooltip(function(tooltip)
+-- Tooltips can be added to panel with `panel:SetWindsweptTooltip()`. An example taken from the scoreboard:
+-- 	panel:SetWindsweptTooltip(function(tooltip)
 -- 		local name = tooltip:AddRow("name")
 -- 		name:SetImportant()
 -- 		name:SetText(client:SteamName())

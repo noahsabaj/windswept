@@ -112,7 +112,7 @@ if (CLIENT) then
 			end
 
 			if (text != "") then
-				self.markup = markup.Parse("<font=wsItemDescFont>"..text, ScrW() * 0.3)
+				self.markup = ws.markup.Parse("<font=wsItemDescFont>"..text, ScrW() * 0.3)  -- (fw-plugins-world-11)
 				self.infoAlpha = 0
 			end
 

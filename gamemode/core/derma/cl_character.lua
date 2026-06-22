@@ -147,7 +147,7 @@ function PANEL:Init()
 	local infoLabel = self:Add("DLabel")
 	infoLabel:SetTextColor(Color(255, 255, 255, 25))
 	infoLabel:SetFont("wsMenuMiniFont")
-	infoLabel:SetText(L("helix") .. " " .. GAMEMODE.Version)
+	infoLabel:SetText(L("windswept") .. " " .. GAMEMODE.Version)
 	infoLabel:SizeToContents()
 	infoLabel:SetPos(ScrW() - infoLabel:GetWide() - 4, ScrH() - infoLabel:GetTall() - 4)
 

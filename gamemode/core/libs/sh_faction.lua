@@ -95,7 +95,9 @@ end
 -- @string uniqueID Unique ID of the faction
 -- @treturn number Faction index
 function ws.faction.GetIndex(uniqueID)
-	for k, v in ipairs(ws.faction.indices) do
+	-- pairs(), not ipairs(): a schema may assign explicit/non-contiguous FACTION.index
+	-- values, which would make ipairs() stop early and miss valid factions. (fw-faction-class-8)
+	for k, v in pairs(ws.faction.indices) do
 		if (v.uniqueID == uniqueID) then
 			return k
 		end

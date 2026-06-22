@@ -150,7 +150,7 @@ function PANEL:Init()
 	self.outAnimation = 1
 	self.alpha = 255
 
-	LocalPlayer():EmitSound("Helix.Notify")
+	LocalPlayer():EmitSound("Windswept.Notify")
 end
 
 function PANEL:SetError(bValue)

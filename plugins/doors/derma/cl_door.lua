@@ -2,11 +2,12 @@
 local PANEL = {}
 
 local function DoorSetPermission(door, target, permission)
-	net.Start("wsDoorPermission")
-		net.WriteEntity(door)
+	-- ws.action arg order: no item, target = the door entity, then writeExtra() writes
+	-- the targeted player + access level (matches the server's target -> read() order).
+	ws.action.Send("wsDoorPermission", nil, door, function()
 		net.WriteEntity(target)
 		net.WriteUInt(permission, 4)
-	net.SendToServer()
+	end)
 end
 
 function PANEL:Init()

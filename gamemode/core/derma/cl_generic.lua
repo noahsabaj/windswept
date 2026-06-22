@@ -559,7 +559,7 @@ function PANEL:OnValueUpdated()
 end
 
 function PANEL:Paint(width, height)
-	derma.SkinFunc("PaintHelixSlider", self, width, height)
+	derma.SkinFunc("PaintWindsweptSlider", self, width, height)
 end
 
 vgui.Register("wsSlider", PANEL, "EditablePanel")

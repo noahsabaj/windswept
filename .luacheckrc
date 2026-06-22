@@ -1,14 +1,14 @@
 
 max_line_length = 128
-std = "luajit+gmod+helix"
+std = "luajit+gmod+windswept"
 ignore = {
 	"212", -- unused argument
 }
 
--- helix
-stds.helix = {}
-stds.helix.globals = {
-	"ix",
+-- windswept
+stds.windswept = {}
+stds.windswept.globals = {
+	"ws",
 	"Schema",
 
 	"ITEM",
@@ -23,10 +23,10 @@ stds.helix.globals = {
 	"ICON_RENDER_QUEUE",
 	"USABLE_FUNCS",
 }
-stds.helix.read_globals = {
+stds.windswept.read_globals = {
 	"L",
 	"L2",
-	"IX_RELOADED",
+	"WS_RELOADED",
 	"CHAT_CLASS",
 	"HOOKS_CACHE",
 	"BAR_HEIGHT",
@@ -41,7 +41,7 @@ stds.helix.read_globals = {
 
 	"SetNetVar",
 	"GetNetVar",
-	"ixSoundDuration",
+	"wsSoundDuration",
 
 	"HOLDTYPE_TRANSLATOR",
 	"PLAYER_HOLDTYPE_TRANSLATOR",

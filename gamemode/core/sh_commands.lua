@@ -24,6 +24,34 @@ ws.command.Add("Event", {
 	end
 })
 
+-- Lets a player switch to a class in their current faction. The Classes menu sends this
+-- via ws.command.Send("BecomeClass", index); the command was dropped during the ix->ws
+-- port, which silently broke class switching. (fw-faction-class-1)
+ws.command.Add("BecomeClass", {
+	description = "@cmdBecomeClass",
+	arguments = ws.type.number,
+	OnRun = function(self, client, class)
+		local character = client:GetCharacter()
+
+		if (!character) then
+			return
+		end
+
+		class = tonumber(class)
+
+		if (!class or !ws.class.list[class]) then
+			return "@invalidArg", 1
+		end
+
+		-- character:JoinClass re-runs ws.class.CanSwitchTo and returns false if denied.
+		if (character:JoinClass(class)) then
+			return "@classSwitched", L(ws.class.list[class].name, client)
+		end
+
+		return "@classSwitchFail"
+	end
+})
+
 ws.command.Add("CharGiveFlag", {
 	description = "@cmdCharGiveFlag",
 	privilege = "Manage Character Flags",
@@ -358,7 +386,7 @@ ws.command.Add("CharUnban", {
 
 		client.wsNextSearch = CurTime() + 15
 
-		local query = mysql:Select("ix_characters")
+		local query = mysql:Select("ws_characters")
 			query:Select("id")
 			query:Select("name")
 			query:Select("data")
@@ -378,7 +406,7 @@ ws.command.Add("CharUnban", {
 
 					data.banned = nil
 
-					local updateQuery = mysql:Update("ix_characters")
+					local updateQuery = mysql:Update("ws_characters")
 						updateQuery:Update("data", util.TableToJSON(data))
 						updateQuery:Where("id", characterID)
 					updateQuery:Execute()
@@ -418,18 +446,26 @@ do
 
 				if (IsValid(target) and target:IsPlayer() and target:GetCharacter()) then
 					local cents = amount * ws.currency.CENTS_PER_DOLLAR
+					local giverChar = client:GetCharacter()
 
-					if (!client:GetCharacter():HasMoney(cents)) then
+					if (!giverChar:HasMoney(cents)) then
 						return
 					end
 
-					-- Check if target has inventory space for the money
-					if (!target:GetCharacter():GiveMoney(cents)) then
+					-- Debit the giver FIRST and only credit the target if it succeeded; a failed
+					-- removal (e.g. can't make change in a full inventory) would otherwise mint
+					-- money since the target was already credited. (fw-currency-economy-5)
+					if (!giverChar:TakeMoney(cents)) then
 						client:NotifyLocalized("inventoryFull")
 						return
 					end
 
-					client:GetCharacter():TakeMoney(cents)
+					-- Target had no room; refund the giver so money isn't destroyed.
+					if (!target:GetCharacter():GiveMoney(cents)) then
+						giverChar:GiveMoney(cents)
+						client:NotifyLocalized("inventoryFull")
+						return
+					end
 
 					target:NotifyLocalized("moneyTaken", ws.currency.Get(cents))
 					client:NotifyLocalized("moneyGiven", ws.currency.Get(cents))
@@ -446,8 +482,10 @@ do
 				ws.type.number
 			},
 			OnRun = function(self, client, target, amount)
-				-- User enters dollars, internal system uses cents
-				amount = math.Round(amount)
+				-- User enters dollars, internal system uses cents. Floor (not round) so the
+				-- set amount never exceeds what was typed, consistent with Give/Drop.
+				-- (fw-config-command-boot-12)
+				amount = math.floor(amount)
 
 				if (amount <= 0) then
 					return "@invalidArg", 2
@@ -464,8 +502,9 @@ do
 			description = "@cmdDropMoney",
 			arguments = ws.type.number,
 			OnRun = function(self, client, amount)
-				-- User enters dollars, internal system uses cents
-				amount = math.Round(amount)
+				-- User enters dollars, internal system uses cents. Floor (not round) so a player
+				-- never drops more than they typed. (fw-config-command-boot-12)
+				amount = math.floor(amount)
 
 				local minDropAmount = ws.config.Get("minMoneyDropAmount", 1)
 
@@ -476,15 +515,22 @@ do
 				-- Convert to cents for internal checks
 				local cents = amount * ws.currency.CENTS_PER_DOLLAR
 
-				if (!client:GetCharacter():HasMoney(cents)) then
+				local character = client:GetCharacter()
+
+				if (!character:HasMoney(cents)) then
 					return "@insufficientMoney"
 				end
 
-				client:GetCharacter():TakeMoney(cents)
+				-- Only spawn the pickup if the money was actually removed; a failed removal
+				-- would otherwise mint a free money entity. (fw-currency-economy-5 / cons-2)
+				if (!character:TakeMoney(cents)) then
+					client:NotifyLocalized("inventoryFull")
+					return
+				end
 
 				-- Spawn money entity (amount in dollars for ws.currency.Spawn)
 				local money = ws.currency.Spawn(client, amount)
-				money.wsCharID = client:GetCharacter():GetID()
+				money.wsCharID = character:GetID()
 				money.wsSteamID = client:SteamID()
 			end
 		})

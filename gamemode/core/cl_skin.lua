@@ -2,11 +2,11 @@
 local gradient = surface.GetTextureID("vgui/gradient-d")
 local gradientUp = surface.GetTextureID("vgui/gradient-u")
 local gradientLeft = surface.GetTextureID("vgui/gradient-l")
-local gradientRadial = Material("helix/gui/radial-gradient.png")
+local gradientRadial = Material("windswept/gui/radial-gradient.png")
 local defaultBackgroundColor = Color(30, 30, 30, 200)
 
 local SKIN = {}
-derma.DefineSkin("helix", "The base skin for the Helix framework.", SKIN)
+derma.DefineSkin("windswept", "The base skin for the Windswept framework.", SKIN)
 
 SKIN.fontCategory = "wsMediumLightFont"
 SKIN.fontCategoryBlur = "wsMediumLightBlurFont"
@@ -52,7 +52,7 @@ hook.Add("ColorSchemeChanged", "wsSkin", function(color)
 	SKIN.Colours.Area.Background = color
 end)
 
-function SKIN:DrawHelixCurved(x, y, radius, segments, barHeight, fraction, color, altColor)
+function SKIN:DrawWindsweptCurved(x, y, radius, segments, barHeight, fraction, color, altColor)
 	radius = radius or math.min(ScreenScale(72), 128) * 2
 	segments = segments or 76
 	barHeight = barHeight or 64
@@ -78,7 +78,7 @@ function SKIN:DrawHelixCurved(x, y, radius, segments, barHeight, fraction, color
 	end
 end
 
-function SKIN:DrawHelix(x, y, width, height, segments, color, fraction, speed)
+function SKIN:DrawWindswept(x, y, width, height, segments, color, fraction, speed)
 	segments = segments or width * 0.05
 	color = color or ws.config.Get("color")
 	fraction = fraction or 0.25
@@ -398,7 +398,7 @@ function SKIN:PaintMenuOption(panel, width, height)
 	end
 end
 
-function SKIN:PaintHelixSlider(panel, width, height)
+function SKIN:PaintWindsweptSlider(panel, width, height)
 	surface.SetDrawColor(self.Colours.DarkerBackground)
 	surface.DrawRect(0, 0, width, height)
 
@@ -563,53 +563,55 @@ function SKIN:PaintDeathScreen(panel, width, height, progress)
 end
 
 do
-	-- check if sounds exist, otherwise fall back to default UI sounds
-	local bWhoosh = file.Exists("sound/helix/ui/whoosh1.wav", "GAME")
-	local bRollover = file.Exists("sound/helix/ui/rollover.wav", "GAME")
-	local bPress = file.Exists("sound/helix/ui/press.wav", "GAME")
-	local bNotify = file.Exists("sound/helix/ui/REPLACEME.wav", "GAME") -- @todo
+	-- check if sounds exist, otherwise fall back to default UI sounds.
+	-- Probe the SAME windswept/ui/* paths that are actually played below, so a present
+	-- custom sound is actually selected (probe path must match play path). (fw-derma-2)
+	local bWhoosh = file.Exists("sound/windswept/ui/whoosh1.wav", "GAME")
+	local bRollover = file.Exists("sound/windswept/ui/rollover.wav", "GAME")
+	local bPress = file.Exists("sound/windswept/ui/press.wav", "GAME")
 
 	sound.Add({
-		name = "Helix.Whoosh",
+		name = "Windswept.Whoosh",
 		channel = CHAN_STATIC,
 		volume = 0.4,
 		level = 80,
 		pitch = bWhoosh and {90, 105} or 100,
 		sound = bWhoosh and {
-			"helix/ui/whoosh1.wav",
-			"helix/ui/whoosh2.wav",
-			"helix/ui/whoosh3.wav",
-			"helix/ui/whoosh4.wav",
-			"helix/ui/whoosh5.wav",
-			"helix/ui/whoosh6.wav"
+			"windswept/ui/whoosh1.wav",
+			"windswept/ui/whoosh2.wav",
+			"windswept/ui/whoosh3.wav",
+			"windswept/ui/whoosh4.wav",
+			"windswept/ui/whoosh5.wav",
+			"windswept/ui/whoosh6.wav"
 		} or ""
 	})
 
 	sound.Add({
-		name = "Helix.Rollover",
+		name = "Windswept.Rollover",
 		channel = CHAN_STATIC,
 		volume = 0.5,
 		level = 80,
 		pitch = {95, 105},
-		sound = bRollover and "helix/ui/rollover.wav" or "ui/buttonrollover.wav"
+		sound = bRollover and "windswept/ui/rollover.wav" or "ui/buttonrollover.wav"
 	})
 
 	sound.Add({
-		name = "Helix.Press",
+		name = "Windswept.Press",
 		channel = CHAN_STATIC,
 		volume = 0.5,
 		level = 80,
 		pitch = bPress and {95, 110} or 100,
-		sound = bPress and "helix/ui/press.wav" or "ui/buttonclickrelease.wav"
+		sound = bPress and "windswept/ui/press.wav" or "ui/buttonclickrelease.wav"
 	})
 
 	sound.Add({
-		name = "Helix.Notify",
+		name = "Windswept.Notify",
 		channel = CHAN_STATIC,
 		volume = 0.35,
 		level = 80,
 		pitch = 140,
-		sound = bNotify and "helix/ui/REPLACEME.wav" or "weapons/grenade/tick1.wav"
+		-- No custom notify asset exists yet (the old code referenced a REPLACEME placeholder). (fw-derma-2)
+		sound = "weapons/grenade/tick1.wav"
 	})
 end
 

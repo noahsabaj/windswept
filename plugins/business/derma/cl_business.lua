@@ -37,7 +37,7 @@ function PANEL:SetItem(itemTable)
 	self.icon:DockMargin(5, 5, 5, 10)
 	self.icon:InvalidateLayout(true)
 	self.icon:SetModel(itemTable:GetModel(), itemTable:GetSkin())
-	self.icon:SetHelixTooltip(function(tooltip)
+	self.icon:SetWindsweptTooltip(function(tooltip)
 		ws.hud.PopulateItemTooltip(tooltip, itemTable)
 	end)
 	self.icon.itemTable = itemTable
@@ -495,6 +495,9 @@ end
 vgui.Register("wsBusinessCheckout", PANEL, "DFrame")
 
 hook.Add("CreateMenuButtons", "wsBusiness", function(tabs)
+	-- Off by default; the schema enables it via the businessEnabled config. (layer-7)
+	if (!ws.config.Get("businessEnabled", false)) then return end
+
 	if (hook.Run("BuildBusinessMenu") != false) then
 		tabs["business"] = function(container)
 			container:Add("wsBusiness")

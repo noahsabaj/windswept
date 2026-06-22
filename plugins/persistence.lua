@@ -91,47 +91,65 @@ if (SERVER) then
 		local entities = self:GetData() or {}
 
 		for _, v in ipairs(entities) do
-			local entity = ents.Create(v.Class)
+			-- Validate every persisted field's type before applying, and isolate each
+			-- restore in a pcall so one corrupt record can't abort the whole load. (fw-plugins-world-12)
+			if (!isstring(v.Class) or !isvector(v.Pos) or !isangle(v.Angle)) then
+				ErrorNoHalt("[Windswept] Skipping persistent entity with invalid base fields.\n")
+				continue
+			end
 
-			if (IsValid(entity)) then
-				entity:SetPos(v.Pos)
-				entity:SetAngles(v.Angle)
-				entity:SetModel(v.Model)
-				entity:SetSkin(v.Skin)
-				entity:SetColor(v.Color)
-				entity:SetMaterial(v.Material)
-				entity:Spawn()
-				entity:Activate()
+			local ok, err = pcall(function()
+				local entity = ents.Create(v.Class)
 
-				if (v.bNoCollision) then
-					entity:SetCollisionGroup(COLLISION_GROUP_WORLD)
-				end
+				if (IsValid(entity)) then
+					entity:SetPos(v.Pos)
+					entity:SetAngles(v.Angle)
 
-				if (istable(v.BodyGroups)) then
-					for k2, v2 in pairs(v.BodyGroups) do
-						entity:SetBodygroup(k2, v2)
+					if (isstring(v.Model)) then entity:SetModel(v.Model) end
+					if (isnumber(v.Skin)) then entity:SetSkin(v.Skin) end
+					if (IsColor(v.Color)) then entity:SetColor(v.Color) end
+					if (isstring(v.Material)) then entity:SetMaterial(v.Material) end
+
+					entity:Spawn()
+					entity:Activate()
+
+					if (v.bNoCollision) then
+						entity:SetCollisionGroup(COLLISION_GROUP_WORLD)
 					end
-				end
 
-				if (istable(v.SubMaterial)) then
-					for k2, v2 in pairs(v.SubMaterial) do
-						if (!isnumber(k2) or !isstring(v2)) then
-							continue
+					if (istable(v.BodyGroups)) then
+						for k2, v2 in pairs(v.BodyGroups) do
+							if (isnumber(k2) and isnumber(v2)) then
+								entity:SetBodygroup(k2, v2)
+							end
 						end
-
-						entity:SetSubMaterial(k2 - 1, v2)
 					end
+
+					if (istable(v.SubMaterial)) then
+						for k2, v2 in pairs(v.SubMaterial) do
+							if (!isnumber(k2) or !isstring(v2)) then
+								continue
+							end
+
+							entity:SetSubMaterial(k2 - 1, v2)
+						end
+					end
+
+					local physicsObject = entity:GetPhysicsObject()
+
+					if (IsValid(physicsObject)) then
+						physicsObject:EnableMotion(v.Movable)
+					end
+
+					self.stored[#self.stored + 1] = entity
+
+					entity:SetNetVar("Persistent", true)
 				end
+			end)
 
-				local physicsObject = entity:GetPhysicsObject()
-
-				if (IsValid(physicsObject)) then
-					physicsObject:EnableMotion(v.Movable)
-				end
-
-				self.stored[#self.stored + 1] = entity
-
-				entity:SetNetVar("Persistent", true)
+			if (!ok) then
+				ErrorNoHalt(Format("[Windswept] Failed to restore persistent entity '%s': %s\n",
+					tostring(v.Class), tostring(err)))
 			end
 		end
 	end

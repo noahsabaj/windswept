@@ -3,7 +3,7 @@
 
     Windswept's headline differentiator over Helix: factions are a CHOICE, not a
     requirement. A schema picks its model via the `factionMode` config:
-        "required"  - every character must belong to a faction (Helix behaviour)
+        "required"  - every character must belong to a faction (Helix behaviour)  -- (layer-6)
         "optional"  - characters may be factionless
         "disabled"  - no factions at all
     `showFactionColors` decouples faction identity from UI tint (anti-metagaming).
@@ -17,7 +17,8 @@ ws.faction = ws.faction or {}
 
 if (ws.config and ws.config.Add) then
     ws.config.Add("factionMode", "required",
-        "Faction model: 'required' (every character picks a faction), 'optional' (factionless allowed), or 'disabled' (no factions).",
+        "Faction model: 'required' (every character picks a faction), 'optional' " ..
+        "(factionless allowed), or 'disabled' (no factions).",
         nil, { category = "factions" })
 
     ws.config.Add("showFactionColors", true,

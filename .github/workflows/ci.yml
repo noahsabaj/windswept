@@ -9,7 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        path: helix
+        path: windswept
 
     - uses: leafo/gh-actions-lua@v8.0.0
       with:
@@ -28,8 +28,15 @@ jobs:
       run: luarocks make
 
     - name: Lint
-      working-directory: helix
+      working-directory: windswept
       run: luacheck .
+
+    # Ratchet: new client->server net.Receive must use ws.action / ws.weapon.NetReceive, or be
+    # justified in tools/net-handlers.allowlist. Scans the framework here; the schema/addon are
+    # gated by the same script on the local pre-ship run (they have no CI of their own).
+    - name: Net-handler guard gate
+      working-directory: windswept
+      run: bash tools/check-net-handlers.sh
 
   docs:
     runs-on: ubuntu-latest
@@ -37,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          path: helix
+          path: windswept
 
       - uses: leafo/gh-actions-lua@v8.0.0
         with:
@@ -56,11 +63,11 @@ jobs:
         run: luarocks make
 
       - name: Build docs
-        working-directory: helix
+        working-directory: windswept
         run: ldoc . --fatalwarnings
 
       - name: Copy assets
-        working-directory: helix
+        working-directory: windswept
         run: |
           cp -v docs/css/* docs/html
           cp -v docs/js/* docs/html
@@ -70,5 +77,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: helix/docs/html
+          publish_dir: windswept/docs/html
           cname: docs.gethelix.co

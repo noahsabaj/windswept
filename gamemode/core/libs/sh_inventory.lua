@@ -6,7 +6,7 @@ Inventory manipulation and helper functions.
 
 ws.inventory = ws.inventory or {}
 
-ws.util.Include("windswept/gamemode/core/meta/sh_inventory.lua")
+ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/core/meta/sh_inventory.lua")
 
 --- Retrieves an inventory table.
 -- @realm shared
@@ -52,7 +52,7 @@ function ws.inventory.Restore(invID, width, height, callback)
 		end
 	end
 
-	local query = mysql:Select("ix_items")
+	local query = mysql:Select("ws_items")
 		query:Select("item_id")
 		query:Select("inventory_id")
 		query:Select("unique_id")
@@ -133,7 +133,7 @@ end
 function ws.inventory.New(owner, invType, callback)
 	local invData = ws.item.inventoryTypes[invType] or {w = 1, h = 1}
 
-	local query = mysql:Insert("ix_inventories")
+	local query = mysql:Insert("ws_inventories")
 		query:Insert("inventory_type", invType)
 		query:Insert("character_id", owner)
 		query:Callback(function(result, status, lastID)

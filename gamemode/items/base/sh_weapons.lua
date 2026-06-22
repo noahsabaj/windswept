@@ -185,7 +185,11 @@ function ITEM:Equip(client, bNoSelect, bNoSound)
 			self:OnEquipWeapon(client, weapon)
 		end
 	else
-		print(Format("[Helix] Cannot equip weapon - %s does not exist!", self.class))
+		print(Format("[Windswept] Cannot equip weapon - %s does not exist!", self.class))
+
+		-- Signal failure so callers don't treat a failed Give() as a successful equip
+		-- (carryWeapons[weaponCategory] and the "equipped" flag are left unset here). (fw-items-entities-5)
+		return false
 	end
 end
 
@@ -204,7 +208,7 @@ function ITEM:Unequip(client, bPlaySound, bRemoveItem)
 		self:SetData("ammo", weapon:Clip1())
 		client:StripWeapon(self.class)
 	else
-		print(Format("[Helix] Cannot unequip weapon - %s does not exist!", self.class))
+		print(Format("[Windswept] Cannot unequip weapon - %s does not exist!", self.class))
 	end
 
 	if (bPlaySound) then
@@ -274,7 +278,7 @@ function ITEM:OnLoadout()
 			-- Retry after a delay to give addons time to register their weapon classes.
 			timer.Simple(1, function()
 				if not DoEquip() then
-					print(Format("[Helix] Cannot give weapon - %s does not exist!", item.class))
+					print(Format("[Windswept] Cannot give weapon - %s does not exist!", item.class))
 				end
 			end)
 		end
@@ -282,6 +286,8 @@ function ITEM:OnLoadout()
 end
 
 function ITEM:OnSave()
+	if (!IsValid(self.player)) then return end -- (fw-items-entities-9)
+
 	local weapon = self.player:GetWeapon(self.class)
 
 	if (IsValid(weapon) and weapon.wsItem == self and self:GetData("equipped")) then
@@ -291,6 +297,9 @@ end
 
 function ITEM:OnRemoved()
 	local inventory = ws.item.inventories[self.invID]
+
+	if (!inventory) then return end -- (fw-items-entities-8)
+
 	local owner = inventory.GetOwner and inventory:GetOwner()
 
 	if (IsValid(owner) and owner:IsPlayer()) then

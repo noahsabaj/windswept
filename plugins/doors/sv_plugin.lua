@@ -86,6 +86,9 @@ function PLUGIN:LoadData()
 					end
 				elseif (k2 == "factions") then
 					-- New multi-faction format
+					-- NOTE: door faction uniqueIDs are PERSISTED identifiers. Renaming a
+					-- faction's uniqueID without a back-compat alias silently orphans door
+					-- ownership, so we log any uniqueID that no longer resolves. (fw-plugins-net-10)
 					local factionIDs = {}
 					local factionIndices = {}
 					for _, uniqueID in ipairs(v2) do
@@ -93,6 +96,9 @@ function PLUGIN:LoadData()
 						if (factionData) then
 							table.insert(factionIDs, uniqueID)
 							table.insert(factionIndices, factionData.index)
+						else
+							ErrorNoHalt(Format("[Windswept] Door %s references unknown faction '%s' -- ownership lost.\n",
+								tostring(k), tostring(uniqueID)))
 						end
 					end
 					if (#factionIDs > 0) then
@@ -105,6 +111,9 @@ function PLUGIN:LoadData()
 					if (factionData) then
 						entity.wsFactionIDs = {v2}
 						entity:SetNetVar("factions", {factionData.index})
+					else
+						ErrorNoHalt(Format("[Windswept] Door %s references unknown faction '%s' -- ownership lost.\n",
+							tostring(k), tostring(v2))) -- (fw-plugins-net-10)
 					end
 				else
 					entity:SetNetVar(k2, v2)
@@ -266,13 +275,36 @@ function PLUGIN:PlayerDisconnected(client)
 	end
 end
 
-net.Receive("wsDoorPermission", function(length, client)
-	local door = net.ReadEntity()
-	local target = net.ReadEntity()
-	local access = net.ReadUInt(4)
+-- Door permission grant. ws.action handles the door entity (ctx.target, IsValid +
+-- close-range check); the remaining payload (the targeted player + access level) is
+-- read by read(). Authority is the door OWNER (GetDTEntity(0) == client), which is an
+-- ownership check on a physical entity (not an open session), so this migrates cleanly.
+-- onValidate enforces every original gate before run() mutates wsAccess. (fw-plugins-net-10)
+ws.action.Register("wsDoorPermission", {
+	target = true,
+	read = function()
+		return {
+			player = net.ReadEntity(),
+			access = net.ReadUInt(4)
+		}
+	end,
+	onValidate = function(client, ctx)
+		local door = ctx.target
+		local target = ctx.data.player
 
-	if (IsValid(target) and target:GetCharacter() and door.wsAccess and door:GetDTEntity(0) == client and target != client) then
-		access = math.Clamp(access or 0, DOOR_NONE, DOOR_TENANT)
+		if (!IsValid(target) or !target:GetCharacter()) then
+			return false
+		end
+
+		-- wsAccess only exists on owned doors; GetDTEntity(0) is the door owner.
+		if (!door.wsAccess or door:GetDTEntity(0) != client or target == client) then
+			return false
+		end
+	end,
+	run = function(client, ctx)
+		local door = ctx.target
+		local target = ctx.data.player
+		local access = math.Clamp(ctx.data.access or 0, DOOR_NONE, DOOR_TENANT)
 
 		if (access == door.wsAccess[target]) then
 			return
@@ -296,4 +328,4 @@ net.Receive("wsDoorPermission", function(length, client)
 			net.Send(recipient)
 		end
 	end
-end)
+})

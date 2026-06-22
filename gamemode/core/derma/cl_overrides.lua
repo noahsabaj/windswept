@@ -16,7 +16,7 @@ local function OverridePanel(name, func)
 	func()
 
 	for k, _ in pairs(PANEL) do
-		local overrideName = "ix" .. k
+		local overrideName = "ws" .. k
 
 		if (PANEL[overrideName] and !OVERRIDES[k]) then
 			print("unhooking override ", overrideName)
@@ -28,7 +28,7 @@ local function OverridePanel(name, func)
 end
 
 local function Override(name)
-	local oldMethod = "ix" .. name
+	local oldMethod = "ws" .. name
 	OVERRIDES[name] = true
 
 	if (PANEL[oldMethod]) then

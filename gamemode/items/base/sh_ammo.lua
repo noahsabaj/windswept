@@ -29,6 +29,18 @@ ITEM.functions.use = {
 	tip = "useTip",
 	icon = "icon16/add.png",
 	OnRun = function(item)
+		local client = item.player
+
+		-- Per-client rate limit to blunt action spam (sound spam / minor DoS); the
+		-- action itself is non-duplicating. (fw-items-entities-11)
+		if (IsValid(client)) then
+			if ((client.wsNextAmmoUse or 0) > CurTime()) then
+				return false
+			end
+
+			client.wsNextAmmoUse = CurTime() + 0.5
+		end
+
 		local rounds = item:GetData("rounds", item.ammoAmount)
 
 		item.player:GiveAmmo(rounds, item.ammo)

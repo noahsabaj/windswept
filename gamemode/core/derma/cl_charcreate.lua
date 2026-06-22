@@ -471,7 +471,6 @@ function PANEL:Populate()
 		-- Auto-select factionless if no default faction selected
 		if (!lastSelected) then
 			noneButton:SetSelected(true)
-			lastSelected = true
 		end
 	end
 

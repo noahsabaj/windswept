@@ -64,23 +64,23 @@ function PANEL:Populate()
 
 				panel:SetShowReset(newValue != v.default, k, v.default)
 
-				net.Start("wsConfigSet")
+				ws.action.Send("wsConfigSet", nil, nil, function()
 					net.WriteString(k)
 					net.WriteType(newValue)
-				net.SendToServer()
+				end)
 			end
 
 			row.OnResetClicked = function(panel)
 				panel:SetValue(v.default, true)
 				panel:SetShowReset(false)
 
-				net.Start("wsConfigSet")
+				ws.action.Send("wsConfigSet", nil, nil, function()
 					net.WriteString(k)
 					net.WriteType(v.default)
-				net.SendToServer()
+				end)
 			end
 
-			row:GetLabel():SetHelixTooltip(function(tooltip)
+			row:GetLabel():SetWindsweptTooltip(function(tooltip)
 				local title = tooltip:AddRow("name")
 				title:SetImportant()
 				title:SetText(k)
@@ -110,18 +110,17 @@ function PANEL:Init()
 	self.unloadedCategory = L("unloadedPlugins")
 
 	if (!ws.gui.bReceivedUnloadedPlugins) then
-		net.Start("wsConfigRequestUnloadedList")
-		net.SendToServer()
+		ws.action.Send("wsConfigRequestUnloadedList")
 	end
 
 	self:Populate()
 end
 
 function PANEL:OnPluginToggled(uniqueID, bEnabled)
-	net.Start("wsConfigPluginToggle")
+	ws.action.Send("wsConfigPluginToggle", nil, nil, function()
 		net.WriteString(uniqueID)
 		net.WriteBool(bEnabled)
-	net.SendToServer()
+	end)
 end
 
 function PANEL:Populate()
@@ -145,7 +144,7 @@ function PANEL:Populate()
 			self:OnPluginToggled(k, bEnabled)
 		end
 
-		row:GetLabel():SetHelixTooltip(function(tooltip)
+		row:GetLabel():SetWindsweptTooltip(function(tooltip)
 			local title = tooltip:AddRow("name")
 			title:SetImportant()
 			title:SetText(v.name)

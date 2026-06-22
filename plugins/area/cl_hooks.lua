@@ -100,8 +100,14 @@ function PLUGIN:PostDrawTranslucentRenderables(bDepth, bSkybox)
 
 	-- draw all areas
 	for k, v in pairs(ws.area.stored) do
+		-- Guard against malformed entries from an attacker-shaped sync. (fw-plugins-net-6)
+		if (!istable(v) or !v.startPosition or !v.endPosition) then
+			continue
+		end
+
+		local properties = istable(v.properties) and v.properties or {}
 		local center, min, max = self:GetLocalAreaPosition(v.startPosition, v.endPosition)
-		local color = ColorAlpha(v.properties.color or ws.config.Get("color"), 255)
+		local color = ColorAlpha(properties.color or ws.config.Get("color"), 255)
 
 		render.DrawWireframeBox(center, angle_zero, min, max, color)
 
@@ -110,7 +116,7 @@ function PLUGIN:PostDrawTranslucentRenderables(bDepth, bSkybox)
 			local _, textHeight = draw.SimpleText(
 				k, "BudgetLabel", centerScreen.x, centerScreen.y, color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
-			if (v.type != "area") then
+			if (v.type and v.type != "area") then
 				draw.SimpleText(
 					"(" .. L(v.type) .. ")", "BudgetLabel",
 					centerScreen.x, centerScreen.y + textHeight, color, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER
@@ -169,9 +175,10 @@ function PLUGIN:EditReload()
 	Derma_Query(L("areaDeleteConfirm", id), L("areaDelete"),
 		L("no"), nil,
 		L("yes"), function()
-			net.Start("wsAreaRemove")
+			-- No item/target; the id string goes through writeExtra to match server read().
+			ws.action.Send("wsAreaRemove", nil, nil, function()
 				net.WriteString(id)
-			net.SendToServer()
+			end)
 		end
 	)
 end
@@ -188,7 +195,8 @@ function PLUGIN:OnAreaChanged(oldID, newID)
 
 	local area = ws.area.stored[newID]
 
-	if (!area) then
+	-- Guard against a malformed/missing entry from an attacker-shaped sync. (fw-plugins-net-6)
+	if (!istable(area) or !istable(area.properties)) then
 		client.wsInArea = false
 		return
 	end
@@ -224,7 +232,7 @@ net.Receive("wsAreaAdd", function()
 			type = type,
 			startPosition = startPosition,
 			endPosition = endPosition,
-			properties = properties
+			properties = istable(properties) and properties or {} -- (fw-plugins-net-6)
 		}
 	end
 end)
@@ -243,12 +251,20 @@ net.Receive("wsAreaSync", function()
 	local uncompressed = util.Decompress(data)
 
 	if (!uncompressed) then
-		ErrorNoHalt("[Helix] Unable to decompress area data!\n")
+		ErrorNoHalt("[Windswept] Unable to decompress area data!\n")
 		return
 	end
 
-	-- Set the list of texts to the ones provided by the server.
-	ws.area.stored = util.JSONToTable(uncompressed)
+	-- Set the list of texts to the ones provided by the server. Guard against a
+	-- malformed/non-table payload so renderers don't index a nil. (fw-plugins-net-6)
+	local stored = util.JSONToTable(uncompressed)
+
+	if (!istable(stored)) then
+		ErrorNoHalt("[Windswept] Received malformed area data!\n")
+		return
+	end
+
+	ws.area.stored = stored
 end)
 
 net.Receive("wsAreaChanged", function()

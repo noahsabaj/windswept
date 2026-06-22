@@ -221,11 +221,11 @@ function PANEL:Init()
 
     self.item:Rebuild()
 
-    timer.Create("ix_icon_editor_update", 0.5, 0, function()
+    timer.Create("ws_icon_editor_update", 0.5, 0, function()
         if IsValid(self) and IsValid(self.model) then
             self.item:Rebuild()
         else
-            timer.Remove("ix_icon_editor_update")
+            timer.Remove("ws_icon_editor_update")
         end
     end)
 
@@ -252,10 +252,10 @@ function PANEL:Init()
     end
 end
 
-vgui.Register("ix_icon_editor", PANEL, "DFrame")
+vgui.Register("ws_icon_editor", PANEL, "DFrame")
 
-concommand.Add("ix_dev_icon", function()
+concommand.Add("ws_dev_icon", function()
     if (LocalPlayer():IsAdmin()) then
-        vgui.Create("ix_icon_editor")
+        vgui.Create("ws_icon_editor")
     end
 end)

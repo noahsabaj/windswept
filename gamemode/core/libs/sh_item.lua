@@ -12,7 +12,7 @@ ws.item.inventories = ws.item.inventories or {
 }
 ws.item.inventoryTypes = ws.item.inventoryTypes or {}
 
-ws.util.Include("windswept/gamemode/core/meta/sh_item.lua")
+ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/core/meta/sh_item.lua")
 
 -- Declare some supports for logic inventory
 local zeroInv = ws.item.inventories[0]
@@ -60,7 +60,7 @@ function ws.item.Instance(index, uniqueID, itemData, x, y, callback, characterID
 	if (!uniqueID or ws.item.list[uniqueID]) then
 		itemData = istable(itemData) and itemData or {}
 
-		local query = mysql:Insert("ix_items")
+		local query = mysql:Insert("ws_items")
 			query:Insert("inventory_id", index)
 			query:Insert("unique_id", uniqueID)
 			query:Insert("data", util.TableToJSON(itemData))
@@ -95,7 +95,7 @@ function ws.item.Instance(index, uniqueID, itemData, x, y, callback, characterID
 			end)
 		query:Execute()
 	else
-		ErrorNoHalt("[Helix] Attempt to give an invalid item! (" .. (uniqueID or "nil") .. ")\n")
+		ErrorNoHalt("[Windswept] Attempt to give an invalid item! (" .. (uniqueID or "nil") .. ")\n")
 	end
 end
 
@@ -117,7 +117,7 @@ function ws.item.Load(path, baseID, isBaseItem)
 		ws.item.Register(uniqueID, baseID, isBaseItem, path)
 	else
 		if (!path:find(".txt")) then
-			ErrorNoHalt("[Helix] Item at '"..path.."' follows invalid naming convention!\n")
+			ErrorNoHalt("[Windswept] Item at '"..path.."' follows invalid naming convention!\n")
 		end
 	end
 end
@@ -195,7 +195,7 @@ function ws.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 					local mergeTable = table.Copy(baseTable)
 					ITEM = table.Merge(mergeTable, ITEM)
 				else
-					ErrorNoHalt("[Helix] Item '"..ITEM.uniqueID.."' has a non-existent base! ("..ITEM.base..")\n")
+					ErrorNoHalt("[Windswept] Item '"..ITEM.uniqueID.."' has a non-existent base! ("..ITEM.base..")\n")
 				end
 			end
 
@@ -222,7 +222,7 @@ function ws.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 					local mergeTable = table.Copy(baseTable)
 					ITEM = table.Merge(mergeTable, ITEM)
 				else
-					ErrorNoHalt("[Helix] Item '"..ITEM.uniqueID.."' has a non-existent base! ("..ITEM.base..")\n")
+					ErrorNoHalt("[Windswept] Item '"..ITEM.uniqueID.."' has a non-existent base! ("..ITEM.base..")\n")
 				end
 			end
 
@@ -237,7 +237,7 @@ function ws.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 
 			(isBaseItem and ws.item.base or ws.item.list)[ITEM.uniqueID] = ITEM
 
-			if (IX_RELOADED) then
+			if (WS_RELOADED) then
 				-- we don't know which item was actually edited, so we'll refresh all of them
 				for _, v in pairs(ws.item.instances) do
 					if (v.uniqueID == uniqueID) then
@@ -251,7 +251,7 @@ function ws.item.Register(uniqueID, baseID, isBaseItem, path, luaGenerated)
 			ITEM = nil
 		end
 	else
-		ErrorNoHalt("[Helix] You tried to register an item without uniqueID!\n")
+		ErrorNoHalt("[Windswept] You tried to register an item without uniqueID!\n")
 	end
 end
 
@@ -299,7 +299,7 @@ function ws.item.New(uniqueID, id)
 
 		return item
 	else
-		ErrorNoHalt("[Helix] Attempt to index unknown item '"..uniqueID.."'\n")
+		ErrorNoHalt("[Windswept] Attempt to index unknown item '"..uniqueID.."'\n")
 	end
 end
 
@@ -391,14 +391,20 @@ do
 				item.data = item.data or {}
 				item.data[key] = value
 
-				local invID = item.invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or item.invID
+				-- Guard against missing character/inventory on the client. (fw-character-item-8)
+				local char = LocalPlayer():GetCharacter()
+				if (!char) then return end
+				local mainInv = char:GetInventory()
+				if (!mainInv) then return end
+
+				local invID = item.invID == mainInv:GetID() and 1 or item.invID
 				local panel = ws.gui["inv" .. invID]
 
 				if (panel and panel.panels) then
 					local icon = panel.panels[id]
 
 					if (icon) then
-						icon:SetHelixTooltip(function(tooltip)
+						icon:SetWindsweptTooltip(function(tooltip)
 							ws.hud.PopulateItemTooltip(tooltip, item)
 						end)
 					end
@@ -433,7 +439,7 @@ do
 							local icon = panel.panels[id]
 
 							if (icon) then
-								icon:SetHelixTooltip(function(tooltip)
+								icon:SetWindsweptTooltip(function(tooltip)
 									ws.hud.PopulateItemTooltip(tooltip, item)
 								end)
 							end
@@ -468,7 +474,10 @@ do
 					inventory.slots[x] = inventory.slots[x] or {}
 					inventory.slots[x][y] = item
 
-					invID = invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or invID
+					-- Guard against missing local character/inventory. (fw-character-item-8)
+					local localChar = LocalPlayer():GetCharacter()
+					local mainInv = localChar and localChar:GetInventory()
+					invID = (mainInv and invID == mainInv:GetID()) and 1 or invID
 
 					local panel = ws.gui["inv" .. invID]
 
@@ -478,7 +487,7 @@ do
 						)
 
 						if (IsValid(icon)) then
-							icon:SetHelixTooltip(function(tooltip)
+							icon:SetWindsweptTooltip(function(tooltip)
 								ws.hud.PopulateItemTooltip(tooltip, item)
 							end)
 
@@ -504,7 +513,10 @@ do
 			local x = net.ReadUInt(6)
 			local y = net.ReadUInt(6)
 
-			invID = invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or invID
+			-- Guard against missing local character/inventory. (fw-character-item-8)
+			local localChar = LocalPlayer():GetCharacter()
+			local mainInv = localChar and localChar:GetInventory()
+			invID = (mainInv and invID == mainInv:GetID()) and 1 or invID
 
 			local item = ws.item.instances[itemID]
 			local panel = ws.gui["inv" .. invID]
@@ -539,7 +551,10 @@ do
 
 			inventory:Remove(id)
 
-			invID = invID == LocalPlayer():GetCharacter():GetInventory():GetID() and 1 or invID
+			-- Guard against missing local character/inventory. (fw-character-item-8)
+			local localChar = LocalPlayer():GetCharacter()
+			local mainInv = localChar and localChar:GetInventory()
+			invID = (mainInv and invID == mainInv:GetID()) and 1 or invID
 			local panel = ws.gui["inv" .. invID]
 
 			if (IsValid(panel)) then
@@ -585,7 +600,7 @@ do
 		util.AddNetworkString("wsInventoryAction")
 
 		function ws.item.LoadItemByID(itemIndex, recipientFilter)
-			local query = mysql:Select("ix_items")
+			local query = mysql:Select("ws_items")
 				query:Select("item_id")
 				query:Select("unique_id")
 				query:Select("data")
@@ -624,6 +639,12 @@ do
 			end
 
 			local inventory = ws.item.inventories[invID or 0]
+
+			-- Guard against an unknown invID: inventory is nil and the OnCheckAccess call below
+			-- would error in the net thread (remotely triggerable). (tb-1)
+			if (!inventory) then
+				return
+			end
 
 			if (hook.Run("CanPlayerInteractItem", client, action, item, data) == false) then
 				return
@@ -671,19 +692,13 @@ do
 				return
 			end
 
-			if (!item.bAllowMultiCharacterInteraction and IsValid(client) and client:GetCharacter()) then
-				local itemPlayerID = item:GetPlayerID()
-				local itemCharacterID = item:GetCharacterID()
-				local playerID = client:SteamID64()
-				local characterID = client:GetCharacter():GetID()
+			-- Single-character ownership (no first-use assignment on this path). (fw-character-item-10)
+			if (!ws.access.EnsureItemOwnership(client, item, false)) then
+				client:NotifyLocalized("itemOwned")
 
-				if (itemPlayerID and itemCharacterID and itemPlayerID == playerID and itemCharacterID != characterID) then
-					client:NotifyLocalized("itemOwned")
-
-					item.player = nil
-					item.entity = nil
-					return
-				end
+				item.player = nil
+				item.entity = nil
+				return
 			end
 
 			local callback = item.functions[action]
@@ -742,6 +757,11 @@ do
 		end
 
 		net.Receive("wsInventoryMove", function(length, client)
+			-- Lenient per-client rate limit: bounds net/DB-write spam without affecting human
+			-- drag-drop (rejected moves snap back via NetworkInventoryMove). (fw-character-item-4)
+			if ((client.wsNextInvMove or 0) > CurTime()) then return end
+			client.wsNextInvMove = CurTime() + 0.05
+
 			local oldX, oldY, x, y = net.ReadUInt(6), net.ReadUInt(6), net.ReadUInt(6), net.ReadUInt(6)
 			local invID, newInvID = net.ReadUInt(32), net.ReadUInt(32)
 
@@ -761,7 +781,11 @@ do
 						if (newInvID and invID != newInvID) then
 							local inventory2 = ws.item.inventories[newInvID]
 
-							if (inventory2) then
+							-- The caller must also be able to access the DESTINATION inventory, not
+							-- just the source; otherwise an item could be pushed into an inventory the
+							-- player has no rights to. (fw-character-item-3)
+							if (inventory2 and ((inventory2.owner and inventory2.owner == character:GetID())
+								or inventory2:OnCheckAccess(client))) then
 								local bStatus, error = item:Transfer(newInvID, x, y, client)
 
 								if (!bStatus) then
@@ -816,7 +840,7 @@ do
 							end
 
 							if (!inventory.noSave) then
-								local query = mysql:Update("ix_items")
+								local query = mysql:Update("ws_items")
 									query:Update("x", x)
 									query:Update("y", y)
 									query:Where("item_id", item.id)
@@ -841,7 +865,28 @@ do
 		end)
 
 		net.Receive("wsInventoryAction", function(length, client)
-			ws.item.PerformInventoryAction(client, net.ReadString(), net.ReadUInt(32), net.ReadUInt(32), net.ReadTable())
+			-- Lenient per-client rate limit on item actions. (fw-character-item-4)
+			if ((client.wsNextInvAction or 0) > CurTime()) then return end
+			client.wsNextInvAction = CurTime() + 0.1
+
+			local action = net.ReadString()
+			local item = net.ReadUInt(32)
+			local invID = net.ReadUInt(32)
+			local data = net.ReadTable()
+
+			-- net.ReadTable is unbounded; reject oversized hostile tables and validate the
+			-- combine target (data[1]) is a number before it reaches item callbacks. (fw-character-item-6)
+			if (istable(data)) then
+				if (table.Count(data) > 16) then return end
+
+				if (data[1] ~= nil and not isnumber(data[1])) then
+					data[1] = tonumber(data[1])
+				end
+			else
+				data = nil
+			end
+
+			ws.item.PerformInventoryAction(client, action, item, invID, data)
 		end)
 	end
 

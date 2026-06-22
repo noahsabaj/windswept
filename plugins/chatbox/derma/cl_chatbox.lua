@@ -79,7 +79,7 @@ function PANEL:Paint(width, height)
 		newAlpha = math.min(255 - ws.gui.characterMenu.currentAlpha, self.alpha)
 	elseif (IsValid(ws.gui.menu)) then
 		newAlpha = math.min(255 - ws.gui.menu.currentAlpha, self.alpha)
-	elseif (ws.gui.chat:GetActive()) then
+	elseif (IsValid(ws.gui.chat) and ws.gui.chat:GetActive()) then -- (fw-derma-11)
 		newAlpha = math.max(ws.gui.chat.alpha, self.alpha)
 	else
 		newAlpha = self.alpha
@@ -332,7 +332,10 @@ function PANEL:AddLine(elements, bShouldScroll)
 		elseif (istable(v) and v.r and v.g and v.b) then
 			buffer[#buffer + 1] = string.format("<color=%d,%d,%d>", v.r, v.g, v.b)
 		elseif (type(v) == "Player") then
-			local color = team.GetColor(v:Team())
+			-- Gate name colour on the faction-colour policy to match the HUD/scoreboard
+			-- (anti-metagaming): neutral when disabled. (fw-derma-9)
+			local color = (ws.faction and ws.faction.ShowColors() == false) and ws.config.Get("color")
+				or team.GetColor(v:Team())
 
 			buffer[#buffer + 1] = string.format("<color=%d,%d,%d>%s", color.r, color.g, color.b,
 				v:GetName():gsub("<", "&lt;"):gsub(">", "&gt;"))
@@ -792,7 +795,7 @@ function PANEL:SetHighlighted(bValue)
 		easing = "outQuint"
 	})
 
-	self.bHighlighted = true
+	self.bSelected = tobool(bValue) -- update AccessorFunc-backed field, not a dead one (fw-derma-6)
 end
 
 function PANEL:SetCommand(command)
@@ -1238,9 +1241,9 @@ function PANEL:OnMessageSent()
 			ws.chat.history[#ws.chat.history + 1] = text
 		end
 
-		net.Start("wsChatMessage")
+		ws.action.Send("wsChatMessage", nil, nil, function()
 			net.WriteString(text)
-		net.SendToServer()
+		end)
 	end
 
 	self:SetActive(false) -- textentry is set to "" in SetActive
@@ -1309,7 +1312,7 @@ function PANEL:AddMessage(...)
 	end
 
 	for _, v in pairs(self.tabs:GetTabs()) do
-		if (v:GetID() == activeTab:GetID()) then
+		if (activeTab and v:GetID() == activeTab:GetID()) then
 			continue -- we already added it to the active tab
 		end
 

@@ -49,10 +49,10 @@ function PANEL:Init()
 		surface.SetDrawColor(backgroundColor)
 		surface.DrawRect(0, 0, width, height)
 
-		derma.SkinFunc("DrawHelixCurved", width * 0.5, height * 0.5, width * 0.25)
+		derma.SkinFunc("DrawWindsweptCurved", width * 0.5, height * 0.5, width * 0.25)
 
 		surface.SetFont("wsIntroSubtitleFont")
-		local text = L("helix"):lower()
+		local text = L("windswept"):lower()
 		local textWidth, textHeight = surface.GetTextSize(text)
 
 		surface.SetTextColor(color_white)
@@ -147,7 +147,7 @@ end
 
 vgui.Register("wsHelpMenu", PANEL, "EditablePanel")
 
-local function DrawHelix(width, height, color) -- luacheck: ignore 211
+local function DrawWindswept(width, height, color) -- luacheck: ignore 211
 	local segments = 76
 	local radius = math.min(width, height) * 0.375
 

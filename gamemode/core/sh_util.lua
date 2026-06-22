@@ -29,6 +29,17 @@ ws.type = ws.type or {
 
 ws.blurRenderQueue = {}
 
+-- Resolve the framework's own gamemode folder once, read from the path of this running
+-- file. The framework folder is always whatever name the schema passes to
+-- DeriveGamemode() ("windswept") -- GMod runs the derived base from gamemodes/<that>/ --
+-- so we read it from the path rather than hardcoding it, and fall back to "windswept" if
+-- the path can't be parsed. Note: engine.ActiveGamemode() returns the SCHEMA
+-- (e.g. "windsweptrp"), not the framework, so it can't be used here.
+if (!ws.FRAMEWORK_FOLDER) then
+	local source = debug.getinfo(1, "S").source or ""
+	ws.FRAMEWORK_FOLDER = source:match("gamemodes/([^/]+)/") or "windswept"
+end
+
 --- Includes a lua file based on the prefix of the file. This will automatically call `include` and `AddCSLuaFile` based on the
 -- current realm. This function should always be called shared to ensure that the client will receive the file from the server.
 -- @realm shared
@@ -38,7 +49,7 @@ ws.blurRenderQueue = {}
 -- `"client"` if it is filled in manually
 function ws.util.Include(fileName, realm)
 	if (!fileName) then
-		error("[Helix] No file name specified for including.")
+		error("[Windswept] No file name specified for including.")
 	end
 
 	-- Only include server-side if we're on the server.
@@ -69,8 +80,9 @@ end
 -- or `gamemode/`
 -- @see ws.util.Include
 function ws.util.IncludeDir(directory, bFromLua)
-	-- By default, we include relatively to Helix.
-	local baseDir = "helix"
+	-- By default, we include relative to the framework's own gamemode folder
+	-- (resolved dynamically above: "windswept" local / "windswept" live, never hardcoded).
+	local baseDir = ws.FRAMEWORK_FOLDER
 
 	-- If we're in a schema, include relative to the schema.
 	if (Schema and Schema.folder and Schema.loading) then
@@ -124,7 +136,7 @@ end
 -- could not be found, it will return the default value for the type. This only works for simple types - e.g it does not work
 -- for player, character, or Steam ID types.
 -- @realm shared
--- @ixtype type Type to check for
+-- @wstype type Type to check for
 -- @param input Value to sanitize
 -- @return Sanitized value
 -- @see ws.type
@@ -780,30 +792,21 @@ do
 		local pNearest = NULL
 
 		for i = 1, NUM_TANGENTS do
-			if (i == 0) then
-				tr = util.TraceLine({
-					start = searchCenter,
-					endpos = searchCenter + forward * 1024,
-					mask = useableContents,
-					filter = player
-				})
+			-- The loop starts at 1, so the old `if (i == 0)` straight-traceline branch was
+			-- dead code; removed. (fw-config-command-boot-15)
+			local down = forward - tangents[i] * up
+			down:Normalize()
 
-				tr.EndPos = searchCenter + forward * 1024
-			else
-				local down = forward - tangents[i] * up
-				down:Normalize()
+			tr = util.TraceHull({
+				start = searchCenter,
+				endpos = searchCenter + down * 72,
+				mins = traceMin,
+				maxs = traceMax,
+				mask = useableContents,
+				filter = player
+			})
 
-				tr = util.TraceHull({
-					start = searchCenter,
-					endpos = searchCenter + down * 72,
-					mins = traceMin,
-					maxs = traceMax,
-					mask = useableContents,
-					filter = player
-				})
-
-				tr.EndPos = searchCenter + down * 72
-			end
+			tr.EndPos = searchCenter + down * 72
 
 			pObject = tr.Entity
 
@@ -822,11 +825,6 @@ do
 
 				if (dist < 80) then
 					pNearest = pObject
-
-					-- if this is directly under the cursor just return it now
-					if (i == 0) then
-						return pObject
-					end
 				end
 			end
 		end
@@ -890,7 +888,7 @@ end
 ALWAYS_RAISED = {}
 ALWAYS_RAISED["weapon_physgun"] = true
 ALWAYS_RAISED["gmod_tool"] = true
-ALWAYS_RAISED["ix_poshelper"] = true
+ALWAYS_RAISED["ws_poshelper"] = true
 
 function ws.util.FindEmptySpace(entity, filter, spacing, size, height, tolerance)
 	spacing = spacing or 32
@@ -1172,5 +1170,5 @@ function ws.util.GetLookAtPlayer(client, maxRange)
 	return nil
 end
 
-ws.util.Include("windswept/gamemode/core/meta/sh_entity.lua")
-ws.util.Include("windswept/gamemode/core/meta/sh_player.lua")
+ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/core/meta/sh_entity.lua")
+ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/core/meta/sh_player.lua")

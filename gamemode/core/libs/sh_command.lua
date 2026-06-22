@@ -31,8 +31,8 @@ restricted to certain usergroups using a [CAMI](https://github.com/glua/CAMI)-co
 -- @field[type=boolean,opt=false] adminOnly Provides an additional check to see if the user is an admin before running.
 -- @field[type=boolean,opt=false] superAdminOnly Provides an additional check to see if the user is a superadmin before running.
 -- @field[type=string,opt=nil] privilege Manually specify a privilege name for this command. It will always be prefixed with
--- `"Helix - "`. This is used in the case that you want to group commands under the same privilege, or use a privilege that
--- you've already defined (i.e grouping `/CharBan` and `/CharUnban` into the `Helix - Ban Character` privilege).
+-- `"Windswept - "`. This is used in the case that you want to group commands under the same privilege, or use a privilege that
+-- you've already defined (i.e grouping `/CharBan` and `/CharUnban` into the `Windswept - Ban Character` privilege).
 -- @field[type=function,opt=nil] OnCheckAccess This callback checks whether or not the player is allowed to run the command.
 -- This callback should **NOT** be used in conjunction with `adminOnly` or `superAdminOnly`, as populating those
 -- fields create a custom a `OnCheckAccess` callback for you internally. This is used in cases where you want more fine-grained
@@ -40,7 +40,7 @@ restricted to certain usergroups using a [CAMI](https://github.com/glua/CAMI)-co
 --
 -- Keep in mind that this is a **SHARED** callback; the command will not show up the client if the callback returns `false`.
 
---- Rather than checking the validity for arguments in your command's `OnRun` function, you can have Helix do it for you to
+--- Rather than checking the validity for arguments in your command's `OnRun` function, you can have Windswept do it for you to
 -- reduce the amount of boilerplate code that needs to be written. This can be done by populating the `arguments` field.
 --
 -- When using the `arguments` field in your command, you are specifying specific types that you expect to receive when the
@@ -129,9 +129,11 @@ local function ArgumentCheckStub(command, client, given)
 
 			result[#result + 1] = value
 		elseif (argType == ws.type.steamid) then
-			local value = argument:match("STEAM_(%d+):(%d+):(%d+)")
+			-- argument may be nil for an omitted optional; guard the match and only error
+			-- when a REQUIRED steamid is missing/malformed. (fw-config-command-boot-6)
+			local value = (argument or ""):match("STEAM_(%d+):(%d+):(%d+)")
 
-			if (!value and bOptional) then
+			if (!value and !bOptional) then
 				return L("invalidArg", client, i)
 			end
 
@@ -188,7 +190,7 @@ function ws.command.Add(command, data)
 			return
 		end
 
-		local privilege = "Helix - " .. (isstring(data.privilege) and data.privilege or data.name)
+		local privilege = "Windswept - " .. (isstring(data.privilege) and data.privilege or data.name)
 
 		-- we could be using a previously-defined privilege
 		if (!CAMI.GetPrivilege(privilege)) then
@@ -573,15 +575,36 @@ if (SERVER) then
 		return false
 	end
 
-	concommand.Add("ix", function(client, _, arguments)
+	-- Maximum accepted length for a single command argument string. Anything past
+	-- this is rejected to keep an untrusted net payload from ballooning. (fw-config-command-boot-8)
+	local MAX_ARGUMENT_LENGTH = 256
+
+	-- Shared per-client throttle so both entry points (net + server concommand)
+	-- use the same time base. (fw-config-command-boot-11)
+	local function CanRunCommand(client)
+		if (!IsValid(client)) then
+			return true -- server console
+		end
+
+		if ((client.wsNextCmd or 0) > CurTime()) then
+			return false
+		end
+
+		client.wsNextCmd = CurTime() + 0.2
+		return true
+	end
+
+	concommand.Add("ws", function(client, _, arguments)
+		if (!CanRunCommand(client)) then return end
+
 		local command = arguments[1]
 		table.remove(arguments, 1)
 
 		ws.command.Parse(client, nil, command or "", arguments)
 	end)
 
-	net.Receive("wsCommand", function(length, client)
-		if ((client.wsNextCmd or 0) < CurTime()) then
+	ws.action.Register("wsCommand", {
+		read = function()
 			local command = net.ReadString()
 			local indices = net.ReadUInt(4)
 			local arguments = {}
@@ -590,14 +613,26 @@ if (SERVER) then
 				local value = net.ReadType()
 
 				if (isstring(value) or isnumber(value)) then
-					arguments[#arguments + 1] = tostring(value)
+					value = tostring(value)
+
+					-- Reject over-long argument strings rather than truncating, so we
+					-- never silently mangle a command. (fw-config-command-boot-8)
+					if (#value <= MAX_ARGUMENT_LENGTH) then
+						arguments[#arguments + 1] = value
+					end
 				end
 			end
 
-			ws.command.Parse(client, nil, command, arguments)
-			client.wsNextCmd = CurTime() + 0.2
+			return {command = command, arguments = arguments}
+		end,
+		run = function(client, ctx)
+			-- Shared throttle with the server-console concommand path; keep it here
+			-- (charges every call) rather than def.rateLimit so behavior is identical. (fw-config-command-boot-11)
+			if (!CanRunCommand(client)) then return end
+
+			ws.command.Parse(client, nil, ctx.data.command, ctx.data.arguments)
 		end
-	end)
+	})
 else
 	--- Request the server to run a command. This mimics similar functionality to the client typing `/CommandName` in the chatbox.
 	-- @realm client
@@ -607,18 +642,17 @@ else
 	function ws.command.Send(command, ...)
 		local arguments =  {...}
 
-		net.Start("wsCommand")
-		net.WriteString(command)
-		net.WriteUInt(#arguments, 4)
+		ws.action.Send("wsCommand", nil, nil, function()
+			net.WriteString(command)
+			net.WriteUInt(#arguments, 4)
 
-		for _, v in ipairs(arguments) do
-			net.WriteType(v)
-		end
-
-		net.SendToServer()
+			for _, v in ipairs(arguments) do
+				net.WriteType(v)
+			end
+		end)
 	end
 
-	concommand.Add("ix", function(client, _, arguments)
+	concommand.Add("ws", function(client, _, arguments)
 		ws.command.Send(table.remove(arguments, 1), unpack(arguments))
 	end, function(_, arguments)
 		arguments = arguments:TrimLeft()
@@ -633,13 +667,13 @@ else
 
 			if (arguments:find(v.uniqueID, 1, true) == 1) then
 				return {
-					"ix " .. arguments,
+					"ws " .. arguments,
 					v:GetDescription(),
 					L("syntax", v.syntax)
 				}
 			end
 
-			table.insert(autocomplete, "ix " .. v.uniqueID)
+			table.insert(autocomplete, "ws " .. v.uniqueID)
 		end
 
 		return autocomplete

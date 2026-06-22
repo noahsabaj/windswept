@@ -147,7 +147,7 @@ function PANEL:Init()
 		menu:Open()
 	end
 
-	self.icon:SetHelixTooltip(function(tooltip)
+	self.icon:SetWindsweptTooltip(function(tooltip)
 		local client = self.player
 
 		if (IsValid(self) and IsValid(client)) then

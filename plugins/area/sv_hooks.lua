@@ -77,50 +77,105 @@ function PLUGIN:OnPlayerAreaChanged(client, oldID, newID)
 	net.Send(client)
 end
 
-net.Receive("wsAreaAdd", function(length, client)
-	if (!client:Alive() or !CAMI.PlayerHasAccess(client, "Helix - AreaEdit", nil)) then
-		return
-	end
+-- Admin world-editor add. No item/target; the admin gate (alive + CAMI) lives in
+-- onValidate and the multi-field payload is read in read(). Migrated to ws.action so
+-- the dispatch is guard-by-construction. (Client sender: derma/cl_areaedit.lua Submit.)
+ws.action.Register("wsAreaAdd", {
+	read = function()
+		return {
+			id = net.ReadString(),
+			type = net.ReadString(),
+			startPosition = net.ReadVector(),
+			endPosition = net.ReadVector(),
+			properties = net.ReadTable()
+		}
+	end,
+	onValidate = function(client)
+		-- Mirror the original gate exactly; return strict false on denial so a CAMI
+		-- result of nil (some admin mods) is treated as deny, not allow. The wrapper
+		-- only rejects on a literal false. (fw-plugins-net-5)
+		if (!client:Alive() or !CAMI.PlayerHasAccess(client, "Windswept - AreaEdit", nil)) then
+			return false
+		end
+	end,
+	run = function(client, ctx)
+		local data = ctx.data
+		local type = data.type
+		local startPosition, endPosition = data.startPosition, data.endPosition
+		local properties = data.properties
 
-	local id = net.ReadString()
-	local type = net.ReadString()
-	local startPosition, endPosition = net.ReadVector(), net.ReadVector()
-	local properties = net.ReadTable()
+		-- Clamp/reject the untrusted id: bound the length and require a non-empty id
+		-- so a hostile client can't store a giant or blank key. (fw-plugins-net-5)
+		local id = isstring(data.id) and data.id:utf8sub(1, 32) or ""
 
-	if (!ws.area.types[type]) then
-		client:NotifyLocalized("areaInvalidType")
-		return
-	end
-
-	if (ws.area.stored[id]) then
-		client:NotifyLocalized("areaAlreadyExists")
-		return
-	end
-
-	for k, v in pairs(properties) do
-		if (!isstring(k) or !ws.area.properties[k]) then
-			continue
+		if (id == "" or !id:find("%S")) then
+			client:NotifyLocalized("areaInvalidType")
+			return
 		end
 
-		properties[k] = ws.util.SanitizeType(ws.area.properties[k].type, v)
+		if (!ws.area.types[type]) then
+			client:NotifyLocalized("areaInvalidType")
+			return
+		end
+
+		-- Reject non-finite or out-of-bounds vectors before storing them. (fw-plugins-net-5)
+		local function isFiniteInWorld(vec)
+			if (!isvector(vec)) then return false end
+
+			for _, axis in ipairs({vec.x, vec.y, vec.z}) do
+				-- NaN != itself; reject NaN and infinities, then bound to source map limits.
+				if (axis != axis or math.abs(axis) > 16384) then
+					return false
+				end
+			end
+
+			return true
+		end
+
+		if (!isFiniteInWorld(startPosition) or !isFiniteInWorld(endPosition)) then
+			client:NotifyLocalized("areaInvalidType")
+			return
+		end
+
+		if (ws.area.stored[id]) then
+			client:NotifyLocalized("areaAlreadyExists")
+			return
+		end
+
+		for k, v in pairs(properties) do
+			if (!isstring(k) or !ws.area.properties[k]) then
+				continue
+			end
+
+			properties[k] = ws.util.SanitizeType(ws.area.properties[k].type, v)
+		end
+
+		ws.area.Create(id, type, startPosition, endPosition, nil, properties)
+		ws.log.Add(client, "areaAdd", id)
 	end
+})
 
-	ws.area.Create(id, type, startPosition, endPosition, nil, properties)
-	ws.log.Add(client, "areaAdd", id)
-end)
+-- Admin world-editor remove. No item/target; admin gate in onValidate, id payload in
+-- read(). (Client sender: cl_hooks.lua EditReload.)
+ws.action.Register("wsAreaRemove", {
+	read = function()
+		return net.ReadString()
+	end,
+	onValidate = function(client)
+		-- Strict false on denial (see wsAreaAdd note). (fw-plugins-net-5)
+		if (!client:Alive() or !CAMI.PlayerHasAccess(client, "Windswept - AreaEdit", nil)) then
+			return false
+		end
+	end,
+	run = function(client, ctx)
+		local id = ctx.data
 
-net.Receive("wsAreaRemove", function(length, client)
-	if (!client:Alive() or !CAMI.PlayerHasAccess(client, "Helix - AreaEdit", nil)) then
-		return
+		if (!ws.area.stored[id]) then
+			client:NotifyLocalized("areaDoesntExist")
+			return
+		end
+
+		ws.area.Remove(id)
+		ws.log.Add(client, "areaRemove", id)
 	end
-
-	local id = net.ReadString()
-
-	if (!ws.area.stored[id]) then
-		client:NotifyLocalized("areaDoesntExist")
-		return
-	end
-
-	ws.area.Remove(id)
-	ws.log.Add(client, "areaRemove", id)
-end)
+})

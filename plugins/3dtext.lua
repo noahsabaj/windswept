@@ -117,10 +117,10 @@ else
 	-- Pre-define the zero index in client before the net receives
 	PLUGIN.list[0] = PLUGIN.list[0] or 0
 
-	language.Add("Undone_ix3dText", "Removed 3D Text")
+	language.Add("Undone_ws3dText", "Removed 3D Text")  -- (fw-plugins-world-5)
 
 	function PLUGIN:GenerateMarkup(text)
-		local object = ws.markup.Parse("<font=ix3D2DFont>"..text:gsub("\\n", "\n"))
+		local object = ws.markup.Parse("<font=ws3D2DFont>"..text:gsub("\\n", "\n"))
 
 		object.onDrawText = function(surfaceText, font, x, y, color, alignX, alignY, alpha)
 			-- shadow
@@ -173,7 +173,7 @@ else
 		local uncompressed = util.Decompress(data)
 
 		if (!uncompressed) then
-			ErrorNoHalt("[Helix] Unable to decompress text data!\n")
+			ErrorNoHalt("[Windswept] Unable to decompress text data!\n")
 			return
 		end
 
@@ -187,7 +187,7 @@ else
 				continue
 			end
 
-			local object = ws.markup.Parse("<font=ix3D2DFont>"..v[3]:gsub("\\n", "\n"))
+			local object = ws.markup.Parse("<font=ws3D2DFont>"..v[3]:gsub("\\n", "\n"))
 
 			object.onDrawText = function(text, font, x, y, color, alignX, alignY, alpha)
 				draw.TextShadow({
@@ -314,7 +314,7 @@ ws.command.Add("TextAdd", {
 
 		local index = PLUGIN:AddText(position + angles:Up() * 0.1, angles, text, scale)
 
-		undo.Create("ix3dText")
+		undo.Create("ws3dText")
 			undo.SetPlayer(client)
 			undo.AddFunction(function()
 				if (PLUGIN:RemoveTextByID(index)) then

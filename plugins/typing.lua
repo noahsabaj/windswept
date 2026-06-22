@@ -40,9 +40,9 @@ if (CLIENT) then
 		if (text == "") then
 			currentClass = nil
 
-			net.Start("wsTypeClass")
+			ws.action.Send("wsTypeClass", nil, nil, function()
 				net.WriteString("")
-			net.SendToServer()
+			end)
 
 			return
 		end
@@ -52,18 +52,18 @@ if (CLIENT) then
 		if (newClass != currentClass) then
 			currentClass = newClass
 
-			net.Start("wsTypeClass")
+			ws.action.Send("wsTypeClass", nil, nil, function()
 				net.WriteString(currentClass or "")
-			net.SendToServer()
+			end)
 		end
 	end
 
 	function PLUGIN:FinishChat()
 		currentClass = nil
 
-		net.Start("wsTypeClass")
+		ws.action.Send("wsTypeClass", nil, nil, function()
 			net.WriteString("")
-		net.SendToServer()
+		end)
 	end
 
 	function PLUGIN:GetTypingIndicator(character, text)
@@ -220,25 +220,27 @@ else
 		net.Broadcast()
 	end
 
-	net.Receive("wsTypeClass", function(length, client)
-		if ((client.wsNextTypeClass or 0) > RealTime()) then
-			return
+	-- client->server typing-class update. No item/target/money; payload is a single
+	-- string. The inline CurTime/RealTime cooldown becomes def.rateLimit (0.2s). The
+	-- server's own net.Start("wsTypeClass") broadcasts below stay untouched -- they're
+	-- a server->client send sharing the net name, not a second receive.
+	ws.action.Register("wsTypeClass", {
+		rateLimit = 0.2,
+		read = function() return net.ReadString() end,
+		run = function(client, ctx)
+			local newClass = ctx.data
+
+			-- send message to players in pvs only since they're the only ones who can see the indicator
+			-- we'll broadcast if the type class is empty because they might move out of pvs before the ending net message is sent
+			net.Start("wsTypeClass")
+			net.WriteEntity(client)
+			net.WriteString(newClass)
+
+			if (newClass == "") then
+				net.Broadcast()
+			else
+				net.SendPVS(client:GetPos())
+			end
 		end
-
-		local newClass = net.ReadString()
-
-		-- send message to players in pvs only since they're the only ones who can see the indicator
-		-- we'll broadcast if the type class is empty because they might move out of pvs before the ending net message is sent
-		net.Start("wsTypeClass")
-		net.WriteEntity(client)
-		net.WriteString(newClass)
-
-		if (newClass == "") then
-			net.Broadcast()
-		else
-			net.SendPVS(client:GetPos())
-		end
-
-		client.wsNextTypeClass = RealTime() + 0.2
-	end)
+	})
 end

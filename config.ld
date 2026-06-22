@@ -15,8 +15,8 @@ module_file = {
 }
 
 dir = "docs/html"
-project = "Helix"
-title = "Helix Documentation"
+project = "Windswept"
+title = "Windswept Documentation"
 
 no_space_before_args = true
 style = "docs/css"
@@ -57,11 +57,11 @@ end
 new_type("hooks", "Hooks", true)
 new_type("panel", "Panels", true)
 
--- helix types
+-- windswept types
 tparam_alias("char", "Character")
 tparam_alias("inventory", "Inventory")
 tparam_alias("item", "Item")
-tparam_alias("ixtype", "ix.type")
+tparam_alias("wstype", "ws.type")
 tparam_alias("date", "date")
 
 -- standard types

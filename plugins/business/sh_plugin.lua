@@ -1,8 +1,13 @@
--- DISABLED: Physical currency system
--- Business menu spawns items from thin air - not compatible with physical economy
--- Items should come from vendors, crafting, or other players
+PLUGIN.name = "Business"
+PLUGIN.author = "Windswept"
+PLUGIN.description = "Order items via deliverable shipments. Off by default."
+
 ws.business = ws.business or {}
-ws.business.disabled = true
+
+-- Off by default: the business menu spawns items from nothing, which the physical-currency
+-- economy avoids (items should come from vendors / crafting / players). A schema opts in via
+-- this config. Relocated from framework core into this plugin. (layer-7)
+ws.config.Add("businessEnabled", false, "Enables the business/shipment ordering menu.")
 
 if (SERVER) then
 	util.AddNetworkString("wsBusinessBuy")
@@ -12,8 +17,8 @@ if (SERVER) then
 	util.AddNetworkString("wsShipmentClose")
 
 	net.Receive("wsBusinessBuy", function(length, client)
-		-- Physical currency system: business menu disabled
-		if (ws.business.disabled) then
+		-- Off unless the schema enables it (spawns items from nothing). (layer-7)
+		if (!ws.config.Get("businessEnabled")) then
 			client:NotifyLocalized("businessDisabled")
 			return
 		end
@@ -29,7 +34,12 @@ if (SERVER) then
 			return
 		end
 
-		local indicies = net.ReadUInt(8)
+		-- Overall caps so a crafted payload (or a huge admin/item price) can't request an
+		-- unbounded number of distinct items or run up an unbounded shipment cost. (fw-currency-economy-7)
+		local MAX_DISTINCT_ITEMS = 16
+		local MAX_TOTAL_COST = 1000000
+
+		local indicies = math.min(net.ReadUInt(8), MAX_DISTINCT_ITEMS)
 		local items = {}
 
 		for _ = 1, indicies do
@@ -63,10 +73,19 @@ if (SERVER) then
 			return
 		end
 
-		if (char:HasMoney(cost)) then
-			char:TakeMoney(cost)
+		-- Reject the whole order if it exceeds the total-cost ceiling. (fw-currency-economy-7)
+		if (cost > MAX_TOTAL_COST) then
+			return
+		end
 
-			local entity = ents.Create("ix_shipment")
+		if (char:HasMoney(cost)) then
+			-- Abort if the money can't actually be removed (e.g. can't make change in a full
+			-- inventory), or the player would get a free shipment. (fw-currency-economy-5 ripple)
+			if (!char:TakeMoney(cost)) then
+				return
+			end
+
+			local entity = ents.Create("ws_shipment")
 			entity:Spawn()
 			entity:SetPos(client:GetItemDropPos(entity))
 			entity:SetItems(items)
@@ -93,7 +112,8 @@ if (SERVER) then
 		local itemTable = ws.item.list[uniqueID]
 
 		if (itemTable and IsValid(entity)) then
-			if (entity:GetPos():Distance(client:GetPos()) > 128) then
+			-- Range check via ws.access (interaction range) instead of a magic 128u. (fw-currency-economy-8)
+			if (!ws.access.CanInteract(client, entity)) then
 				client.wsShipment = nil
 
 				return
@@ -101,11 +121,9 @@ if (SERVER) then
 
 			local amount = entity.items[uniqueID]
 
+			-- The dead inner `entity.items[uniqueID] <= 0` branch was removed; the
+			-- post-decrement GetItemCount() < 1 check below cleans up the shipment. (tb-7)
 			if (amount and amount > 0) then
-				if (entity.items[uniqueID] <= 0) then
-					entity.items[uniqueID] = nil
-				end
-
 				if (drop) then
 					ws.item.Spawn(uniqueID, entity:GetPos() + Vector(0, 0, 16), function(item, itemEntity)
 						if (IsValid(client)) then

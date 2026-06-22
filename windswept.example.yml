@@ -4,5 +4,5 @@ database:
   hostname: "example.com"
   username: "example"
   password: "example"
-  database: "helix"
+  database: "windswept"
   port: 3306

@@ -82,6 +82,13 @@ ws.command.Add("DoorBuy", {
 
 			-- Check if the player can actually afford it.
 			if (character:HasMoney(price)) then
+				-- Take their money FIRST and abort if it can't actually be removed (e.g. can't
+				-- make change in a full inventory), or the player would own the door for free.
+				-- (fw-currency-economy-5 ripple)
+				if (!character:TakeMoney(price)) then
+					return "@canNotAfford"
+				end
+
 				-- Set the door to be owned by this player.
 				entity:SetDTEntity(0, client)
 				entity.wsAccess = {
@@ -96,8 +103,6 @@ ws.command.Add("DoorBuy", {
 					doors[#doors + 1] = entity
 				character:SetVar("doors", doors, true)
 
-				-- Take their money and notify them.
-				character:TakeMoney(price)
 				hook.Run("OnPlayerPurchaseDoor", client, entity, true, PLUGIN.CallOnDoorChildren)
 
 				ws.log.Add(client, "buydoor")
@@ -392,7 +397,7 @@ ws.command.Add("DoorSetTitle", {
 			-- Check if they are allowed to change the door's name.
 			if (entity:CheckDoorAccess(client, DOOR_TENANT)) then
 				entity:SetNetVar("title", name)
-			elseif (CAMI.PlayerHasAccess(client, "Helix - Manage Doors", nil)) then
+			elseif (CAMI.PlayerHasAccess(client, "Windswept - Manage Doors", nil)) then
 				entity:SetNetVar("name", name)
 
 				PLUGIN:CallOnDoorChildren(entity, function(child)

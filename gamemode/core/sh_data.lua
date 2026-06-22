@@ -6,23 +6,24 @@ ws.data = ws.data or {}
 ws.data.stored = ws.data.stored or {}
 
 -- Create a folder to store data in.
-file.CreateDir("helix")
+file.CreateDir("windswept")
 
---- Populates a file in the `data/helix` folder with some serialized data.
+--- Populates a file in the `data/windswept` folder with some serialized data.
 -- @realm shared
 -- @string key Name of the file to save
 -- @param value Some sort of data to save
--- @bool[opt=false] bGlobal Whether or not to write directly to the `data/helix` folder, or the `data/helix/schema` folder,
+-- @bool[opt=false] bGlobal Whether or not to write directly to the `data/windswept` folder, or the
+-- `data/windswept/schema` folder,
 -- where `schema` is the name of the current schema.
 -- @bool[opt=false] bIgnoreMap Whether or not to ignore the map and save in the schema folder, rather than
--- `data/helix/schema/map`, where `map` is the name of the current map.
+-- `data/windswept/schema/map`, where `map` is the name of the current map.
 function ws.data.Set(key, value, bGlobal, bIgnoreMap)
 	-- Get the base path to write to.
-	local path = "helix/" .. (bGlobal and "" or Schema.folder .. "/") .. (bIgnoreMap and "" or game.GetMap() .. "/")
+	local path = "windswept/" .. (bGlobal and "" or Schema.folder .. "/") .. (bIgnoreMap and "" or game.GetMap() .. "/")
 
 	-- Create the schema folder if the data is not global.
 	if (!bGlobal) then
-		file.CreateDir("helix/" .. Schema.folder .. "/")
+		file.CreateDir("windswept/" .. Schema.folder .. "/")
 	end
 
 	-- If we're not ignoring the map, create a folder for the map.
@@ -36,14 +37,14 @@ function ws.data.Set(key, value, bGlobal, bIgnoreMap)
 	return path
 end
 
---- Retrieves the contents of a saved file in the `data/helix` folder.
+--- Retrieves the contents of a saved file in the `data/windswept` folder.
 -- @realm shared
 -- @string key Name of the file to load
 -- @param default Value to return if the file could not be loaded successfully
--- @bool[opt=false] bGlobal Whether or not the data is in the `data/helix` folder, or the `data/helix/schema` folder,
+-- @bool[opt=false] bGlobal Whether or not the data is in the `data/windswept` folder, or the `data/windswept/schema` folder,
 -- where `schema` is the name of the current schema.
 -- @bool[opt=false] bIgnoreMap Whether or not to ignore the map and load from the schema folder, rather than
--- `data/helix/schema/map`, where `map` is the name of the current map.
+-- `data/windswept/schema/map`, where `map` is the name of the current map.
 -- @bool[opt=false] bRefresh Whether or not to skip the cache and forcefully load from disk.
 -- @return Value associated with the key, or the default that was given if it doesn't exists
 function ws.data.Get(key, default, bGlobal, bIgnoreMap, bRefresh)
@@ -57,7 +58,7 @@ function ws.data.Get(key, default, bGlobal, bIgnoreMap, bRefresh)
 	end
 
 	-- Get the path to read from.
-	local path = "helix/" .. (bGlobal and "" or Schema.folder .. "/") .. (bIgnoreMap and "" or game.GetMap() .. "/")
+	local path = "windswept/" .. (bGlobal and "" or Schema.folder .. "/") .. (bIgnoreMap and "" or game.GetMap() .. "/")
 	-- Read the data from a local file.
 	local contents = file.Read(path .. key .. ".txt", "DATA")
 
@@ -88,17 +89,17 @@ function ws.data.Get(key, default, bGlobal, bIgnoreMap, bRefresh)
 	return default
 end
 
---- Deletes the contents of a saved file in the `data/helix` folder.
+--- Deletes the contents of a saved file in the `data/windswept` folder.
 -- @realm shared
 -- @string key Name of the file to delete
--- @bool[opt=false] bGlobal Whether or not the data is in the `data/helix` folder, or the `data/helix/schema` folder,
+-- @bool[opt=false] bGlobal Whether or not the data is in the `data/windswept` folder, or the `data/windswept/schema` folder,
 -- where `schema` is the name of the current schema.
 -- @bool[opt=false] bIgnoreMap Whether or not to ignore the map and delete from the schema folder, rather than
--- `data/helix/schema/map`, where `map` is the name of the current map.
+-- `data/windswept/schema/map`, where `map` is the name of the current map.
 -- @treturn bool Whether or not the deletion has succeeded
 function ws.data.Delete(key, bGlobal, bIgnoreMap)
 	-- Get the path to read from.
-	local path = "helix/" .. (bGlobal and "" or Schema.folder .. "/") .. (bIgnoreMap and "" or game.GetMap() .. "/")
+	local path = "windswept/" .. (bGlobal and "" or Schema.folder .. "/") .. (bIgnoreMap and "" or game.GetMap() .. "/")
 	-- Read the data from a local file.
 	local contents = file.Read(path .. key .. ".txt", "DATA")
 
