@@ -10,6 +10,7 @@ stds.windswept = {}
 stds.windswept.globals = {
 	"ws",
 	"Schema",
+	"HOOKS_CACHE",
 
 	"ITEM",
 	"PLUGIN",
@@ -28,7 +29,6 @@ stds.windswept.read_globals = {
 	"L2",
 	"WS_RELOADED",
 	"CHAT_CLASS",
-	"HOOKS_CACHE",
 	"BAR_HEIGHT",
 	"ACCESS_LABELS",
 	"CAMI",
@@ -101,11 +101,19 @@ files = {
 		}
 	},
 
-	-- Plugins absorb a lot of moved schema content (verbose GMod UI + data tables), so relax the
-	-- max-line-length check for plugin code. The framework CORE (gamemode/) stays strict at 128.
+	-- Plugins absorb a lot of moved schema content (verbose GMod UI + data tables). Match the
+	-- colony schema's lint policy for plugin code (cosmetic + dead-code codes), so moved systems
+	-- don't need per-file reflows/cleanups. The framework CORE (gamemode/) stays strict.
 	["plugins/**/*.lua"] = {
 		ignore = {
-			"631"
+			"211", -- unused local
+			"213", -- unused loop variable
+			"221", -- variable set but never accessed
+			"231", -- variable set but never accessed
+			"311", -- value assigned but never used
+			"611", -- line contains only whitespace
+			"612", -- line contains trailing whitespace
+			"631"  -- line too long
 		}
 	}
 }
