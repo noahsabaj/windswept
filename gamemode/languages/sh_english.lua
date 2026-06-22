@@ -302,6 +302,7 @@ LANGUAGE = {
 	vendorNoTrade = "You are not able to trade with this vendor!",
 	vendorNoMoney = "This vendor can not afford that item!",
 	vendorNoStock = "This vendor does not have that item in stock!",
+	vendorCannotMint = "This vendor isn't backed to trade that (no finite money or stock).",
 	vendorMaxStock = "This vendor has full stock of that item!",
 	contentTitle = "Windswept Content Missing",
 	contentWarning = "You do not have the Windswept content mounted. This may result in certain features missing.\nWould you like to open the Workshop page for the Windswept content?",
