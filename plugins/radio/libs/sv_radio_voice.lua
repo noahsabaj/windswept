@@ -15,6 +15,11 @@
 
 ws.radio = ws.radio or {}
 
+-- Client->server voice net strings (a schema's handheld radio item net.Start's these).
+util.AddNetworkString("wsRadioVoiceStart")
+util.AddNetworkString("wsRadioVoiceStop")
+util.AddNetworkString("wsVoiceAmplitude")
+
 -- Track who is currently transmitting on radio
 ws.radio.transmitters = ws.radio.transmitters or {}
 
