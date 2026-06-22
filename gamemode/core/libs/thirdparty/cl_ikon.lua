@@ -83,8 +83,8 @@ function ikon:init()
 		end
 	end
 
-	file.CreateDir("helix/icons")
-	file.CreateDir("helix/icons/" .. schemaName)
+	file.CreateDir("windswept/icons")
+	file.CreateDir("windswept/icons/" .. schemaName)
 end
 
 --[[
@@ -295,7 +295,7 @@ function ikon:renderIcon(name, w, h, mdl, camInfo, updateCache)
 		h = h
 	})
 
-	file.Write("helix/icons/" .. schemaName .. "/" .. name .. ".png", capturedIcon)
+	file.Write("windswept/icons/" .. schemaName .. "/" .. name .. ".png", capturedIcon)
 	ikon.info = nil
 	render.PopRenderTarget()
 
@@ -324,16 +324,16 @@ function ikon:GetIcon(name)
 		return ikon.cache[name] -- yeah return cache
 	end
 
-	if (file.Exists("helix/icons/" .. schemaName .. "/" .. name .. ".png", "DATA")) then
-		ikon.cache[name] = Material("../data/helix/icons/" .. schemaName .. "/".. name ..".png")
+	if (file.Exists("windswept/icons/" .. schemaName .. "/" .. name .. ".png", "DATA")) then
+		ikon.cache[name] = Material("../data/windswept/icons/" .. schemaName .. "/".. name ..".png")
 		return ikon.cache[name] -- yeah return cache
 	else
 		return false -- retryd
 	end
 end
 
-concommand.Add("ix_flushicon", function()
-	local root = "helix/icons/" .. schemaName
+concommand.Add("ws_flushicon", function()
+	local root = "windswept/icons/" .. schemaName
 
 	for _, v in ipairs(file.Find(root .. "/*.png", "DATA")) do
 		file.Delete(root .. "/" .. v)

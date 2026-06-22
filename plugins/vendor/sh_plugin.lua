@@ -644,8 +644,8 @@ else
 			return
 		end
 
-		local value = net.ReadUInt(16)
-		value = value != -1 and value or nil
+		-- nil = infinite money (no cap); otherwise a 16-bit balance
+		local value = net.ReadBool() and net.ReadUInt(16) or nil
 
 		entity.money = value
 
