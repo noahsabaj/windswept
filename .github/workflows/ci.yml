@@ -40,6 +40,8 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # allow the deploy step to push the built docs to the gh-pages branch
 
     steps:
       - uses: actions/checkout@v7
@@ -72,10 +74,9 @@ jobs:
           cp -v docs/css/* docs/html
           cp -v docs/js/* docs/html
 
-      - name: Deploy
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'NebulousCloud/helix' && success()
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'noahsabaj/windswept' && success()
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: windswept/docs/html
-          cname: docs.gethelix.co
