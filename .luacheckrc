@@ -99,6 +99,14 @@ files = {
 		ignore = {
 			"631"
 		}
+	},
+
+	-- Plugins absorb a lot of moved schema content (verbose GMod UI + data tables), so relax the
+	-- max-line-length check for plugin code. The framework CORE (gamemode/) stays strict at 128.
+	["plugins/**/*.lua"] = {
+		ignore = {
+			"631"
+		}
 	}
 }
 
