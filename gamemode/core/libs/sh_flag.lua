@@ -2,7 +2,8 @@
 --[[--
 Grants abilities to characters.
 
-Flags are a simple way of adding/removing certain abilities to players on a per-character basis. Windswept comes with a few flags
+Flags are a simple way of adding/removing certain abilities to players on a per-character basis. Windswept comes
+with a few flags
 by default, for example to restrict spawning of props, usage of the physgun, etc. All flags will be listed in the
 `Flags` section of the `Help` menu. Flags are usually used when server validation is required to allow a player to do something
 on their character. However, it's usually preferable to use in-character methods over flags when possible (i.e restricting

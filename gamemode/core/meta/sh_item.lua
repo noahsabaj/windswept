@@ -335,7 +335,6 @@ if (SERVER) then
 		ws.item.netSyncScheduled = false
 
 		for itemID, data in pairs(pending) do
-			local item = data.item
 			local changes = data.changes
 			local receivers = data.receivers
 
@@ -509,7 +508,7 @@ function ITEM:SetData(key, value, receivers, noSave, noCheckEntity)
 		-- World items use entity netvar above, so skip net message to avoid duplicate sync
 		if (self.invID > 0) then
 			local inventory = ws.item.inventories[self.invID]
-			local targetReceivers = receivers
+			local targetReceivers
 
 			if (receivers != false) then
 				targetReceivers = receivers or (inventory and inventory.GetReceivers and inventory:GetReceivers()) or self:GetOwner()

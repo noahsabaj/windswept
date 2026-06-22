@@ -39,7 +39,7 @@ ws.factionperms.ALL = {
 --- Check if a character has a specific permission.
 -- Rank 255 always has all permissions, rank 0 never has any.
 -- @realm shared
--- @character character The character to check
+-- @char character The character to check
 -- @string permKey The permission key to check (e.g., "faction_invite")
 -- @treturn bool Whether the character has the permission
 function ws.factionperms.HasPermission(character, permKey)
@@ -65,7 +65,7 @@ end
 --- Check if a character can affect a target rank.
 -- A character can only affect ranks strictly below their own.
 -- @realm shared
--- @character character The character performing the action
+-- @char character The character performing the action
 -- @number targetRank The rank being affected
 -- @treturn bool Whether the character can affect the target rank
 function ws.factionperms.CanAffectRank(character, targetRank)
@@ -82,7 +82,7 @@ end
 
 --- Get a character's current rank.
 -- @realm shared
--- @character character The character to check
+-- @char character The character to check
 -- @treturn number The character's rank, or -1 if not in a class
 function ws.factionperms.GetRank(character)
     if not character then return -1 end
@@ -99,7 +99,7 @@ end
 --- Get the maximum rank a character can create or assign to.
 -- This is always their own rank minus 1.
 -- @realm shared
--- @character character The character to check
+-- @char character The character to check
 -- @treturn number The maximum assignable rank, or -1 if cannot assign
 function ws.factionperms.GetMaxAssignableRank(character)
     local rank = ws.factionperms.GetRank(character)
@@ -110,7 +110,7 @@ end
 --- Check if a character can grant a specific permission to others.
 -- You can only grant permissions you have.
 -- @realm shared
--- @character character The character attempting to grant
+-- @char character The character attempting to grant
 -- @string permKey The permission key to grant
 -- @treturn bool Whether the character can grant this permission
 function ws.factionperms.CanGrantPermission(character, permKey)
@@ -120,7 +120,7 @@ end
 
 --- Get all permissions a character currently has.
 -- @realm shared
--- @character character The character to check
+-- @char character The character to check
 -- @treturn table Array of permission keys the character has
 function ws.factionperms.GetPermissions(character)
     if not character then return {} end

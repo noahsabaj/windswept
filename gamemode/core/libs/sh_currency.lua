@@ -742,7 +742,6 @@ if SERVER then
                     -- Partial merge
                     mergedTotal = mergedTotal + canAdd
                     otherItem:SetData("quantity", otherQuantity - canAdd)
-                    canAdd = 0
                     break
                 end
 

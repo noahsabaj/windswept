@@ -1,5 +1,6 @@
 
---- Top-level library containing all Windswept libraries. A large majority of the framework is split into respective libraries that
+--- Top-level library containing all Windswept libraries. A large majority of the framework is split into
+-- respective libraries that
 -- reside within `ws`.
 -- @module ws
 

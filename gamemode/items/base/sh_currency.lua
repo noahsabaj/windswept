@@ -118,7 +118,6 @@ ITEM.functions.MergeAll = {
 				elseif canAdd > 0 then
 					mergedTotal = mergedTotal + canAdd
 					otherItem:SetData("quantity", otherQuantity - canAdd)
-					canAdd = 0
 					break
 				end
 

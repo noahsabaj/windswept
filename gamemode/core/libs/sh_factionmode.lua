@@ -17,7 +17,8 @@ ws.faction = ws.faction or {}
 
 if (ws.config and ws.config.Add) then
     ws.config.Add("factionMode", "required",
-        "Faction model: 'required' (every character picks a faction), 'optional' (factionless allowed), or 'disabled' (no factions).",
+        "Faction model: 'required' (every character picks a faction), 'optional' " ..
+        "(factionless allowed), or 'disabled' (no factions).",
         nil, { category = "factions" })
 
     ws.config.Add("showFactionColors", true,

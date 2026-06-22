@@ -204,7 +204,9 @@ ws.config.Add("itemPickupTime", 1, "How long it takes to pick up and put an item
 	data = {min = 0, max = 5, decimals = 1},
 	category = "interaction"
 })
-ws.config.Add("year", 2200, "The current in-game year. Auto-syncs from real year + offset on server start.", function(oldValue, newValue)
+ws.config.Add("year", 2200,
+	"The current in-game year. Auto-syncs from real year + offset on server start.",
+	function(oldValue, newValue)
 	if (SERVER and !ws.date.bSaving) then
 		ws.date.ResolveOffset()
 		ws.date.current:setyear(newValue)

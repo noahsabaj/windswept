@@ -12,7 +12,8 @@ file.CreateDir("windswept")
 -- @realm shared
 -- @string key Name of the file to save
 -- @param value Some sort of data to save
--- @bool[opt=false] bGlobal Whether or not to write directly to the `data/windswept` folder, or the `data/windswept/schema` folder,
+-- @bool[opt=false] bGlobal Whether or not to write directly to the `data/windswept` folder, or the
+-- `data/windswept/schema` folder,
 -- where `schema` is the name of the current schema.
 -- @bool[opt=false] bIgnoreMap Whether or not to ignore the map and save in the schema folder, rather than
 -- `data/windswept/schema/map`, where `map` is the name of the current map.

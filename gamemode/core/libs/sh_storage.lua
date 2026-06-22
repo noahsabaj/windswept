@@ -291,7 +291,7 @@ else
 		local id = net.ReadUInt(32)
 		local entity = net.ReadEntity()
 		local name = net.ReadString()
-		local data = net.ReadTable()
+		net.ReadTable() -- read to keep the net order; field not currently consumed
 
 		local inventory = ws.item.inventories[id]
 

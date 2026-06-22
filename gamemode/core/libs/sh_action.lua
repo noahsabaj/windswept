@@ -42,8 +42,10 @@ if SERVER then
         -- An invalid/typo'd range string would silently disable the distance check,
         -- so reject anything other than the known values. "none" is the explicit opt-out
         -- for non-physical targets; nil defaults to a "close" check below. (fw-core-security-3)
-        assert(def.range == nil or def.range == "close" or def.range == "interaction" or def.range == "none" or isnumber(def.range),
-            "ws.action.Register: def.range must be nil, 'close', 'interaction', 'none', or a number (got " .. tostring(def.range) .. ")")
+        local validRange = def.range == nil or def.range == "close" or def.range == "interaction"
+            or def.range == "none" or isnumber(def.range)
+        assert(validRange, "ws.action.Register: def.range must be nil, 'close', 'interaction', " ..
+            "'none', or a number (got " .. tostring(def.range) .. ")")
         -- session / targetClass authority only make sense against a target entity. (session shape)
         assert(not def.session or def.target, "ws.action.Register: def.session requires def.target")
         assert(not def.targetClass or def.target, "ws.action.Register: def.targetClass requires def.target")

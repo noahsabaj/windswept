@@ -2,7 +2,8 @@
 --[[--
 Player model animation.
 
-Windswept comes with support for using NPC animations/models as regular player models by manually translating animations. There are
+Windswept comes with support for using NPC animations/models as regular player models by manually translating
+animations. There are
 a few standard animation sets that are built-in that should cover most non-player models:
 	citizen_male
 	citizen_female

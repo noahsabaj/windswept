@@ -348,7 +348,6 @@ do
 			return hook.Run("GetDefaultCharacterName", client, payload.faction) or value:utf8sub(1, 70)
 		end,
 		OnPostSetup = function(self, panel, payload)
-			local faction = ws.faction.indices[payload.faction]
 			local name, disabled = hook.Run("GetDefaultCharacterName", LocalPlayer(), payload.faction)
 
 			if (name) then
