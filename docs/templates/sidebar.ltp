@@ -43,7 +43,7 @@ end
 								{% for k, v in pairs(currentMod.items) do %}
 									{% if (v.kind == "functions") then %}
 										<li>
-											{* ldoc.realm_icon(v.tags.realm[1]) *}
+											{* ldoc.realm_icon(v.tags.realm and v.tags.realm[1]) *}
 											<a href="{* ldoc.ref_to_module(currentMod) *}#{{v.name}}">
 												{% if (ldoc.is_kind_classmethod(currentMod.kind)) then
 													echo((v.name:gsub(".+:", "")))
