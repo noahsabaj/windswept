@@ -1,83 +1,30 @@
+--[[
+    Doors — physical door, lock, and key system (framework plugin)
+
+    Windswept's doors are physical, like its money: there is no abstract ownership
+    or purchasable-door economy. This plugin replaces a map's doors with managed
+    prop_door_rotating leaves that have health and a type (wood/metal/gate), can be
+    fitted with physical locks keyed to physical keys, are opened/closed natively,
+    can be battered down (with debris/breach VFX), and persist per-map. Double doors
+    open in sync.
+
+    Generic engine only: the ws.doors lib, server handlers, and client frame viz.
+    The schema owns the CONTENT (door/key/lock items + the SWEPs that drive them)
+    and wires it in through this plugin's seams: ws.doors.RegisterDamageSource(class,
+    {fist|ram}) for what can damage a door, and ws.doors.installToolClass for the
+    door-install tool that reveals empty frames.
+
+    Off by default — a schema sets the doorsEnabled config to take over the map's
+    doors (the InitPostEntity orchestrator in libs/sv_doors_init.lua early-returns
+    while it is false, so the framework and a zero-plugin skeleton boot untouched).
+]]--
 
 local PLUGIN = PLUGIN
 
 PLUGIN.name = "Doors"
-PLUGIN.author = "Chessnut"
-PLUGIN.description = "A simple door system."
+PLUGIN.author = "Windswept"
+PLUGIN.description = "Physical doors, locks, and keys: breakable managed doors with per-map persistence."
 
--- luacheck: globals DOOR_OWNER DOOR_TENANT DOOR_GUEST DOOR_NONE
-DOOR_OWNER = 3
-DOOR_TENANT = 2
-DOOR_GUEST = 1
-DOOR_NONE = 0
+ws.doors = ws.doors or {}
 
-ws.util.Include("sv_plugin.lua")
-ws.util.Include("cl_plugin.lua")
-ws.util.Include("sh_commands.lua")
-
-do
-	local entityMeta = FindMetaTable("Entity")
-
-	function entityMeta:CheckDoorAccess(client, access)
-		if (!self:IsDoor()) then
-			return false
-		end
-
-		access = access or DOOR_GUEST
-
-		local parent = self.wsParent
-
-		if (IsValid(parent)) then
-			return parent:CheckDoorAccess(client, access)
-		end
-
-		if (hook.Run("CanPlayerAccessDoor", client, self, access)) then
-			return true
-		end
-
-		if (self.wsAccess and (self.wsAccess[client] or 0) >= access) then
-			return true
-		end
-
-		return false
-	end
-
-	if (SERVER) then
-		function entityMeta:RemoveDoorAccessData()
-			local receivers = {}
-
-			for k, _ in pairs(self.wsAccess or {}) do
-				receivers[#receivers + 1] = k
-			end
-
-			if (#receivers > 0) then
-				net.Start("wsDoorMenu")
-					net.WriteEntity(self)
-					net.WriteTable({})
-				net.Send(receivers)
-			end
-
-			self.wsAccess = {}
-			self:SetDTEntity(0, nil)
-
-			-- Remove door information on child doors
-			PLUGIN:CallOnDoorChildren(self, function(child)
-				child:SetDTEntity(0, nil)
-			end)
-		end
-	end
-end
-
--- Configurations for door prices.
-ws.config.Add("doorCost", 10, "The price to purchase a door.", nil, {
-	data = {min = 0, max = 500},
-	category = "dConfigName"
-})
-ws.config.Add("doorSellRatio", 0.5, "How much of the door price is returned when selling a door.", nil, {
-	data = {min = 0, max = 1.0, decimals = 1},
-	category = "dConfigName"
-})
-ws.config.Add("doorLockTime", 1, "How long it takes to (un)lock a door.", nil, {
-	data = {min = 0, max = 10.0, decimals = 1},
-	category = "dConfigName"
-})
+ws.config.Add("doorsEnabled", false, "Replaces the map's doors with the physical door/lock system.")
