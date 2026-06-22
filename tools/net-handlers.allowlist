@@ -69,8 +69,6 @@ wsData
 wsDataSync
 wsDateSync
 wsDocumentData
-wsDoorMenu
-wsDoorPermission
 wsDoorsSync
 wsGlobalVarSet
 wsInventoryAction
