@@ -1265,27 +1265,6 @@ ws.resource.Transfer											</a>
 							</li>
 							<li>
 									<details >
-									<summary><a href="../../libraries/ws.act/">ws.act</a></summary>
-
-									<ul>
-
-
-										<li>
-											<span class="realm shared"></span>
-											<a href="../../libraries/ws.act/#ws.act.Register">
-Register											</a>
-										</li>
-										<li>
-											<span class="realm shared"></span>
-											<a href="../../libraries/ws.act/#ws.act.Remove">
-Remove											</a>
-										</li>
-
-									</ul>
-									</details>
-							</li>
-							<li>
-									<details >
 									<summary><a href="../../libraries/ws.anim/">ws.anim</a></summary>
 
 									<ul>
@@ -1965,12 +1944,12 @@ ws.util.NotifyLocalized											</a>
 Add											</a>
 										</li>
 										<li>
-											<span class="realm client"></span>
+											<span class="realm server"></span>
 											<a href="../../libraries/ws.option/#ws.option.Get">
 Get											</a>
 										</li>
 										<li>
-											<span class="realm server"></span>
+											<span class="realm client"></span>
 											<a href="../../libraries/ws.option/#ws.option.Get">
 Get											</a>
 										</li>
@@ -3114,18 +3093,31 @@ named <code>headbob</code>, then you'll need to define a language phrase called 
 		<section class="method">
 			<header>
 				<a class="anchor" id="ws.option.Get">
-					<h1><span class="realm client"></span></span>ws.option.Get(key, default)</h1>
+					<h1><span class="realm server"></span></span>ws.option.Get(client, key, default)</h1>
 				</a>
 
 
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_option.lua#L271">View source &raquo;</a>
+					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_option.lua#L330">View source &raquo;</a>
 
-					<p>Retrieves an option value for the local player.  If it is not set, it'll return the default that you've specified.</p>
+					<p>Retrieves an option value from the specified player.  If it is not set, it'll return the default that you've specified.
+ This function will error when an invalid player is passed.</p>
 			</header>
 
 
 					<h3>Parameters</h3>
 
+
+					<ul>
+
+							<li>
+								<span class="tag parameter">client</span>
+
+									<span class="tag"><a class="type" href="../../classes/player/#">Player</a></span>
+
+
+								<p> Player to retrieve option value from</p>
+							</li>
+					</ul>
 
 					<ul>
 
@@ -3175,31 +3167,18 @@ named <code>headbob</code>, then you'll need to define a language phrase called 
 		<section class="method">
 			<header>
 				<a class="anchor" id="ws.option.Get">
-					<h1><span class="realm server"></span></span>ws.option.Get(client, key, default)</h1>
+					<h1><span class="realm client"></span></span>ws.option.Get(key, default)</h1>
 				</a>
 
 
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_option.lua#L330">View source &raquo;</a>
+					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_option.lua#L271">View source &raquo;</a>
 
-					<p>Retrieves an option value from the specified player.  If it is not set, it'll return the default that you've specified.
- This function will error when an invalid player is passed.</p>
+					<p>Retrieves an option value for the local player.  If it is not set, it'll return the default that you've specified.</p>
 			</header>
 
 
 					<h3>Parameters</h3>
 
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">client</span>
-
-									<span class="tag"><a class="type" href="../../classes/player/#">Player</a></span>
-
-
-								<p> Player to retrieve option value from</p>
-							</li>
-					</ul>
 
 					<ul>
 
