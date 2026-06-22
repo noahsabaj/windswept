@@ -1,50 +1,68 @@
-<p align="center">
-	<img src="https://raw.githubusercontent.com/NebulousCloud/helix/master/docs/banner.gif" alt="Windswept" />
-</p>
+# Windswept
 
-<p align="center">
-	<a href="https://discord.gg/2AutUcF">
-		<img src="https://img.shields.io/discord/505957257125691423.svg" alt="Discord" />
-	</a>
-	<a href="https://github.com/NebulousCloud/helix/actions">
-		<img src="https://img.shields.io/github/workflow/status/NebulousCloud/windswept/CI" alt="Build Status" />
-	</a>
-</p>
+[![CI](https://github.com/noahsabaj/windswept/actions/workflows/ci.yml/badge.svg)](https://github.com/noahsabaj/windswept/actions/workflows/ci.yml)
 
-Windswept is a framework for roleplay gamemodes in [Garry's Mod](https://gmod.facepunch.com/), based off of [NutScript 1.1](https://github.com/rebel1324/NutScript). Windswept provides a stable, feature-filled, open-source, and DRM-free base so you can focus more on the things you want: making gameplay.
+**Windswept** is a **faction-optional** roleplay framework for [Garry's Mod](https://gmod.facepunch.com/). It gives you a stable, open-source engine — characters, inventories, items, a plugin system, and a hardened client→server trust boundary — so you can spend your time on gameplay instead of plumbing.
 
-## Getting Started
-Visit the getting started guide in the [documentation](https://docs.getwindswept.co/manual/getting-started/) for an in-depth guide.
+The guiding idea: **the framework provides mechanism; the schema provides policy.** Factions, the currency model, UI affordances, and every gameplay system are choices a developer opts into — never defaults the engine forces on you.
 
-If you know what you're doing, a quick start for bootstrapping your own schema is forking/copying the skeleton schema at https://github.com/nebulouscloud/helix-skeleton. The skeleton contains all the important elements you need to have a functioning schema so you can get to coding right away.
+## What makes it different
 
-You can also use our HL2 RP schema at https://github.com/nebulouscloud/helix-hl2rp as a base to work off of if you need something more fleshed out.
+- **Faction-optional.** Factions are a *choice*. The `factionMode` config supports:
+  - `required` — every character belongs to a faction (the classic Helix model),
+  - `optional` — factionless characters are allowed,
+  - `disabled` — no factions at all.
 
-## Plugins
-If you'd like to enhance your gamemode, you can use any of the freely provided plugins available at the [Windswept Plugin Center](https://plugins.gethelix.co). It is also encouraged to submit your own plugins for others to find and use at https://github.com/nebulouscloud/helix-plugins
+  Every faction-aware subsystem (character creation, scoreboard, HUD, whitelist, vendors, default names/models) degrades gracefully in all three modes. `showFactionColors` further decouples faction identity from UI color, so an anti-metagaming schema can drop faction colors without dropping factions.
+- **A real trust boundary.** Client→server actions route through **`ws.action`** (automatic caller / ownership / range / bounds checks); active-weapon SWEPs use **`ws.weapon.NetReceive`**. Conserved resources (money, charge, …) move through atomic primitives (**`ws.resource`**, the currency registry) so quantities are never duplicated across the net boundary. A CI ratchet (`tools/check-net-handlers.sh`) blocks new unchecked `net.Receive` handlers.
+- **Self-contained.** The UI assets (fonts, sounds, vignette) ship with the framework — no external workshop content pack required.
 
-## Documentation
-Up-to-date documentation can be found at https://docs.getwindswept.co. This is automatically updated when commits are pushed to the master branch.
+## The Windswept suite
 
-If you'd like to ask some questions or integrate with the community, you can always join our [Discord](https://discord.gg/2AutUcF) server. We highly encourage you to search through the documentation before posting a question - the docs contain a good deal of information about how the various systems in Windswept work, and it might explain what you're looking for.
+This repository is the **framework** (the reusable engine). It's accompanied by:
 
-### Building documentation
-If you're planning on contributing to the documentation, you'll probably want to preview your changes before you commit. The documentation can be built using [LDoc](https://github.com/impulsh/ldoc) - note that we use a forked version to add some functionality. You'll need [LuaRocks](https://luarocks.org/) installed in order to get started.
+| Repo | What it is |
+|------|------------|
+| **windswept** (here) | The framework — a generic RP engine, no game-specific gameplay. Gamemode id `windswept`. |
+| [windswept-colony](https://github.com/noahsabaj/windswept-colony) | Windswept Colony RP — the flagship game (schema) built on the framework. |
+| [windswept-fire](https://github.com/noahsabaj/windswept-fire) | A standalone, performance-focused fire system addon. |
+
+## Getting started
+
+Windswept is a base gamemode; what players actually run is a **schema** built on top of it. Derive your schema from the framework:
+
+```lua
+-- your schema's gamemode (boots as its own gamemode id, e.g. "myschema")
+DeriveGamemode("windswept")
+```
+
+See [windswept-colony](https://github.com/noahsabaj/windswept-colony) for a complete, working schema to learn from or fork.
+
+## Conventions
+
+- **Namespace `ws.*`**; entities, data tables, and saved keys use the `ws_` prefix.
+- **Realms by file prefix:** `sh_` (shared), `cl_` (client), `sv_` (server); entities use `init.lua` / `cl_init.lua` / `shared.lua`.
+- **Trust boundary:** treat every `net.Read*` as hostile. Route client→server actions through `ws.action` (SWEPs: `ws.weapon.NetReceive`) — never hand-roll an unchecked `net.Receive`. The CI gate enforces this.
+- **Conserved resources** (money, charge, ink, durability) go through `ws.resource` / the currency registry — never inline-mutate a quantity across the net boundary.
+
+## Building the documentation
+
+API docs are generated from the source's LDoc comments using a [forked LDoc](https://github.com/impulsh/LDoc) (requires [LuaRocks](https://luarocks.org/)):
 
 ```shell
-# installing ldoc
-git clone https://github.com/impulsh/ldoc
-cd ldoc
-luarocks make
+git clone https://github.com/impulsh/LDoc ldoc
+cd ldoc && luarocks make
 
-# navigate to the windswept repo folder and run
+# then, from the framework repo:
 ldoc .
 ```
 
-You may not see the syntax highlighting work on your local copy - you'll need to copy the files in `docs/js` and `docs/css` over into the `docs/html` folder after it's done building.
+After building, copy the files in `docs/js` and `docs/css` into `docs/html` for syntax highlighting.
 
 ## Contributing
-Feel free to submit a pull request with any fixes/changes that you might find beneficial. Currently, there are no solid contributing guidelines other than keeping your code consistent with the rest of the framework.
+
+Pull requests welcome — keep code consistent with the surrounding style. CI runs `luacheck` and the net-handler gate (`tools/check-net-handlers.sh`); please make sure both pass before opening a PR.
 
 ## Acknowledgements
-Windswept is a fork of NutScript 1.1 by [Chessnut](https://github.com/brianhang) and [rebel1324](https://github.com/rebel1324).
+
+Windswept is a fork of [Helix](https://github.com/NebulousCloud/helix) by NebulousCloud, which itself builds on [NutScript](https://github.com/NutScript/NutScript) by [Chessnut](https://github.com/brianhang) and rebel1324.
