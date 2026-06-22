@@ -246,7 +246,12 @@ if (SERVER) then
 		self.money = value
 
 		net.Start("wsVendorMoney")
-			net.WriteUInt(value and value or -1, 16)
+			-- explicit "has a cap" flag; nil = infinite money. (A -1 sentinel can't survive a
+			-- 16-bit UNSIGNED field -- it wraps to 65535 -- so the receiver could never detect it.)
+			net.WriteBool(value != nil)
+			if (value) then
+				net.WriteUInt(value, 16)
+			end
 		net.Send(self.receivers)
 	end
 
