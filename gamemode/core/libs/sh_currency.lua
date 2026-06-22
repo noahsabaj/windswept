@@ -526,17 +526,9 @@ end
 -- CURRENCY SPLIT NETWORKING
 -- ============================================================================
 
--- Shared per-client throttle for the currency net handlers (replay/DoS + give-spam
--- griefing surface). Returns true if the client is currently rate limited. (fw-currency-economy-6)
+-- Shared cooldown (seconds) for the currency net actions -- used as the ws.action rateLimit on
+-- currency split/merge/give/destroy (replay/DoS + give-spam griefing surface). (fw-currency-economy-6)
 local CURRENCY_NET_COOLDOWN = 0.25
-local function CurrencyRateLimited(client)
-    if (client.wsNextCurrencyNet and client.wsNextCurrencyNet > CurTime()) then
-        return true
-    end
-
-    client.wsNextCurrencyNet = CurTime() + CURRENCY_NET_COOLDOWN
-    return false
-end
 
 if SERVER then
     util.AddNetworkString("wsCurrencySplit")
