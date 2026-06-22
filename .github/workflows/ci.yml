@@ -7,18 +7,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v7
       with:
         path: windswept
 
-    - uses: leafo/gh-actions-lua@v8.0.0
+    - uses: leafo/gh-actions-lua@v13
       with:
         luaVersion: "5.2"
 
-    - uses: leafo/gh-actions-luarocks@v4.0.0
+    - uses: leafo/gh-actions-luarocks@v6
 
     - name: Pull gluacheck
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7
       with:
         repository: impulsh/gluacheck
         path: luacheck
@@ -42,18 +42,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         with:
           path: windswept
 
-      - uses: leafo/gh-actions-lua@v8.0.0
+      - uses: leafo/gh-actions-lua@v13
         with:
           luaVersion: "5.2"
 
-      - uses: leafo/gh-actions-luarocks@v4.0.0
+      - uses: leafo/gh-actions-luarocks@v6
 
       - name: Pull LDoc
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with:
           repository: impulsh/LDoc
           path: ldoc
