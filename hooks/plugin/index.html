@@ -132,11 +132,6 @@ CanCreateCharacterInfo											</a>
 CanDrawAmmoHUD											</a>
 										</li>
 										<li>
-											<span class="realm shared"></span>
-											<a href="../../hooks/plugin/#CanPlayerAccessDoor">
-CanPlayerAccessDoor											</a>
-										</li>
-										<li>
 											<span class="realm server"></span>
 											<a href="../../hooks/plugin/#CanPlayerCombineItem">
 CanPlayerCombineItem											</a>
@@ -595,11 +590,6 @@ OnPlayerObserve											</a>
 											<span class="realm server"></span>
 											<a href="../../hooks/plugin/#OnPlayerOptionSelected">
 OnPlayerOptionSelected											</a>
-										</li>
-										<li>
-											<span class="realm server"></span>
-											<a href="../../hooks/plugin/#OnPlayerPurchaseDoor">
-OnPlayerPurchaseDoor											</a>
 										</li>
 										<li>
 											<span class="realm server"></span>
@@ -3315,76 +3305,6 @@ end
 	if (weapon:GetClass() == "weapon_frag") then -- Hides the ammo hud when holding grenades.
 		return false
 	end
-end
-</code></pre>
-
-		</section>
-		<section class="method">
-			<header>
-				<a class="anchor" id="CanPlayerAccessDoor">
-					<h1><span class="realm shared"></span></span>PLUGIN:CanPlayerAccessDoor(client, door, access)</h1>
-				</a>
-
-
-
-					<p>Called when a player tries to use abilities on the door, such as locking.</p>
-			</header>
-
-
-					<h3>Parameters</h3>
-
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">client</span>
-
-									<span class="tag"><a class="type" href="../../classes/player/#">Player</a></span>
-
-
-								<p> The client trying something on the door.</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">door</span>
-
-									<span class="tag"><a class="type" href="../../classes/entity/#">Entity</a></span>
-
-
-								<p> The door entity itself.</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">access</span>
-
-									<span class="tag"><span class="type">number</span></span>
-
-
-								<p> The access level used when called.</p>
-							</li>
-					</ul>
-
-
-				<h3>Returns</h3>
-				<ul>
-
-							<li>
-									<span class="type">bool</span>
-
-								<p>Whether or not to allow the client access.</p>
-							</li>
-
-				</ul>
-
-				<h3>Example Usage</h3>
-					<pre><code>function PLUGIN:CanPlayerAccessDoor(client, door, access)
-	return true -- Always allow access.
 end
 </code></pre>
 
@@ -7753,72 +7673,6 @@ end
 
 
 								<p> Option that was selected</p>
-							</li>
-					</ul>
-
-
-
-		</section>
-		<section class="method">
-			<header>
-				<a class="anchor" id="OnPlayerPurchaseDoor">
-					<h1><span class="realm server"></span></span>PLUGIN:OnPlayerPurchaseDoor(client, entity, bBuying, bCallOnDoorChild)</h1>
-				</a>
-
-
-
-					<p>Called when a player has purchased or sold a door.</p>
-			</header>
-
-
-					<h3>Parameters</h3>
-
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">client</span>
-
-									<span class="tag"><a class="type" href="../../classes/player/#">Player</a></span>
-
-
-								<p> Player that has purchased or sold a door</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">entity</span>
-
-									<span class="tag"><a class="type" href="../../classes/entity/#">Entity</a></span>
-
-
-								<p> Door that was purchased or sold</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">bBuying</span>
-
-									<span class="tag"><span class="type">boolean</span></span>
-
-
-								<p> Whether or not the player is bying a door</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">bCallOnDoorChild</span>
-
-									<span class="tag"><span class="type">function</span></span>
-
-
-								<p> Function to call something on the door child</p>
 							</li>
 					</ul>
 
