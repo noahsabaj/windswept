@@ -82,7 +82,7 @@ function PANEL:Init()
     self.sigStatus:SetTextColor(Color(150, 200, 150))
 
     -- Button panel
-    local btnPanel, btns = ws.constants.CreateButtonBar(bottomPanel, {
+    local _, btns = ws.constants.CreateButtonBar(bottomPanel, {
         {"Add Signature", 100, LEFT, function() self:OpenSignaturePad() end},
         {"Use Saved", 90, LEFT, function() self:UseSavedSignature() end},
         {"Cancel", 80, RIGHT, function() self:Remove() end},
