@@ -87,18 +87,6 @@ end
 function CanDrawAmmoHUD(weapon)
 end
 
---- Called when a player tries to use abilities on the door, such as locking.
--- @realm shared
--- @player client The client trying something on the door.
--- @entity door The door entity itself.
--- @number access The access level used when called.
--- @treturn bool Whether or not to allow the client access.
--- @usage function PLUGIN:CanPlayerAccessDoor(client, door, access)
--- 	return true -- Always allow access.
--- end
-function CanPlayerAccessDoor(client, door, access)
-end
-
 --- Whether or not a player is allowed to combine an item `other` into the given `item`.
 -- @realm server
 -- @player client Player attempting to combine an item into another
@@ -748,15 +736,6 @@ end
 -- @player callingClient Player that has interacted with with other player
 -- @string option Option that was selected
 function OnPlayerOptionSelected(client, callingClient, option)
-end
-
---- Called when a player has purchased or sold a door.
--- @realm server
--- @player client Player that has purchased or sold a door
--- @entity entity Door that was purchased or sold
--- @bool bBuying Whether or not the player is bying a door
--- @func bCallOnDoorChild Function to call something on the door child
-function OnPlayerPurchaseDoor(client, entity, bBuying, bCallOnDoorChild)
 end
 
 --- Called when a player was restricted.
