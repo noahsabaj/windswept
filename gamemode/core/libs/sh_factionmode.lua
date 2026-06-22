@@ -4,7 +4,7 @@
     Windswept's headline differentiator over Helix: factions are a CHOICE, not a
     requirement. A schema picks its model via the `factionMode` config:
         "required"  - every character must belong to a faction (Helix behaviour)  -- (layer-6)
-        "optional"  - characters may be factionless
+        "optional"  - characters may be factionless (the DEFAULT -- factions are opt-in here)
         "disabled"  - no factions at all
     `showFactionColors` decouples faction identity from UI tint (anti-metagaming).
 
@@ -16,9 +16,10 @@
 ws.faction = ws.faction or {}
 
 if (ws.config and ws.config.Add) then
-    ws.config.Add("factionMode", "required",
-        "Faction model: 'required' (every character picks a faction), 'optional' " ..
-        "(factionless allowed), or 'disabled' (no factions).",
+    ws.config.Add("factionMode", "optional",
+        "Faction model: 'required' (every character must pick a faction), 'optional' " ..
+        "(factionless allowed -- the default, since factions are opt-in here), or " ..
+        "'disabled' (no factions at all).",
         nil, { category = "factions" })
 
     ws.config.Add("showFactionColors", true,
@@ -28,7 +29,7 @@ end
 
 --- Current faction model ("required" | "optional" | "disabled").
 function ws.faction.GetMode()
-    return (ws.config and ws.config.Get("factionMode", "required")) or "required"
+    return (ws.config and ws.config.Get("factionMode", "optional")) or "optional"
 end
 
 --- Must every character belong to a faction?

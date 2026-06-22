@@ -609,20 +609,32 @@ do
 			return faction and faction.index or nil
 		end,
 		OnValidate = function(self, index, data, client)
-			-- nil faction is always valid (factionless)
-			if (index == nil) then
+			-- Factions disabled: ignore any submitted faction (OnAdjust forces factionless).
+			if (ws.faction.IsDisabled()) then
 				return true
 			end
+
+			-- nil faction = factionless
+			if (index == nil) then
+				-- Allowed when optional; rejected when the schema requires a faction.
+				if (ws.faction.IsRequired()) then
+					return false, "factionRequired"
+				end
+				return true
+			end
+
 			if (client:HasWhitelist(index)) then
 				return true
 			end
 			return false
 		end,
 		OnAdjust = function(self, client, data, value, newData)
-			if (value == nil) then
+			-- Force factionless when factions are disabled, regardless of a (tampered) submitted index.
+			if (value == nil or ws.faction.IsDisabled()) then
 				newData.faction = nil
 			else
-				newData.faction = ws.faction.indices[value].uniqueID
+				local faction = ws.faction.indices[value]
+				newData.faction = faction and faction.uniqueID or nil
 			end
 		end
 	})
