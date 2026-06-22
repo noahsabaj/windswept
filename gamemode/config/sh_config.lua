@@ -5,7 +5,7 @@ ws.config.language = "english"
 --[[
 	DO NOT CHANGE ANYTHING BELOW THIS.
 
-	This is the Helix main configuration file.
+	This is the Windswept main configuration file.
 	This file DOES NOT set any configurations, instead it just prepares them.
 	To set the configuration, there is a "Config" tab in the F1 menu for super admins and above.
 	Use the menu to change the variables, not this file.
@@ -137,7 +137,7 @@ ws.config.Add("walkRatio", 0.5, "How fast one goes when holding ALT.", nil, {
 	data = {min = 0, max = 1, decimals = 1},
 	category = "characters"
 })
-ws.config.Add("intro", false, "Whether or not the Helix intro is enabled for new players.", nil, {
+ws.config.Add("intro", false, "Whether or not the Windswept intro is enabled for new players.", nil, {
 	category = "appearance"
 })
 ws.config.Add("music", "music/hl2_song2.mp3", "The default music played in the character menu.", nil, {

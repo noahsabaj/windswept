@@ -2,7 +2,7 @@
 NAME = "Русский"
 
 LANGUAGE = {
-	helix = "Helix",
+	windswept = "Windswept",
 
 	introTextOne = "Fist Industries представляет",
 	introTextTwo = "В сотрудничестве с %s",
@@ -289,8 +289,8 @@ LANGUAGE = {
 	vendorNoTrade = "Вы не можете торговать с этим торговцем!",
 	vendorNoMoney = "У торговца недостаточно денег для покупки!",
 	vendorNoStock = "У торговца нету этого товара!",
-	contentTitle = "Отсутствует контент Helix",
-	contentWarning = "У вас нет контента фреймворка Helix. Могут отсутствовать некоторые функции.\nХотите открыть страницу контента в Steam Workshop?",
+	contentTitle = "Отсутствует контент Windswept",
+	contentWarning = "У вас нет контента фреймворка Windswept. Могут отсутствовать некоторые функции.\nХотите открыть страницу контента в Steam Workshop?",
 	flags = "Флаги",
 	mapRestarting = "Рестарт карты произойдет через %d секунд!",
 	chooseTip = "Выберите персонажа, чтобы начать играть.",
@@ -357,7 +357,7 @@ LANGUAGE = {
 	optAltLower = "Опуская, скрывать руки", -- @todo remove me
 	optdAltLower = "Скрывать руки, при опускани оных.", -- @todo remove me
 	optThirdpersonEnabled = "|Третье лицо",
-	optdThirdpersonEnabled = "Перемещение камеры позади вас. Также переключается консольной командой \'ix_togglethirdperson\'",
+	optdThirdpersonEnabled = "Перемещение камеры позади вас. Также переключается консольной командой \'ws_togglethirdperson\'",
 	optThirdpersonClassic = "|Классическая камера",
 	optdThirdpersonClassic = "Управлять взглядом вашего персонажа с помощью мыши.",
 	optThirdpersonVertical = "Высота камеры",
@@ -373,7 +373,7 @@ LANGUAGE = {
 	optAnimationScale = "Скорость анимаций",
 	optdAnimationScale = "Насколько быстрее или медленнее проигрывается анимация.",
 	optLanguage = "Язык",
-	optdLanguage = "Язык интерфейса Helix.",
+	optdLanguage = "Язык интерфейса Windswept.",
 	optMinimalTooltips = "Минималистичные подсказки",
 	optdMinimalTooltips = "Изменяет стиль показа подсказок, чтобы занимать меньше места.",
 	optNoticeDuration = "Длительность уведомления",

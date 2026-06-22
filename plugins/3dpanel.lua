@@ -115,15 +115,21 @@ else
 	-- Holds the current cached material and filename.
 	local cachedPreview = {}
 
+	-- Derive a safe on-disk filename from an untrusted URL: hash the URL for the
+	-- base name (no path traversal / separators) and force an image extension so a
+	-- crafted URL can't write outside the cache dir or with a hostile name. (fw-plugins-world-8)
+	local function SafeFilename(url)
+		return util.CRC(tostring(url or "")) .. ".png"
+	end
+
 	local function CacheMaterial(index)
 		if (index < 1) then
 			return
 		end
 
 		local info = PLUGIN.list[index]
-		local exploded = string.Explode("/", info[6])
-		local filename = exploded[#exploded]
-		local path = "helix/"..Schema.folder.."/"..PLUGIN.uniqueID.."/"
+		local filename = SafeFilename(info[6]) -- (fw-plugins-world-8)
+		local path = "windswept/"..Schema.folder.."/"..PLUGIN.uniqueID.."/"
 
 		if (file.Exists(path..filename, "DATA")) then
 			local material = Material("../data/"..path..filename, "noclamp smooth")
@@ -155,11 +161,10 @@ else
 	end
 
 	local function UpdateCachedPreview(url)
-		local path = "helix/"..Schema.folder.."/"..PLUGIN.uniqueID.."/"
+		local path = "windswept/"..Schema.folder.."/"..PLUGIN.uniqueID.."/"
 
-		-- Gets the file name
-		local exploded = string.Explode("/", url)
-		local filename = exploded[#exploded]
+		-- Gets the file name (sanitized/hashed from the untrusted URL)
+		local filename = SafeFilename(url) -- (fw-plugins-world-8)
 
 		if (file.Exists(path..filename, "DATA")) then
 			local preview = Material("../data/"..path..filename, "noclamp smooth")
@@ -221,7 +226,7 @@ else
 		local uncompressed = util.Decompress(data)
 
 		if (!uncompressed) then
-			ErrorNoHalt("[Helix] Unable to decompress panel data!\n")
+			ErrorNoHalt("[Windswept] Unable to decompress panel data!\n")
 			return
 		end
 

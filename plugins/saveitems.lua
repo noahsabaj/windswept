@@ -32,13 +32,13 @@ function PLUGIN:LoadData()
 		if (#idRange > 0) then
 			if (hook.Run("ShouldDeleteSavedItems") == true) then
 				-- don't spawn saved item and just delete them.
-				local query = mysql:Delete("ix_items")
+				local query = mysql:Delete("ws_items")
 					query:WhereIn("item_id", idRange)
 				query:Execute()
 
 				print("Server Deleted Server Items (does not includes Logical Items)")
 			else
-				local query = mysql:Select("ix_items")
+				local query = mysql:Select("ws_items")
 					query:Select("item_id")
 					query:Select("unique_id")
 					query:Select("data")
@@ -102,7 +102,7 @@ end
 function PLUGIN:SaveData()
 	local items = {}
 
-	for _, v in ipairs(ents.FindByClass("ix_item")) do
+	for _, v in ipairs(ents.FindByClass("ws_item")) do
 		if (v.wsItemID and !v.bTemporary) then
 			local physicsObject = v:GetPhysicsObject()
 			local bMovable = nil

@@ -4,7 +4,7 @@ AddCSLuaFile()
 ENT.Base = "base_entity"
 ENT.Type = "anim"
 ENT.PrintName = "Item"
-ENT.Category = "Helix"
+ENT.Category = "Windswept"
 ENT.Spawnable = false
 ENT.ShowPlayerInteraction = true
 ENT.RenderGroup = RENDERGROUP_BOTH
@@ -134,6 +134,8 @@ if (SERVER) then
 		local itemID = entTable.wsItemID
 		local itemTable = ws.item.instances[itemID]
 
+		if (!itemTable) then return end -- guard before deref (fw-items-entities-10)
+
 		ws.item.Instance(0, itemTable.uniqueID, itemTable.data, 1, 1, function(item)
 			self:SetItem(item:GetID())
 		end)
@@ -141,6 +143,8 @@ if (SERVER) then
 
 	function ENT:OnTakeDamage(damageInfo)
 		local itemTable = ws.item.instances[self.wsItemID]
+
+		if (!itemTable) then return end -- guard before deref (fw-items-entities-4)
 
 		if (itemTable.OnEntityTakeDamage
 		and itemTable:OnEntityTakeDamage(self, damageInfo) == false) then
@@ -183,7 +187,7 @@ if (SERVER) then
 					itemTable:OnRemoved()
 				end
 
-				local query = mysql:Delete("ix_items")
+				local query = mysql:Delete("ws_items")
 					query:Where("item_id", self.wsItemID)
 				query:Execute()
 			end
@@ -195,6 +199,7 @@ if (SERVER) then
 
 		if (!itemTable) then
 			self:Remove()
+			return -- itemTable is nil; bail before dereferencing it (fw-items-entities-3)
 		end
 
 		if (itemTable.Think) then
@@ -208,9 +213,25 @@ if (SERVER) then
 		return TRANSMIT_PVS
 	end
 
-	net.Receive("wsItemEntityAction", function(length, client)
-		ws.item.PerformInventoryAction(client, net.ReadString(), net.ReadEntity())
-	end)
+	-- Migrated to ws.action: target=true reads/validates the world ws_item entity (IsValid +
+	-- close-range check, which mirrors PerformInventoryAction's own 96u entity gate); read()
+	-- carries the attacker-chosen action string. Write order on both sides is target -> action.
+	ws.action.Register("wsItemEntityAction", {
+		target = true,
+		range = "close",
+		read = function() return net.ReadString() end,
+		onValidate = function(client, ctx)
+			-- Validate the action string: attacker-chosen, and a nil/blank data table made the
+			-- 'combine' path index data[1] on nil, throwing a server-side error per crafted
+			-- packet. (fw-items-entities-2)
+			local action = ctx.data
+			if (!isstring(action) or action == "" or #action > 64) then return false end
+		end,
+		run = function(client, ctx)
+			-- Pass an empty data table (never nil) for the same fw-items-entities-2 reason.
+			ws.item.PerformInventoryAction(client, ctx.data, ctx.target, nil, {})
+		end
+	})
 else
 	ENT.PopulateEntityInfo = true
 
@@ -334,10 +355,8 @@ function ENT:GetEntityMenu(client)
 			end
 
 			if (send != false) then
-				net.Start("wsItemEntityAction")
-					net.WriteString(k)
-					net.WriteEntity(self)
-				net.SendToServer()
+				-- target (entity) then action string; matches the server read order. (ws.action)
+				ws.action.Send("wsItemEntityAction", nil, self, function() net.WriteString(k) end)
 			end
 
 			-- don't run callbacks since we're handling it manually

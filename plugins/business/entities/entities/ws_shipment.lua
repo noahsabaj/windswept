@@ -3,7 +3,7 @@ AddCSLuaFile()
 
 ENT.Type = "anim"
 ENT.PrintName = "Shipment"
-ENT.Category = "Helix"
+ENT.Category = "Windswept"
 ENT.Spawnable = false
 ENT.ShowPlayerInteraction = true
 ENT.bNoPersist = true

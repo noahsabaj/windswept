@@ -101,7 +101,7 @@ function GM:PlayerInitialSpawn(client)
 end
 
 function GM:PlayerUse(client, entity)
-	if (client:IsRestricted() or (isfunction(entity.GetEntityMenu) and entity:GetClass() != "ix_item")) then
+	if (client:IsRestricted() or (isfunction(entity.GetEntityMenu) and entity:GetClass() != "ws_item")) then
 		return false
 	end
 
@@ -184,6 +184,9 @@ function GM:CanPlayerInteractItem(client, action, item, data)
 		end
 	end
 
+	-- Entity (dropped world-item) ownership: keyed on the entity's wsSteamID/wsCharID tags
+	-- (set on spawn) — deliberately distinct from the item-instance ws.access.EnsureItemOwnership
+	-- path, which uses SteamID64 + item:GetPlayerID/GetCharacterID. (fw-character-item-10)
 	if (isentity(item) and item.wsSteamID and item.wsCharID
 	and item.wsSteamID == client:SteamID() and item.wsCharID != client:GetCharacter():GetID()
 	and !item:GetItemTable().bAllowMultiCharacterInteraction) then
@@ -217,7 +220,7 @@ end
 function GM:EntityTakeDamage(entity, dmgInfo)
 	local inflictor = dmgInfo:GetInflictor()
 
-	if (IsValid(inflictor) and inflictor:GetClass() == "ix_item") then
+	if (IsValid(inflictor) and inflictor:GetClass() == "ws_item") then
 		dmgInfo:SetDamage(0)
 		return
 	end
@@ -253,7 +256,7 @@ function GM:PrePlayerLoadedCharacter(client, character, lastChar)
 end
 
 function GM:PlayerLoadedCharacter(client, character, lastChar)
-	local query = mysql:Update("ix_characters")
+	local query = mysql:Update("ws_characters")
 		query:Where("id", character:GetID())
 		query:Update("last_join_time", math.floor(os.time()))
 	query:Execute()
@@ -286,25 +289,8 @@ function GM:PlayerLoadedCharacter(client, character, lastChar)
 		client.wsRagdoll:Remove()
 	end
 
-	local faction = ws.faction.indices[character:GetFaction()]
-	local uniqueID = "wsSalary" .. client:SteamID64()
-
-	if (faction and faction.pay and faction.pay > 0) then
-		timer.Create(uniqueID, faction.payTime or 300, 0, function()
-			if (IsValid(client)) then
-				if (hook.Run("CanPlayerEarnSalary", client, faction) != false) then
-					local pay = hook.Run("GetSalaryAmount", client, faction) or faction.pay
-
-					character:GiveMoney(pay)
-					client:NotifyLocalized("salary", ws.currency.Get(pay))
-				end
-			else
-				timer.Remove(uniqueID)
-			end
-		end)
-	elseif (timer.Exists(uniqueID)) then
-		timer.Remove(uniqueID)
-	end
+	-- Salary (faction pay) lives in the salary plugin (windswept/plugins/salary), which hooks
+	-- PlayerLoadedCharacter. (fw-hooks-8: relocated out of framework core.)
 
 	hook.Run("PlayerLoadout", client)
 end
@@ -371,7 +357,8 @@ GM.PlayerSpawnEffect = IsAdmin
 GM.PlayerSpawnSENT = IsAdmin
 
 function GM:PlayerSpawnNPC(client, npcType, weapon)
-	return client:IsAdmin() or client:GetCharacter():HasFlags("n")
+	local char = client:GetCharacter()
+	return client:IsAdmin() or (char and char:HasFlags("n")) or false -- (fw-hooks-3)
 end
 
 function GM:PlayerSpawnSWEP(client, weapon, info)
@@ -407,37 +394,44 @@ function GM:PlayerSpawnVehicle(client, model, name, data)
 end
 
 function GM:PlayerSpawnedEffect(client, model, entity)
-	entity:SetNetVar("owner", client:GetCharacter():GetID())
+	local char = client:GetCharacter()
+	if (char) then entity:SetNetVar("owner", char:GetID()) end -- (fw-hooks-4)
 end
 
 function GM:PlayerSpawnedNPC(client, entity)
-	entity:SetNetVar("owner", client:GetCharacter():GetID())
+	local char = client:GetCharacter()
+	if (char) then entity:SetNetVar("owner", char:GetID()) end -- (fw-hooks-4)
 end
 
 function GM:PlayerSpawnedProp(client, model, entity)
-	entity:SetNetVar("owner", client:GetCharacter():GetID())
+	local char = client:GetCharacter()
+	if (char) then entity:SetNetVar("owner", char:GetID()) end -- (fw-hooks-4)
 end
 
 function GM:PlayerSpawnedRagdoll(client, model, entity)
-	entity:SetNetVar("owner", client:GetCharacter():GetID())
+	local char = client:GetCharacter()
+	if (char) then entity:SetNetVar("owner", char:GetID()) end -- (fw-hooks-4)
 end
 
 function GM:PlayerSpawnedSENT(client, entity)
-	entity:SetNetVar("owner", client:GetCharacter():GetID())
+	local char = client:GetCharacter()
+	if (char) then entity:SetNetVar("owner", char:GetID()) end -- (fw-hooks-4)
 end
 
 function GM:PlayerSpawnedSWEP(client, entity)
-	entity:SetNetVar("owner", client:GetCharacter():GetID())
+	local char = client:GetCharacter()
+	if (char) then entity:SetNetVar("owner", char:GetID()) end -- (fw-hooks-4)
 end
 
 function GM:PlayerSpawnedVehicle(client, entity)
-	entity:SetNetVar("owner", client:GetCharacter():GetID())
+	local char = client:GetCharacter()
+	if (char) then entity:SetNetVar("owner", char:GetID()) end -- (fw-hooks-4)
 end
 
 ws.allowedHoldableClasses = {
-	["ix_item"] = true,
-	["ix_money"] = true,
-	["ix_shipment"] = true,
+	["ws_item"] = true,
+	["ws_money"] = true,
+	["ws_shipment"] = true,
 	["prop_physics"] = true,
 	["prop_physics_override"] = true,
 	["prop_physics_multiplayer"] = true,
@@ -512,7 +506,7 @@ function GM:PlayerLoadout(client)
 		client:SetupHands()
 		-- Set their player model to the character's model.
 		client:SetModel(character:GetModel())
-		client:Give("ix_hands")
+		client:Give("ws_hands")
 		client:SetWalkSpeed(ws.config.Get("walkSpeed"))
 		client:SetRunSpeed(ws.config.Get("runSpeed"))
 		client:SetHealth(character:GetData("health", client:GetMaxHealth()))
@@ -559,7 +553,7 @@ function GM:PlayerLoadout(client)
 
 		hook.Run("PostPlayerLoadout", client)
 
-		client:SelectWeapon("ix_hands")
+		client:SelectWeapon("ws_hands")
 	else
 		client:SetNoDraw(true)
 		client:Lock()
@@ -648,10 +642,13 @@ function GM:PlayerDeath(client, inflictor, attacker)
 			client:EmitSound(deathSound)
 		end
 
-		local weapon = attacker:IsPlayer() and attacker:GetActiveWeapon()
+		-- Guard the attacker; falls (suicide/world) leave it invalid. (fw-hooks-5)
+		local attackerValid = IsValid(attacker)
+		local weapon = attackerValid and attacker:IsPlayer() and attacker:GetActiveWeapon()
+		local attackerName = attackerValid and (attacker:GetName() ~= "" and attacker:GetName() or attacker:GetClass()) or "world"
 
 		ws.log.Add(client, "playerDeath",
-			attacker:GetName() ~= "" and attacker:GetName() or attacker:GetClass(), IsValid(weapon) and weapon:GetClass())
+			attackerName, IsValid(weapon) and weapon:GetClass())
 	end
 end
 
@@ -688,7 +685,9 @@ function GM:PlayerHurt(client, attacker, health, damage)
 		client.wsNextPain = CurTime() + 0.33
 	end
 
-	ws.log.Add(client, "playerHurt", damage, attacker:GetName() ~= "" and attacker:GetName() or attacker:GetClass())
+	-- Guard the attacker; environmental/world damage leaves it invalid. (fw-hooks-5)
+	local attackerName = IsValid(attacker) and (attacker:GetName() ~= "" and attacker:GetName() or attacker:GetClass()) or "world"
+	ws.log.Add(client, "playerHurt", damage, attackerName)
 end
 
 function GM:PlayerDeathThink(client)
@@ -789,7 +788,7 @@ function GM:ShutDown()
 end
 
 function GM:GetGameDescription()
-	return "IX: "..(Schema and Schema.name or "Unknown")
+	return "Windswept: "..(Schema and Schema.name or "Unknown")
 end
 
 function GM:OnPlayerUseBusiness(client, item)
@@ -804,7 +803,7 @@ function GM:PlayerDeathSound()
 end
 
 function GM:InitializedSchema()
-	game.ConsoleCommand("sbox_persist ix_"..Schema.folder.."\n")
+	game.ConsoleCommand("sbox_persist ws_"..Schema.folder.."\n")
 end
 
 function GM:PlayerCanHearPlayersVoice(listener, speaker)
@@ -923,17 +922,26 @@ timer.Create("wsLifeGuard", 1, 0, function()
 end)
 
 net.Receive("wsStringRequest", function(length, client)
-	local time = net.ReadUInt(32)
+	-- Per-client rate limit to stop a spamming client from flooding callbacks. (fw-hooks-2)
+	if ((client.wsNextStrReq or 0) > CurTime()) then return end
+	client.wsNextStrReq = CurTime() + 0.25
+
+	local requestID = net.ReadUInt(32) -- (fw-hooks-1)
 	local text = net.ReadString()
 
-	if (client.wsStrReqs and client.wsStrReqs[time]) then
-		client.wsStrReqs[time](text)
-		client.wsStrReqs[time] = nil
+	-- Clamp the untrusted string to a sane length before any callback uses it. (tb-6)
+	if (#text > 1024) then
+		text = text:utf8sub(1, 1024)
+	end
+
+	if (client.wsStrReqs and client.wsStrReqs[requestID]) then
+		client.wsStrReqs[requestID](text)
+		client.wsStrReqs[requestID] = nil
 	end
 end)
 
 function GM:GetPreferredCarryAngles(entity)
-	if (entity:GetClass() == "ix_item") then
+	if (entity:GetClass() == "ws_item") then
 		local itemTable = entity:GetItemTable()
 
 		if (itemTable) then

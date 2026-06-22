@@ -108,7 +108,7 @@ end
 function PANEL:LoadClasses()
 	self.list:Clear()
 
-	for k, v in ipairs(ws.class.list) do
+	for k, v in pairs(ws.class.list) do
 		local no, why = ws.class.CanSwitchTo(LocalPlayer(), k)
 		local itsFull = ("class is full" == why)
 
@@ -129,7 +129,7 @@ hook.Add("CreateMenuButtons", "wsClasses", function(tabs)
 
 	if (cnt <= 1) then return end
 
-	for k, _ in ipairs(ws.class.list) do
+	for k, _ in pairs(ws.class.list) do
 		if (!ws.class.CanSwitchTo(LocalPlayer(), k)) then
 			continue
 		else

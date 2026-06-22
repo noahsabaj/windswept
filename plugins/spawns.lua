@@ -63,7 +63,10 @@ ws.command.Add("SpawnAdd", {
 		local info2
 		local faction
 
-		if (!info) then
+		if (info) then
+			-- Direct uniqueID hit: set faction so the spawns table isn't keyed by nil. (fw-plugins-world-7)
+			faction = info.uniqueID
+		else
 			for _, v in ipairs(ws.faction.indices) do
 				if (ws.util.StringMatches(v.uniqueID, name) or ws.util.StringMatches(L(v.name, client), name)) then
 					faction = v.uniqueID
@@ -78,7 +81,7 @@ ws.command.Add("SpawnAdd", {
 			if (class and class != "") then
 				local found = false
 
-				for _, v in ipairs(ws.class.list) do
+				for _, v in pairs(ws.class.list) do
 					if (v.faction == info.index and
 						(v.uniqueID:lower() == class:lower() or ws.util.StringMatches(L(v.name, client), class))) then
 						class = v.uniqueID

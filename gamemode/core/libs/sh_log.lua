@@ -31,7 +31,7 @@ ws.log.color = {
 }
 
 CAMI.RegisterPrivilege({
-	Name = "Helix - Logs",
+	Name = "Windswept - Logs",
 	MinAccess = "admin"
 })
 
@@ -110,7 +110,7 @@ if (SERVER) then
 	-- @usage ws.log.AddRaw("Server is restarting in 5 minutes.")
 	-- @see ws.log.Add
 	function ws.log.AddRaw(logString, bNoSave)
-		CAMI.GetPlayersWithAccess("Helix - Logs", function(receivers)
+		CAMI.GetPlayersWithAccess("Windswept - Logs", function(receivers)
 			ws.log.Send(receivers, logString)
 		end)
 
@@ -135,7 +135,7 @@ if (SERVER) then
 		local logString, logFlag = ws.log.Parse(client, logType, ...)
 		if (logString == -1) then return end
 
-		CAMI.GetPlayersWithAccess("Helix - Logs", function(receivers)
+		CAMI.GetPlayersWithAccess("Windswept - Logs", function(receivers)
 			ws.log.Send(receivers, logString, logFlag)
 		end)
 
@@ -185,11 +185,11 @@ if (SERVER) then
 		local HANDLER = {}
 
 		function HANDLER.Load()
-			file.CreateDir("helix/logs")
+			file.CreateDir("windswept/logs")
 		end
 
 		function HANDLER.Write(client, message)
-			file.Append("helix/logs/" .. os.date("%x"):gsub("/", "-") .. ".txt", "[" .. os.date("%X") .. "]\t" .. message .. "\r\n")
+			file.Append("windswept/logs/" .. os.date("%x"):gsub("/", "-") .. ".txt", "[" .. os.date("%X") .. "]\t" .. message .. "\r\n")
 		end
 
 		ws.log.RegisterHandler("File", HANDLER)

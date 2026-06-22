@@ -21,12 +21,13 @@ ws.chat = ws.chat or {}
 -- > "%s says \"%s\""
 ws.chat.classes = ws.chat.classes or {}
 
-if (!ws.command) then
-	include("sh_command.lua")
-end
-
+-- No eager include of sh_command.lua here: it loads in the same core/libs IncludeDir pass
+-- (shared.lua:84), and sh_chatbox only touches ws.command inside ws.chat.Register's deferred,
+-- CLIENT-only prefix branch — never at file scope. The old `if (!ws.command) then include(...) end`
+-- double-loaded sh_command (once here, once in the dir sweep), stacking a second net handler that
+-- ws.action's duplicate-registration guard now flags at boot. (fw-command-double-include)
 CAMI.RegisterPrivilege({
-Name = "Helix - Bypass OOC Timer",
+Name = "Windswept - Bypass OOC Timer",
 	MinAccess = "admin"
 })
 
@@ -483,7 +484,7 @@ do
 						local lastOOC = CurTime() - speaker.wsLastOOC
 
 						-- Use this method of checking time in case the oocDelay config changes.
-						if (lastOOC <= delay and !CAMI.PlayerHasAccess(speaker, "Helix - Bypass OOC Timer", nil)) then
+						if (lastOOC <= delay and !CAMI.PlayerHasAccess(speaker, "Windswept - Bypass OOC Timer", nil)) then
 							speaker:NotifyLocalized("oocDelay", delay - math.ceil(lastOOC))
 
 							return false
@@ -531,7 +532,7 @@ do
 					local lastLOOC = CurTime() - speaker.wsLastLOOC
 
 					-- Use this method of checking time in case the oocDelay config changes.
-					if (lastLOOC <= delay and !CAMI.PlayerHasAccess(speaker, "Helix - Bypass OOC Timer", nil)) then
+					if (lastLOOC <= delay and !CAMI.PlayerHasAccess(speaker, "Windswept - Bypass OOC Timer", nil)) then
 						speaker:NotifyLocalized("loocDelay", delay - math.ceil(lastLOOC))
 
 						return false

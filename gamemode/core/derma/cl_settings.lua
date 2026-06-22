@@ -468,7 +468,7 @@ function PANEL:SetShowReset(value, name, default)
 		self.reset.DoClick = function()
 			self:OnResetClicked()
 		end
-		self.reset:SetHelixTooltip(function(tooltip)
+		self.reset:SetWindsweptTooltip(function(tooltip)
 			local title = tooltip:AddRow("title")
 			title:SetImportant()
 			title:SetText(L("resetDefault"))
@@ -746,7 +746,7 @@ hook.Add("CreateMenuButtons", "wsSettings", function(tabs)
 						ws.option.Set(key, data.default)
 					end
 
-					row:GetLabel():SetHelixTooltip(function(tooltip)
+					row:GetLabel():SetWindsweptTooltip(function(tooltip)
 						local title = tooltip:AddRow("name")
 						title:SetImportant()
 						title:SetText(key)

@@ -24,9 +24,10 @@ function PANEL:GetAll()
 end
 
 function PANEL:Clear()
-	for k, v in ipairs(self.bars) do
-		v:Remove()
-
+	-- Iterate in reverse so table.remove doesn't shift elements we haven't
+	-- visited yet (forward ipairs + remove skips bars). (fw-derma-4)
+	for k = #self.bars, 1, -1 do
+		self.bars[k]:Remove()
 		table.remove(self.bars, k)
 	end
 end
@@ -111,6 +112,14 @@ function PANEL:Think()
 
 	for _, v in ipairs(self.bars) do
 		local info = ws.bar.list[v:GetID()]
+
+		-- After an add/remove the priority-sorted panel order and the
+		-- insertion-ordered ws.bar.list can briefly disagree, leaving a panel
+		-- whose ID no longer maps to an entry; skip it instead of erroring. (fw-derma-3)
+		if (!info) then
+			continue
+		end
+
 		local realValue, barText = info.GetValue()
 
 		if (bShouldHide or realValue == false) then

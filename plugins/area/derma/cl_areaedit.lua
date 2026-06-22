@@ -171,13 +171,15 @@ function PANEL:Submit()
 
 	local _, type = self.typeEntry:GetSelected()
 
-	net.Start("wsAreaAdd")
+	-- No item/target; the full payload goes through writeExtra in the exact order the
+	-- server read() expects: id -> type -> startPos -> endPos -> properties.
+	ws.action.Send("wsAreaAdd", nil, nil, function()
 		net.WriteString(name)
 		net.WriteString(type)
 		net.WriteVector(PLUGIN.editStart)
 		net.WriteVector(PLUGIN:GetPlayerAreaTrace().HitPos)
 		net.WriteTable(properties)
-	net.SendToServer()
+	end)
 
 	PLUGIN.editStart = nil
 	self:Remove()

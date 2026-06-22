@@ -568,7 +568,9 @@ function mysql:RawQuery(query, callback, flags, ...)
 		local result = sql.Query(query)
 
 		if (result == false) then
-			error(string.format("[mysql] SQL Query Error!\nQuery: %s\n%s\n", query, sql.LastError()))
+			-- Match the mysqloo path's onError (ErrorNoHalt): a malformed/locked query is a
+			-- runtime/data condition and must not hard-halt the calling operation. (fw-persistence-db-4)
+			ErrorNoHalt(string.format("[mysql] SQL Query Error!\nQuery: %s\n%s\n", query, sql.LastError()))
 		else
 			if (callback) then
 				local bStatus, value = pcall(callback, result, true, tonumber(sql.QueryValue("SELECT last_insert_rowid()")))
@@ -592,13 +594,14 @@ end
 
 -- A function to escape a string for MySQL.
 function mysql:Escape(text)
-	if (self.connection) then
-		if (self.module == "mysqloo") then
-			return self.connection:escape(text)
-		end
-	else
-		return sql.SQLStr(text, true)
+	if (self.connection and self.module == "mysqloo") then
+		return self.connection:escape(text)
 	end
+
+	-- Fallback for sqlite / any non-mysqloo module. Previously returned nil when a
+	-- connection was set but the module wasn't mysqloo, which could feed nil into a
+	-- query string. (fw-persistence-db-2)
+	return sql.SQLStr(text, true)
 end
 
 -- A function to disconnect from the MySQL database.

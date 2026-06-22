@@ -122,7 +122,7 @@ function PANEL:TransitionSubpanel(id)
 
 		-- only play whoosh sound only when the menu was already open
 		if (IsValid(lastSubpanel)) then
-			LocalPlayer():EmitSound("Helix.Whoosh")
+			LocalPlayer():EmitSound("Windswept.Whoosh")
 		end
 
 		self:SetActiveSubpanel(id)

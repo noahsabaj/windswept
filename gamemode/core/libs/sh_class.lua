@@ -34,8 +34,20 @@ end
 ws.class = ws.class or {}
 ws.class.list = {}
 ws.class.byDatabaseID = {}
+ws.class.nextIndex = 1
 
 local charMeta = ws.meta.character
+
+--- Allocates a never-reused numeric class index.
+-- Classes are stored on characters by index and `ws.class.Delete` leaves holes in
+-- `ws.class.list`, so `#list + 1` could collide with a live class and silently overwrite
+-- it. A monotonic counter avoids that; callers must iterate the (possibly sparse) list
+-- with `pairs`, never `ipairs`. (fw-faction-class-3)
+local function allocClassIndex()
+	local index = ws.class.nextIndex
+	ws.class.nextIndex = index + 1
+	return index
+end
 
 --- Loads classes from a directory.
 -- @realm shared
@@ -46,10 +58,10 @@ function ws.class.LoadFromDir(directory)
 		-- Get the name without the "sh_" prefix and ".lua" suffix.
 		local niceName = v:sub(4, -5)
 		-- Determine a numeric identifier for this class.
-		local index = #ws.class.list + 1
+		local index = allocClassIndex()
 		local halt
 
-		for _, v2 in ipairs(ws.class.list) do
+		for _, v2 in pairs(ws.class.list) do
 			if (v2.uniqueID == niceName) then
 				halt = true
 
@@ -127,7 +139,7 @@ function ws.class.CanSwitchTo(client, class)
 
 	-- Factionless players cannot join any class
 	local playerFaction = client:Team()
-	if (playerFaction == nil or playerFaction == TEAM_UNASSIGNED) then
+	if (playerFaction == TEAM_UNASSIGNED) then
 		return false, "noFaction"
 	end
 
@@ -136,7 +148,12 @@ function ws.class.CanSwitchTo(client, class)
 		return false, "not correct team"
 	end
 
-	if (client:GetCharacter():GetClass() == class) then
+	local character = client:GetCharacter()
+	if (!character) then
+		return false, "no character"
+	end
+
+	if (character:GetClass() == class) then
 		return false, "same class request"
 	end
 
@@ -324,7 +341,7 @@ if (SERVER) then
 		local playerFaction = client:Team()
 
 		-- Factionless players just have no class
-		if (playerFaction == nil or playerFaction == TEAM_UNASSIGNED) then
+		if (playerFaction == TEAM_UNASSIGNED) then
 			self:SetClass(nil)
 			return
 		end
@@ -344,15 +361,15 @@ if (SERVER) then
 			return
 		end
 
+		-- JoinClass already fires the PlayerJoinedClass hook; don't double-fire it.
 		self:JoinClass(goClass)
-		hook.Run("PlayerJoinedClass", client, goClass)
 	end
 
 	function GM:PlayerJoinedClass(client, class, oldClass)
 		local info = ws.class.list[class]
 		local info2 = ws.class.list[oldClass]
 
-		if (info.OnSet) then
+		if (info and info.OnSet) then
 			info:OnSet(client)
 		end
 
@@ -375,10 +392,29 @@ if (SERVER) then
 		end
 
 		local now = os.time()
-		local index = #ws.class.list + 1
+		local index = allocClassIndex()
 
-		-- Generate uniqueID from name
-		local uniqueID = string.lower(string.gsub(data.name, "%s+", "_"))
+		-- Generate a stable, unique uniqueID from the name. uniqueID is a persisted
+		-- identifier, so it must be collision-free and is never recomputed on rename.
+		-- (fw-faction-class-5)
+		local baseUniqueID = string.lower(string.gsub(data.name, "%s+", "_"))
+		local uniqueID = baseUniqueID
+		local suffix = 1
+
+		local function uniqueIDTaken(id)
+			for _, c in pairs(ws.class.list) do
+				if (c.uniqueID == id) then
+					return true
+				end
+			end
+
+			return false
+		end
+
+		while (uniqueIDTaken(uniqueID)) do
+			suffix = suffix + 1
+			uniqueID = baseUniqueID .. "_" .. suffix
+		end
 
 		-- Get faction data for team ID
 		local factionData = ws.faction.teams[data.faction]
@@ -409,7 +445,7 @@ if (SERVER) then
 		end
 
 		-- Insert into database
-		local query = mysql:Insert("ix_faction_classes")
+		local query = mysql:Insert("ws_faction_classes")
 		query:Insert("faction", data.faction)
 		query:Insert("unique_id", uniqueID)
 		query:Insert("name", data.name)
@@ -466,14 +502,12 @@ if (SERVER) then
 		classData.updatedAt = now
 
 		-- Update database
-		local query = mysql:Update("ix_faction_classes")
+		local query = mysql:Update("ws_faction_classes")
 
 		if updates.name then
 			query:Update("name", updates.name)
-			-- Also update uniqueID
-			local uniqueID = string.lower(string.gsub(updates.name, "%s+", "_"))
-			query:Update("unique_id", uniqueID)
-			classData.uniqueID = uniqueID
+			-- uniqueID is a persisted stable identifier; only the display name changes on
+			-- rename, never the uniqueID. (fw-faction-class-5)
 		end
 		if updates.description then
 			query:Update("description", updates.description)
@@ -530,7 +564,7 @@ if (SERVER) then
 		ws.class.byDatabaseID[databaseID] = nil
 
 		-- Remove from database
-		local query = mysql:Delete("ix_faction_classes")
+		local query = mysql:Delete("ws_faction_classes")
 		query:Where("id", databaseID)
 		query:Execute()
 
@@ -543,16 +577,20 @@ if (SERVER) then
 	end
 
 	--- Loads all classes from the database.
+	-- WIP: the DB-backed class system is not yet wired into boot. To activate it, call
+	-- ws.class.LoadFromDatabase() after factions load on server init, and
+	-- ws.class.SyncToClients(client) on PlayerInitialSpawn (the file-loaded classes from
+	-- LoadFromDir remain the active path until then). (fw-faction-class-6)
 	-- @realm server
 	function ws.class.LoadFromDatabase()
-		local query = mysql:Select("ix_faction_classes")
+		local query = mysql:Select("ws_faction_classes")
 		query:Callback(function(result)
 			if not result then return end
 
 			for _, row in ipairs(result) do
 				local factionData = ws.faction.teams[row.faction]
 				if factionData then
-					local index = #ws.class.list + 1
+					local index = allocClassIndex()
 
 					local classData = {
 						id = row.id,
@@ -582,7 +620,7 @@ if (SERVER) then
 				end
 			end
 
-			print("[Helix] Loaded " .. #result .. " classes from database")
+			print("[Windswept] Loaded " .. #result .. " classes from database")
 
 			-- Sync to all connected clients
 			ws.class.SyncToClients()

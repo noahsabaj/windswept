@@ -1,7 +1,7 @@
 
 ENT.Type = "anim"
 ENT.PrintName = "Vendor"
-ENT.Category = "Helix"
+ENT.Category = "Windswept"
 ENT.Spawnable = true
 ENT.AdminOnly = true
 ENT.isVendor = true
@@ -177,7 +177,7 @@ if (SERVER) then
 		angles.p = 0
 		angles.y = angles.y + 180
 
-		local entity = ents.Create("ix_vendor")
+		local entity = ents.Create("ws_vendor")
 		entity:SetPos(trace.HitPos)
 		entity:SetAngles(angles)
 		entity:Spawn()
@@ -210,7 +210,7 @@ if (SERVER) then
 
 		-- Only send what is needed.
 		for k, v in pairs(self.items) do
-			if (!table.IsEmpty(v) and (CAMI.PlayerHasAccess(activator, "Helix - Manage Vendors", nil) or v[VENDOR_MODE])) then
+			if (!table.IsEmpty(v) and (CAMI.PlayerHasAccess(activator, "Windswept - Manage Vendors", nil) or v[VENDOR_MODE])) then
 				items[k] = v
 			end
 		end
@@ -235,6 +235,14 @@ if (SERVER) then
 	end
 
 	function ENT:SetMoney(value)
+		-- Vendor money is networked as a 16-bit field; clamp finite balances to the
+		-- representable range so a large set/give can't wrap and desync the client
+		-- display from server state. nil stays nil (the "infinite money" case).
+		-- (fw-currency-economy-9 / cons-11)
+		if (value) then
+			value = math.Clamp(math.floor(value), 0, 65535)
+		end
+
 		self.money = value
 
 		net.Start("wsVendorMoney")

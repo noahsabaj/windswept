@@ -44,7 +44,7 @@ ITEM.functions.View = {
 
 				ws.gui["inv"..index] = panel
 			else
-				ErrorNoHalt("[Helix] Attempt to view an uninitialized inventory '"..index.."'\n")
+				ErrorNoHalt("[Windswept] Attempt to view an uninitialized inventory '"..index.."'\n")
 			end
 		end
 
@@ -56,7 +56,13 @@ ITEM.functions.View = {
 }
 ITEM.functions.combine = {
 	OnRun = function(item, data)
-		ws.item.instances[data[1]]:Transfer(item:GetData("id"), nil, nil, item.player)
+		-- Guard data[1]: the world-entity action path can invoke combine with no/blank data,
+		-- which would index a nil instance and error. (Cross-inventory access for data[1] is
+		-- enforced upstream by GM:CanPlayerInteractItem's combine branch.) (fw-items-entities-2)
+		local source = istable(data) and isnumber(data[1]) and ws.item.instances[data[1]]
+		if (not source) then return false end
+
+		source:Transfer(item:GetData("id"), nil, nil, item.player)
 
 		return false
 	end,
@@ -157,7 +163,7 @@ end
 ITEM.postHooks.drop = function(item, result)
 	local index = item:GetData("id")
 
-	local query = mysql:Update("ix_inventories")
+	local query = mysql:Update("ws_inventories")
 		query:Update("character_id", 0)
 		query:Where("inventory_id", index)
 	query:Execute()
@@ -183,11 +189,11 @@ function ITEM:OnRemoved()
 	local index = self:GetData("id")
 
 	if (index) then
-		local query = mysql:Delete("ix_items")
+		local query = mysql:Delete("ws_items")
 			query:Where("inventory_id", index)
 		query:Execute()
 
-		query = mysql:Delete("ix_inventories")
+		query = mysql:Delete("ws_inventories")
 			query:Where("inventory_id", index)
 		query:Execute()
 	end

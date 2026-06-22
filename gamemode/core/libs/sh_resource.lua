@@ -9,6 +9,12 @@
     All operations are all-or-nothing: on failure they make NO change, so callers'
     refund/rollback logic can never mint resource out of nothing — the bug class
     that produced the money-dupe vectors.
+
+    Adoption (cons-9): document ink/lead and eraser durability now consume through
+    this kernel (windswept-colony/schema/sv_documents.lua). Remaining inline SetData
+    bypasses (battery charge insert/eject) are single-owner, server-only mutations
+    on a non-shared item and are tracked under cons-5/cons-6 in their own files;
+    they are not edited here to keep this change scoped to the kernel.
 ]]--
 
 ws.resource = ws.resource or {}
@@ -22,7 +28,9 @@ end
 --- Consume `amount`. Returns true only if the full amount was available (and was
 --- removed); false makes no change.
 function ws.resource.Consume(item, key, amount, default)
-    if not item or amount == nil then return false end
+    if not item then return false end
+    -- Reject non-number / NaN / non-integer amounts (hostile net-derived values). (fw-core-security-7)
+    if not isnumber(amount) or amount ~= amount or amount ~= math.floor(amount) then return false end
     if amount <= 0 then return amount == 0 end
 
     local current = item:GetData(key, default or 0)
@@ -35,7 +43,10 @@ end
 --- Replenish toward `max` (max optional = uncapped). Returns the amount actually
 --- added (0..amount).
 function ws.resource.Replenish(item, key, amount, max, default)
-    if not item or not amount or amount <= 0 then return 0 end
+    if not item then return 0 end
+    -- Reject non-number / NaN / non-integer amounts (hostile net-derived values). (fw-core-security-7)
+    if not isnumber(amount) or amount ~= amount or amount ~= math.floor(amount) then return 0 end
+    if amount <= 0 then return 0 end
 
     local current = item:GetData(key, default or 0)
     local target = max and math.min(current + amount, max) or (current + amount)
@@ -47,6 +58,8 @@ end
 --- Move `amount` from src to dst (same key). Atomic: if dst can't take the full
 --- amount, the partial is rolled back onto src and the move fails.
 function ws.resource.Transfer(src, dst, key, amount, max, default)
+    -- Reject non-number / NaN / non-integer amounts before any mutation. (fw-core-security-7)
+    if not isnumber(amount) or amount ~= amount or amount ~= math.floor(amount) then return false end
     if not ws.resource.Consume(src, key, amount, default) then return false end
 
     local added = ws.resource.Replenish(dst, key, amount, max, default)

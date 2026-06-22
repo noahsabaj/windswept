@@ -1,7 +1,7 @@
 
 local waveSegments = 32
-local helixSegments = 76
-local helixHeight = 64
+local windsweptSegments = 76
+local windsweptHeight = 64
 local backgroundColor = Color(115, 53, 142)
 local dimColor = Color(165, 134, 179)
 
@@ -28,8 +28,8 @@ function PANEL:Init()
 	self.textOne = 0
 	self.textTwo = 0
 	self.kickTarget = 0
-	self.helix = 0
-	self.helixAlpha = 0
+	self.windswept = 0
+	self.windsweptAlpha = 0
 	self.continueText = 0
 	self.pulse = 0
 
@@ -54,7 +54,7 @@ function PANEL:BeginIntro()
 	-- because if it errors here, the sound will play each tick and proceed to hurt ears
 	local bLoaded = false
 
-	if (ix and ws.option and ws.option.Set) then
+	if (ws and ws.option and ws.option.Set) then
 		local bSuccess, _ = pcall(ws.option.Set, "showIntro", false)
 		bLoaded = bSuccess
 	end
@@ -62,12 +62,12 @@ function PANEL:BeginIntro()
 	if (!bLoaded) then
 		self:Remove()
 
-		if (ix and ws.gui and IsValid(ws.gui.characterMenu)) then
+		if (ws and ws.gui and IsValid(ws.gui.characterMenu)) then
 			ws.gui.characterMenu:Remove()
 		end
 
 		ErrorNoHalt(
-			"[Helix] Something has errored and prevented the framework from loading correctly - check your console for errors!\n")
+			"[Windswept] Something has errored and prevented the framework from loading correctly - check your console for errors!\n")
 
 		return
 	end
@@ -77,7 +77,7 @@ function PANEL:BeginIntro()
 
 	sound.PlayFile("sound/buttons/combine_button2.wav", "", function()
 		timer.Create("wsIntroStart", 2, 1, function()
-			sound.PlayFile("sound/helix/intro.mp3", "", function(channel, status, error)
+			sound.PlayFile("sound/windswept/intro.mp3", "", function(channel, status, error)
 				if (IsValid(channel)) then
 					channel:SetVolume(self.volume)
 					self.channel = channel
@@ -147,13 +147,13 @@ function PANEL:BeginAnimation()
 			bIgnoreConfig = true,
 			OnComplete = function()
 				self:CreateAnimation(2,{
-					target = {helixAlpha = 1},
+					target = {windsweptAlpha = 1},
 					easing = "inCubic"
 				})
 			end
 		})
 		:CreateAnimation(2, {
-			target = {helix = 1},
+			target = {windswept = 1},
 			easing = "outQuart",
 			bIgnoreConfig = true
 		})
@@ -195,7 +195,7 @@ end
 
 function PANEL:Paint(width, height)
 	local time = SysTime()
-	local text = L("helix"):lower()
+	local text = L("windswept"):lower()
 	local centerY = height * self.waves[#self.waves][1] + height * 0.5
 	local sunbeamOffsetEasing = math.sin(math.pi * self.sunbeamOffset)
 	local textWidth, textHeight
@@ -233,14 +233,14 @@ function PANEL:Paint(width, height)
 		self:PaintCurve(height * wave[1], width, wave[2])
 	end
 
-	-- helix
-	if (self.helix > 0) then
-		local alpha = self.helixAlpha * 255
+	-- windswept
+	if (self.windswept > 0) then
+		local alpha = self.windsweptAlpha * 255
 
-		derma.SkinFunc("DrawHelixCurved",
+		derma.SkinFunc("DrawWindsweptCurved",
 			width * 0.5, centerY,
 			math.min(ScreenScale(72), 128) * 2, -- font sizes are clamped to 128
-			helixSegments * self.helix, helixHeight, self.helix,
+			windsweptSegments * self.windswept, windsweptHeight, self.windswept,
 			ColorAlpha(color_white, alpha),
 			ColorAlpha(dimColor, alpha)
 		)

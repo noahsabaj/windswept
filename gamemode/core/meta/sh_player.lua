@@ -16,13 +16,13 @@ if (SERVER) then
 	-- @realm shared
 	-- @treturn number Number of seconds the player has played on the server
 	function meta:GetPlayTime()
-		return self.wsPlayTime + (RealTime() - (self.wsJoinTime or RealTime()))
+		return (self.wsPlayTime or 0) + (RealTime() - (self.wsJoinTime or RealTime())) -- (fw-core-security-6)
 	end
 else
 	ws.playTime = ws.playTime or 0
 
 	function meta:GetPlayTime()
-		return ws.playTime + (RealTime() - ws.joinTime or 0)
+		return ws.playTime + (RealTime() - (ws.joinTime or RealTime())) -- (fw-core-security-5)
 	end
 end
 
@@ -324,13 +324,15 @@ if (SERVER) then
 	-- end)
 	-- -- prints "Hello, <text>" in the player's chat
 	function meta:RequestString(title, subTitle, callback, default)
-		local time = math.floor(os.time())
+		-- Monotonic per-player request id so concurrent prompts cannot collide. (fw-core-security-4) (fw-hooks-1)
+		self.wsStrReqCounter = (self.wsStrReqCounter or 0) + 1
+		local requestID = self.wsStrReqCounter
 
 		self.wsStrReqs = self.wsStrReqs or {}
-		self.wsStrReqs[time] = callback
+		self.wsStrReqs[requestID] = callback
 
 		net.Start("wsStringRequest")
-			net.WriteUInt(time, 32)
+			net.WriteUInt(requestID, 32)
 			net.WriteString(title)
 			net.WriteString(subTitle)
 			net.WriteString(default or "")

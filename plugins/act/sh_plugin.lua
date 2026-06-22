@@ -15,7 +15,7 @@ ws.act = ws.act or {}
 ws.act.stored = ws.act.stored or {}
 
 CAMI.RegisterPrivilege({
-	Name = "Helix - Player Acts",
+	Name = "Windswept - Player Acts",
 	MinAccess = "user"
 })
 
@@ -108,7 +108,7 @@ function PLUGIN:PostSetupActs()
 			return L("cmdAct", act)
 		end
 
-		local privilege = "Helix - " .. COMMAND.privilege
+		local privilege = "Windswept - " .. COMMAND.privilege
 
 		-- we'll perform a model class check in OnCheckAccess to prevent the command from showing up on the client at all
 		COMMAND.OnCheckAccess = function(command, client)
@@ -129,6 +129,12 @@ function PLUGIN:PostSetupActs()
 
 		COMMAND.OnRun = function(command, client, variant)
 			variant = math.Clamp(tonumber(variant) or 1, 1, variants)
+
+			-- Enforce the per-client act cooldown that was being set but never checked.
+			-- (fw-plugins-world-3)
+			if ((client.wsNextAct or 0) > CurTime()) then
+				return "@notNow"
+			end
 
 			if (client:GetNetVar("actEnterAngle")) then
 				return "@notNow"

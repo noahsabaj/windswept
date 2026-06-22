@@ -104,13 +104,13 @@ function PANEL:DrawModel()
 
 	-- Excecute Some stuffs
 	if (self.enableHook) then
-		hook.Run("DrawHelixModelView", self, self.Entity)
+		hook.Run("DrawWindsweptModelView", self, self.Entity)
 	end
 
 	self.Entity:DrawModel()
 
 	if (self.enableHook) then
-		hook.Run("PostDrawHelixModelView", self, self.Entity)
+		hook.Run("PostDrawWindsweptModelView", self, self.Entity)
 	end
 end
 

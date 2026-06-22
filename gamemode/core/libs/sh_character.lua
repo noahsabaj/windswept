@@ -34,7 +34,7 @@ ws.char.vars = ws.char.vars or {}
 -- @table ws.char.cache
 ws.char.cache = ws.char.cache or {}
 
-ws.util.Include("windswept/gamemode/core/meta/sh_character.lua")
+ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/core/meta/sh_character.lua")
 
 if (SERVER) then
 	--- Creates a character object with its assigned properties and saves it to the database.
@@ -46,15 +46,15 @@ if (SERVER) then
 		local timeStamp = math.floor(os.time())
 
 		data.money = data.money or ws.config.Get("defaultMoney", 0)
-		data.schema = Schema and Schema.folder or "helix"
+		data.schema = Schema and Schema.folder or "windswept"
 		data.createTime = timeStamp
 		data.lastJoinTime = timeStamp
 
-		local query = mysql:Insert("ix_characters")
+		local query = mysql:Insert("ws_characters")
 			query:Insert("name", data.name or "")
 			query:Insert("description", data.description or "")
 			query:Insert("model", data.model or "models/error.mdl")
-			query:Insert("schema", Schema and Schema.folder or "helix")
+			query:Insert("schema", Schema and Schema.folder or "windswept")
 			query:Insert("create_time", data.createTime)
 			query:Insert("last_join_time", data.lastJoinTime)
 			query:Insert("steamid", data.steamID)
@@ -62,7 +62,7 @@ if (SERVER) then
 			query:Insert("money", data.money)
 			query:Insert("data", util.TableToJSON(data.data or {}))
 			query:Callback(function(result, status, lastID)
-				local invQuery = mysql:Insert("ix_inventories")
+				local invQuery = mysql:Insert("ws_inventories")
 					invQuery:Insert("character_id", lastID)
 					invQuery:Callback(function(invResult, invStats, invLastID)
 						local client = player.GetBySteamID64(data.steamID)
@@ -115,7 +115,7 @@ if (SERVER) then
 			return
 		end
 
-		local query = mysql:Select("ix_characters")
+		local query = mysql:Select("ws_characters")
 			query:Select("id")
 
 			ws.char.RestoreVars(query)
@@ -148,7 +148,7 @@ if (SERVER) then
 							[1] = -1,
 						}
 
-						local invQuery = mysql:Select("ix_inventories")
+						local invQuery = mysql:Select("ws_inventories")
 							invQuery:Select("inventory_id")
 							invQuery:Select("inventory_type")
 							invQuery:Where("character_id", charID)
@@ -190,7 +190,7 @@ if (SERVER) then
 										inventory:SetOwner(charID)
 									end, true)
 								else
-									local insertQuery = mysql:Insert("ix_inventories")
+									local insertQuery = mysql:Insert("ws_inventories")
 										insertQuery:Insert("character_id", charID)
 										insertQuery:Callback(function(_, status, lastID)
 											local w, h = ws.config.Get("inventoryWidth"), ws.config.Get("inventoryHeight")
@@ -208,7 +208,7 @@ if (SERVER) then
 
 						ws.char.loaded[charID] = character
 					else
-						ErrorNoHalt("[Helix] Attempt to load character with invalid ID '" .. tostring(id) .. "'!")
+						ErrorNoHalt("[Windswept] Attempt to load character with invalid ID '" .. tostring(id) .. "'!")
 					end
 				end
 
@@ -579,6 +579,7 @@ do
 		fieldType = ws.type.string,
 		default = nil,
 		bNoDisplay = true,
+		bCreatable = true, -- chosen by the client at creation (fw-character-item-13)
 		-- NOTE: FilterValues removed to allow factionless (NULL) characters to load
 		-- Characters with invalid faction IDs will be treated as factionless via OnGet
 		OnSet = function(self, value)
@@ -693,17 +694,30 @@ do
 		end,
 		OnValidate = function(self, value, data, client)
 			if (value != nil) then
-				if (istable(value)) then
-					local count = 0
+				if (!istable(value)) then
+					return false, "unknownError"
+				end
 
-					for _, v in pairs(value) do
-						count = count + v
-					end
+				local count = 0
 
-					if (count > (hook.Run("GetDefaultAttributePoints", client, count) or 10)) then
+				for key, v in pairs(value) do
+					-- The creation payload is attacker-controlled and written directly into the
+					-- persisted attributes table, so validate every entry: known attribute key,
+					-- non-negative integer, within the attribute's own max. (fw-character-item-5)
+					local attribute = ws.attributes.list[key]
+
+					if (!attribute or !isnumber(v) or v < 0 or v != math.floor(v)) then
 						return false, "unknownError"
 					end
-				else
+
+					if (attribute.maxValue and v > attribute.maxValue) then
+						return false, "unknownError"
+					end
+
+					count = count + v
+				end
+
+				if (count > (hook.Run("GetDefaultAttributePoints", client, count) or 10)) then
 					return false, "unknownError"
 				end
 			end
@@ -947,7 +961,7 @@ do
 					net.WriteString("@unknownError")
 				net.Send(client)
 
-				ErrorNoHalt("[Helix] Attempt to load invalid character '" .. id .. "'\n")
+				ErrorNoHalt("[Windswept] Attempt to load invalid character '" .. id .. "'\n")
 			end
 		end)
 
@@ -993,7 +1007,12 @@ do
 			for k, _ in pairs(payload) do
 				local info = ws.char.vars[k]
 
-				if (!info or (!info.OnValidate and info.bNoDisplay)) then
+				-- Only let the client seed vars that are explicitly part of character
+				-- creation: either a displayed (creation-menu) var, or one flagged
+				-- bCreatable. Inferring editability from OnValidate+bNoDisplay let a
+				-- client seed otherwise-hidden vars that happened to have an
+				-- OnValidate. (fw-character-item-13)
+				if (!info or (info.bNoDisplay and !info.bCreatable)) then
 					payload[k] = nil
 				end
 			end
@@ -1073,21 +1092,21 @@ do
 				net.Broadcast()
 
 				-- remove character from database
-				local query = mysql:Delete("ix_characters")
+				local query = mysql:Delete("ws_characters")
 					query:Where("id", id)
 					query:Where("steamid", client:SteamID64())
 				query:Execute()
 
 				-- DBTODO: setup relations instead
 				-- remove inventory from database
-				query = mysql:Select("ix_inventories")
+				query = mysql:Select("ws_inventories")
 					query:Select("inventory_id")
 					query:Where("character_id", id)
 					query:Callback(function(result)
 						if (istable(result)) then
 							-- remove associated items from database
 							for _, v in ipairs(result) do
-								local itemQuery = mysql:Delete("ix_items")
+								local itemQuery = mysql:Delete("ws_items")
 									itemQuery:Where("inventory_id", v.inventory_id)
 								itemQuery:Execute()
 
@@ -1095,7 +1114,7 @@ do
 							end
 						end
 
-						local invQuery = mysql:Delete("ix_inventories")
+						local invQuery = mysql:Delete("ws_inventories")
 							invQuery:Where("character_id", id)
 						invQuery:Execute()
 					end)

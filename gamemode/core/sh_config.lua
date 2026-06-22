@@ -12,11 +12,11 @@ if (SERVER) then
 	util.AddNetworkString("wsConfigUnloadedList")
 	util.AddNetworkString("wsConfigPluginToggle")
 
-	ws.config.server = ws.yaml.Read("gamemodes/helix/helix.yml") or {}
+	ws.config.server = ws.yaml.Read("gamemodes/"..ws.FRAMEWORK_FOLDER.."/windswept.yml") or {}
 end
 
 CAMI.RegisterPrivilege({
-	Name = "Helix - Manage Config",
+	Name = "Windswept - Manage Config",
 	MinAccess = "superadmin"
 })
 
@@ -92,7 +92,8 @@ function ws.config.ForceSet(key, value, noSave)
 		config.value = value
 	end
 
-	if (noSave) then
+	-- noSave: callers pass true to skip the disk write; persist otherwise. (fw-config-command-boot-10)
+	if (!noSave) then
 		ws.config.Save()
 	end
 end
@@ -168,9 +169,9 @@ function ws.config.Load()
 		end
 	end
 
-	ws.util.Include("windswept/gamemode/config/sh_config.lua")
+	ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/config/sh_config.lua")
 
-	if (SERVER or !IX_RELOADED) then
+	if (SERVER or !WS_RELOADED) then
 		hook.Run("InitializedConfig")
 	end
 end
@@ -189,8 +190,20 @@ if (SERVER) then
 	end
 
 	function ws.config.Send(client)
+		-- Strip non-networkable configs so they're never sent to a client, matching the
+		-- per-value Set() broadcast guard (!config.bNoNetworking). (fw-config-command-boot-14)
+		local data = ws.config.GetChangedValues()
+
+		for k in pairs(data) do
+			local stored = ws.config.stored[k]
+
+			if (stored and stored.bNoNetworking) then
+				data[k] = nil
+			end
+		end
+
 		net.Start("wsConfigList")
-			net.WriteTable(ws.config.GetChangedValues())
+			net.WriteTable(data)
 		net.Send(client)
 	end
 
@@ -214,12 +227,56 @@ if (SERVER) then
 		ws.data.Set("config", data, false, true)
 	end
 
-	net.Receive("wsConfigSet", function(length, client)
-		local key = net.ReadString()
-		local value = net.ReadType()
+	-- These config-admin actions are registered in a server post-load hook, NOT at file scope:
+	-- sh_config.lua is included (shared.lua:83) BEFORE core/libs (shared.lua:84) where ws.action
+	-- is defined, so ws.action does not exist yet here. InitPostEntity fires after all core files
+	-- load (ws.action exists), and registration only needs to be in place before a client opens
+	-- the config menu — long after boot. (Do not reorder shared.lua: core/libs/sh_date.lua reads
+	-- ws.config at its own load time, so libs must stay loaded after sh_config.) (fw-config-load-order)
+	hook.Add("InitPostEntity", "wsConfigActions", function()
+	ws.action.Register("wsConfigSet", {
+		read = function()
+			return { key = net.ReadString(), value = net.ReadType() }
+		end,
 
-		if (CAMI.PlayerHasAccess(client, "Helix - Manage Config", nil) and
-			type(ws.config.stored[key].default) == type(value)) then
+		onValidate = function(client, ctx)
+			-- Guard against an unknown key (stored[key] is nil -> .default would error in the
+			-- net thread). Also reject dummy/non-networkable configs (no real .type, or
+			-- bNoNetworking) so a crafted packet can't poke them. (fw-config-command-boot-2) (tb-3)
+			local config = ws.config.stored[ctx.data.key]
+
+			if (!(config and config.type != nil and !config.bNoNetworking and
+				CAMI.PlayerHasAccess(client, "Windswept - Manage Config", nil) and
+				type(config.default) == type(ctx.data.value))) then
+				return false
+			end
+		end,
+
+		run = function(client, ctx)
+			local key = ctx.data.key
+			local value = ctx.data.value
+			local config = ws.config.stored[key]
+
+			-- The client value is attacker-controlled; re-apply the same sanitize/clamp the
+			-- client UI does (cl_config.lua), so out-of-range / NaN / oversized values cannot
+			-- be injected via a crafted net.Start. (fw-config-command-boot-1)
+			value = ws.util.SanitizeType(config.type, value)
+
+			if (config.type == ws.type.number) then
+				-- reject NaN / +-inf
+				if (value != value or value == math.huge or value == -math.huge) then
+					return
+				end
+
+				local cdata = istable(config.data) and config.data or {}
+				value = math.Round(value, cdata.decimals or 0)
+
+				if (isnumber(cdata.min)) then value = math.max(value, cdata.min) end
+				if (isnumber(cdata.max)) then value = math.min(value, cdata.max) end
+			elseif (config.type == ws.type.string or config.type == ws.type.text) then
+				if (#value > 4096) then value = string.sub(value, 1, 4096) end
+			end
+
 			ws.config.Set(key, value)
 
 			if (ws.util.IsColor(value)) then
@@ -244,38 +301,59 @@ if (SERVER) then
 			ws.util.NotifyLocalized("cfgSet", nil, client:Name(), key, tostring(value))
 			ws.log.Add(client, "cfgSet", key, value)
 		end
-	end)
+	})
 
-	net.Receive("wsConfigRequestUnloadedList", function(length, client)
-		if (!CAMI.PlayerHasAccess(client, "Helix - Manage Config", nil)) then
-			return
+	ws.action.Register("wsConfigRequestUnloadedList", {
+		onValidate = function(client)
+			if (!CAMI.PlayerHasAccess(client, "Windswept - Manage Config", nil)) then
+				return false
+			end
+		end,
+
+		run = function(client)
+			net.Start("wsConfigUnloadedList")
+				net.WriteTable(ws.plugin.unloaded)
+			net.Send(client)
 		end
+	})
 
-		net.Start("wsConfigUnloadedList")
-			net.WriteTable(ws.plugin.unloaded)
-		net.Send(client)
-	end)
+	ws.action.Register("wsConfigPluginToggle", {
+		read = function()
+			return { uniqueID = net.ReadString(), bShouldEnable = net.ReadBool() }
+		end,
 
-	net.Receive("wsConfigPluginToggle", function(length, client)
-		if (!CAMI.PlayerHasAccess(client, "Helix - Manage Config", nil)) then
-			return
+		onValidate = function(client, ctx)
+			if (!CAMI.PlayerHasAccess(client, "Windswept - Manage Config", nil)) then
+				return false
+			end
+
+			-- Reject uniqueIDs that aren't real plugins (and aren't already a legitimately-unloaded
+			-- plugin), so a superadmin can't inject arbitrary keys into the persisted unloaded table.
+			-- (fw-config-command-boot-5)
+			if (!ws.plugin.list[ctx.data.uniqueID] and ws.plugin.unloaded[ctx.data.uniqueID] == nil) then
+				return false
+			end
+		end,
+
+		run = function(client, ctx)
+			local uniqueID = ctx.data.uniqueID
+			local bShouldEnable = ctx.data.bShouldEnable
+
+			local bUnloaded = !!ws.plugin.unloaded[uniqueID]
+
+			if ((bShouldEnable and bUnloaded) or (!bShouldEnable and !bUnloaded)) then
+				ws.plugin.SetUnloaded(uniqueID, !bShouldEnable) -- flip bool since we're setting unloaded, not enabled
+
+				ws.util.NotifyLocalized(bShouldEnable and "pluginLoaded" or "pluginUnloaded", nil, client:GetName(), uniqueID)
+				ws.log.Add(client, bShouldEnable and "pluginLoaded" or "pluginUnloaded", uniqueID)
+
+				net.Start("wsConfigPluginToggle")
+					net.WriteString(uniqueID)
+					net.WriteBool(bShouldEnable)
+				net.Broadcast()
+			end
 		end
-
-		local uniqueID = net.ReadString()
-		local bUnloaded = !!ws.plugin.unloaded[uniqueID]
-		local bShouldEnable = net.ReadBool()
-
-		if ((bShouldEnable and bUnloaded) or (!bShouldEnable and !bUnloaded)) then
-			ws.plugin.SetUnloaded(uniqueID, !bShouldEnable) -- flip bool since we're setting unloaded, not enabled
-
-			ws.util.NotifyLocalized(bShouldEnable and "pluginLoaded" or "pluginUnloaded", nil, client:GetName(), uniqueID)
-			ws.log.Add(client, bShouldEnable and "pluginLoaded" or "pluginUnloaded", uniqueID)
-
-			net.Start("wsConfigPluginToggle")
-				net.WriteString(uniqueID)
-				net.WriteBool(bShouldEnable)
-			net.Broadcast()
-		end
+	})
 	end)
 else
 	net.Receive("wsConfigList", function()
@@ -343,7 +421,7 @@ else
 	end)
 
 	hook.Add("CreateMenuButtons", "wsConfig", function(tabs)
-		if (!CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Manage Config", nil)) then
+		if (!CAMI.PlayerHasAccess(LocalPlayer(), "Windswept - Manage Config", nil)) then
 			return
 		end
 

@@ -57,38 +57,48 @@ if (CLIENT) then
 	-- @param data Extra data to send to the entity
 	function ws.menu.NetworkChoice(entity, choice, data)
 		if (IsValid(entity)) then
-			net.Start("wsEntityMenuSelect")
-				net.WriteEntity(entity)
+			ws.action.Send("wsEntityMenuSelect", nil, entity, function()
 				net.WriteString(choice)
 				net.WriteType(data)
-			net.SendToServer()
+			end)
 		end
 	end
 else
 	util.AddNetworkString("wsEntityMenuSelect")
 
-	net.Receive("wsEntityMenuSelect", function(length, client)
-		local entity = net.ReadEntity()
-		local option = net.ReadString()
-		local data = net.ReadType()
+	-- range = "none": this handler does NOT use a fixed framework distance gate;
+	-- it delegates range (and all other interaction rules) to the overridable
+	-- CanPlayerInteractEntity hook below, exactly as the inline handler did. The
+	-- default hook impl enforces a 96u check, but per-entity overrides may widen it,
+	-- so a built-in "close" check would change behavior. (preserves fw-derma-1 contract)
+	ws.action.Register("wsEntityMenuSelect", {
+		target = true,
+		range = "none",
+		read = function()
+			return {option = net.ReadString(), data = net.ReadType()}
+		end,
+		run = function(client, ctx)
+			local entity = ctx.target
+			local option = ctx.data.option
+			local data = ctx.data.data
 
-		if (!IsValid(entity)
-			or !isstring(option)
-			or hook.Run("CanPlayerInteractEntity", client, entity, option, data) == false
-		) then
-			return
+			if (!isstring(option)
+				or hook.Run("CanPlayerInteractEntity", client, entity, option, data) == false
+			) then
+				return
+			end
+
+			hook.Run("PlayerInteractEntity", client, entity, option, data)
+
+			local callbackName = "OnSelect" .. option:gsub("%s", "")
+
+			if (entity[callbackName]) then
+				entity[callbackName](entity, client, data)
+			else
+				entity:OnOptionSelected(client, option, data)
+			end
 		end
-
-		hook.Run("PlayerInteractEntity", client, entity, option, data)
-
-		local callbackName = "OnSelect" .. option:gsub("%s", "")
-
-		if (entity[callbackName]) then
-			entity[callbackName](entity, client, data)
-		else
-			entity:OnOptionSelected(client, option, data)
-		end
-	end)
+	})
 end
 
 do

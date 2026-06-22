@@ -206,11 +206,12 @@ ITEM.functions.Give = {
 				local amount = tonumber(text)
 				if not amount or amount <= 0 then return end
 
-				net.Start("wsMoneyGive")
-					net.WriteUInt(item:GetID(), 32)
+				-- ws.action.Send writes itemID, target, then writeExtra(amount); the server
+				-- (ws.action) reads item, target, then amount. Deliberate wire-order change from
+				-- the old itemID/amount/target -- both sides were updated together.
+				ws.action.Send("wsMoneyGive", item:GetID(), target, function()
 					net.WriteUInt(math.floor(amount), 32)
-					net.WriteEntity(target)
-				net.SendToServer()
+				end)
 			end,
 			nil,
 			"Give",
@@ -247,10 +248,9 @@ ITEM.functions.Destroy = {
 				local amount = tonumber(text)
 				if not amount or amount <= 0 then return end
 
-				net.Start("wsMoneyDestroy")
-					net.WriteUInt(item:GetID(), 32)
+				ws.action.Send("wsMoneyDestroy", item:GetID(), nil, function()
 					net.WriteUInt(math.floor(amount), 32)
-				net.SendToServer()
+				end)
 			end,
 			nil,
 			"Destroy",

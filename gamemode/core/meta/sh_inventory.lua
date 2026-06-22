@@ -24,7 +24,7 @@ You may be looking for the following common functions:
 ]]
 -- @classmod Inventory
 
-local META = ws.meta.inventory or ws.middleclass("ix_inventory")
+local META = ws.meta.inventory or ws.middleclass("ws_inventory")
 
 META.slots = META.slots or {}
 META.w = META.w or 4
@@ -179,7 +179,7 @@ function META:SetOwner(owner, fullUpdate)
 			end
 		end
 
-		local query = mysql:Update("ix_inventories")
+		local query = mysql:Update("ws_inventories")
 			query:Update("character_id", owner)
 			query:Where("inventory_id", self:GetID())
 		query:Execute()
@@ -218,13 +218,25 @@ end
 -- @number h The `Item`'s height.
 -- @item[opt=nil] item2 An `Item`, if any, to ignore when searching.
 function META:CanItemFit(x, y, w, h, item2)
+	-- Reject out-of-bounds origins/extents up front. The grid is 1-indexed, so x,y must be
+	-- >= 1 and the item's far edge must stay within w/h. Previously only the X far edge was
+	-- checked, so a crafted move could place an item below the grid (y > self.h) or at x/y < 1,
+	-- which Remove()/GetFilledSlotCount() (which scan only 1..w / 1..h) then never see. (fw-character-item-2)
+	if (!isnumber(x) or !isnumber(y) or x < 1 or y < 1) then
+		return false
+	end
+
+	if ((x + w - 1) > self.w or (y + h - 1) > self.h) then
+		return false
+	end
+
 	local canFit = true
 
 	for x2 = 0, w - 1 do
 		for y2 = 0, h - 1 do
 			local item = (self.slots[x + x2] or {})[y + y2]
 
-			if ((x + x2) > self.w or item) then
+			if ((x + x2) > self.w or (y + y2) > self.h or item) then
 				if (item2) then
 					if (item and item.id == item2.id) then
 						continue
@@ -395,7 +407,7 @@ function META:Remove(id, bNoReplication, bNoDelete, bTransferring)
 				item:OnRemoved()
 			end
 
-			local query = mysql:Delete("ix_items")
+			local query = mysql:Delete("ws_items")
 				query:Where("item_id", id)
 			query:Execute()
 
@@ -795,7 +807,7 @@ if (SERVER) then
 	-- @treturn[1] bool Returns the field `noSave`.
 	-- @treturn[2] bool Returns true if the field `noSave` is not registered to this inventory.
 	function META:GetShouldSave()
-		return self.noSave or true
+		return self.noSave -- (fw-character-item-7)
 	end
 
 	--- Add an item to the inventory.
@@ -815,7 +827,7 @@ if (SERVER) then
 		quantity = quantity or 1
 
 		if (quantity < 1) then
-			return false, "noOwner"
+			return false, "invalidQuantity" -- (fw-character-item-12)
 		end
 
 		if (!isnumber(uniqueID) and quantity > 1) then
@@ -850,10 +862,10 @@ if (SERVER) then
 				targetInv = bagInv
 			end
 
-			-- we need to check for owner since the item instance already exists
-			if (!item.bAllowMultiCharacterInteraction and IsValid(client) and client:GetCharacter() and
-				item:GetPlayerID() == client:SteamID64() and item:GetCharacterID() != client:GetCharacter():GetID()) then
-				return false, "itemOwned"
+			-- Single-character ownership; the item instance already exists. (fw-character-item-10)
+			local ownOK, ownReason = ws.access.EnsureItemOwnership(client, item, false)
+			if (!ownOK) then
+				return false, ownReason
 			end
 
 			if (hook.Run("CanTransferItem", item, ws.item.inventories[0], targetInv) == false) then
@@ -882,7 +894,7 @@ if (SERVER) then
 				end
 
 				if (!self.noSave) then
-					local query = mysql:Update("ix_items")
+					local query = mysql:Update("ws_items")
 						query:Update("inventory_id", targetInv:GetID())
 						query:Update("x", x)
 						query:Update("y", y)

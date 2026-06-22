@@ -33,7 +33,7 @@ if (CLIENT) then
 		crossSize = 4
 		crossGap = 25 * (scaleFraction - (LocalPlayer():IsWepRaised() and 0 or .1))
 
-		if (IsValid(entity) and entity:GetClass() == "ix_item" and
+		if (IsValid(entity) and entity:GetClass() == "ws_item" and
 			entity:GetPos():DistToSqr(trace.StartPos) <= 16384) then
 			crossGap = 0
 			crossSize = 5

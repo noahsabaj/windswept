@@ -1,8 +1,13 @@
 AddCSLuaFile()
 
+-- NOTE: the ix_* -> ws_* entity-class rename is an INTENTIONAL break. This is a
+-- greenfield deploy (no live servers, no pre-rebrand saved maps/dupes/saves), so
+-- no scripted_ents.Alias("ix_money", "ws_money") back-compat is registered. If a
+-- pre-rebrand map/dupe ever needs to load, add the alias here. (layer-8)
+
 ENT.Type = "anim"
 ENT.PrintName = "Money"
-ENT.Category = "Helix"
+ENT.Category = "Windswept"
 ENT.Spawnable = false
 ENT.ShowPlayerInteraction = true
 ENT.bNoPersist = true

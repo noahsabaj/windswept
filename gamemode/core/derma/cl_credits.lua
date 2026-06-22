@@ -21,7 +21,7 @@ local MISC = {
 	{"NutScript", "Providing the base framework to build upon"}
 }
 
-local url = "https://gethelix.co/"
+local url = "https://getwindswept.co/"
 local padding = 32
 
 -- logo
@@ -33,11 +33,11 @@ function PANEL:Init()
 end
 
 function PANEL:Paint(width, height)
-	derma.SkinFunc("DrawHelixCurved", width * 0.5, height * 0.5, width * 0.25)
+	derma.SkinFunc("DrawWindsweptCurved", width * 0.5, height * 0.5, width * 0.25)
 
 	-- title
 	surface.SetFont("wsIntroSubtitleFont")
-	local text = L("helix"):lower()
+	local text = L("windswept"):lower()
 	local textWidth, textHeight = surface.GetTextSize(text)
 
 	surface.SetTextColor(color_white)

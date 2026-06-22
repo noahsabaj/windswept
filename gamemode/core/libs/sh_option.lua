@@ -32,7 +32,7 @@ ws.option.categories = ws.option.categories or {}
 --- Creates a client-side configuration option with the given information.
 -- @realm shared
 -- @string key Unique ID for this option
--- @ixtype optionType Type of this option
+-- @wstype optionType Type of this option
 -- @param default Default value that this option will have - this can be nil if needed
 -- @tparam OptionStructure data Additional settings for this option
 -- @usage ws.option.Add("animationScale", ws.type.number, 1, {
@@ -135,7 +135,7 @@ end
 -- @realm shared
 -- @internal
 function ws.option.Load()
-	ws.util.Include("windswept/gamemode/config/sh_options.lua")
+	ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/config/sh_options.lua")
 
 	if (CLIENT) then
 		local options = ws.data.Get("options", nil, true, true)
@@ -197,6 +197,32 @@ function ws.option.GetAllByCategories(bRemoveHidden)
 	return result
 end
 
+--- Validates and clamps a value against an option definition. Shared by the client
+-- `Set` and the server receivers so the same type/range rules apply everywhere.
+-- Returns the sanitized value, or nil if the value's type does not match the option
+-- (caller should then reject it). (fw-config-command-boot-3) (tb-5)
+-- @realm shared
+-- @tparam table option Stored option definition
+-- @param value Untrusted value to validate
+-- @return Sanitized value, or nil if the type is mismatched
+function ws.option.ValidateValue(option, value)
+	if (!istable(option) or option.type == nil) then return nil end
+
+	if (option.type == ws.type.number) then
+		if (!isnumber(value)) then return nil end
+
+		-- reject NaN / +-inf before rounding/clamping
+		if (value != value or value == math.huge or value == -math.huge) then return nil end
+
+		value = math.Clamp(math.Round(value, option.decimals or 0), option.min or 0, option.max or 10)
+	else
+		-- For non-number types, the runtime type must map back to the option's type.
+		if (ws.util.GetTypeFromValue(value) != option.type) then return nil end
+	end
+
+	return value
+end
+
 if (CLIENT) then
 	ws.option.client = ws.option.client or {}
 
@@ -209,7 +235,11 @@ if (CLIENT) then
 	function ws.option.Set(key, value, bNoSave)
 		local option = assert(ws.option.stored[key], "invalid option key \"" .. tostring(key) .. "\"")
 
-		if (option.type == ws.type.number) then
+		-- Run through the shared validator (clamps numbers; rejects type mismatches). (fw-config-command-boot-3)
+		local validated = ws.option.ValidateValue(option, value)
+		if (validated != nil) then
+			value = validated
+		elseif (option.type == ws.type.number) then
 			value = math.Clamp(math.Round(value, option.decimals), option.min, option.max)
 		end
 
@@ -217,10 +247,10 @@ if (CLIENT) then
 		ws.option.client[key] = value
 
 		if (option.bNetworked) then
-			net.Start("wsOptionSet")
+			ws.action.Send("wsOptionSet", nil, nil, function()
 				net.WriteString(key)
 				net.WriteType(value)
-			net.SendToServer()
+			end)
 		end
 
 		if (!bNoSave) then
@@ -273,15 +303,14 @@ if (CLIENT) then
 		end
 
 		if (#options > 0) then
-			net.Start("wsOptionSync")
-			net.WriteUInt(#options, 8)
+			ws.action.Send("wsOptionSync", nil, nil, function()
+				net.WriteUInt(#options, 8)
 
-			for _, v in ipairs(options) do
-				net.WriteString(v[1])
-				net.WriteType(v[2])
-			end
-
-			net.SendToServer()
+				for _, v in ipairs(options) do
+					net.WriteString(v[1])
+					net.WriteType(v[2])
+				end
+			end)
 		end
 	end
 else
@@ -321,45 +350,72 @@ else
 	end
 
 	-- sent whenever a client's networked option has changed
-	net.Receive("wsOptionSet", function(length, client)
-		local key = net.ReadString()
-		local value = net.ReadType()
+	ws.action.Register("wsOptionSet", {
+		read = function()
+			return {key = net.ReadString(), value = net.ReadType()}
+		end,
+		run = function(client, ctx)
+			local key = ctx.data.key
+			local value = ctx.data.value
 
-		local steamID = client:SteamID64()
-		local option = ws.option.stored[key]
-
-		if (option) then
-			ws.option.clients[steamID] = ws.option.clients[steamID] or {}
-			ws.option.clients[steamID][key] = value
-		else
-			ErrorNoHalt(string.format(
-				"'%s' attempted to set option with invalid key '%s'\n", tostring(client) .. client:SteamID(), key
-			))
-		end
-	end)
-
-	-- sent on first load to sync all networked option values
-	net.Receive("wsOptionSync", function(length, client)
-		local indices = net.ReadUInt(8)
-		local data = {}
-
-		for _ = 1, indices do
-			data[net.ReadString()] = net.ReadType()
-		end
-
-		local steamID = client:SteamID64()
-		ws.option.clients[steamID] = ws.option.clients[steamID] or {}
-
-		for k, v in pairs(data) do
-			local option = ws.option.stored[k]
+			local steamID = client:SteamID64()
+			local option = ws.option.stored[key]
 
 			if (option) then
-				ws.option.clients[steamID][k] = v
+				-- The value is attacker-controlled; validate/clamp against the option
+				-- definition and drop type mismatches. (fw-config-command-boot-3) (tb-5)
+				local validated = ws.option.ValidateValue(option, value)
+				if (validated == nil) then return end
+
+				ws.option.clients[steamID] = ws.option.clients[steamID] or {}
+				ws.option.clients[steamID][key] = validated
 			else
-				return ErrorNoHalt(string.format(
-					"'%s' attempted to sync option with invalid key '%s'\n", tostring(client) .. client:SteamID(), k
+				ErrorNoHalt(string.format(
+					"'%s' attempted to set option with invalid key '%s'\n", tostring(client) .. client:SteamID(), key
 				))
 			end
 		end
+	})
+
+	-- sent on first load to sync all networked option values
+	ws.action.Register("wsOptionSync", {
+		read = function()
+			local indices = net.ReadUInt(8)
+			local data = {}
+
+			for _ = 1, indices do
+				data[net.ReadString()] = net.ReadType()
+			end
+
+			return data
+		end,
+		run = function(client, ctx)
+			local data = ctx.data
+
+			local steamID = client:SteamID64()
+			ws.option.clients[steamID] = ws.option.clients[steamID] or {}
+
+			for k, v in pairs(data) do
+				local option = ws.option.stored[k]
+
+				if (option) then
+					-- Validate/clamp each synced value the same way as wsOptionSet. (fw-config-command-boot-3) (tb-5)
+					local validated = ws.option.ValidateValue(option, v)
+					if (validated != nil) then
+						ws.option.clients[steamID][k] = validated
+					end
+				else
+					return ErrorNoHalt(string.format(
+						"'%s' attempted to sync option with invalid key '%s'\n", tostring(client) .. client:SteamID(), k
+					))
+				end
+			end
+		end
+	})
+
+	-- Clear the per-client option cache on disconnect so it doesn't leak memory
+	-- across the session (keyed by SteamID64, never otherwise cleared). (fw-config-command-boot-4)
+	hook.Add("PlayerDisconnected", "wsOptionClientCleanup", function(client)
+		ws.option.clients[client:SteamID64()] = nil
 	end)
 end

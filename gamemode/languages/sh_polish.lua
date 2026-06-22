@@ -3,7 +3,7 @@
 NAME = "Polski"
 
 LANGUAGE = {
-	helix = "Helix",
+	windswept = "Windswept",
 
 	introTextOne = "fist industries prezentuje",
 	introTextTwo = "w współpracy z %s",
@@ -287,8 +287,8 @@ LANGUAGE = {
 	vendorNoTrade = "Nie możesz dokonać wymiany z tym sprzedawcą!",
 	vendorNoMoney = "Sprzedawce nie stać na ten przedmiot!",
 	vendorNoStock = "Sprzedawca nie ma tego produktu aktualnie w asortymencie!",
-	contentTitle = "Nie znaleziono zawartości dla trybu Helix",
-	contentWarning = "Zawartość dla trybu Helix nie został wgrana. Rezultatem tego może być brak części funkcji.\nCzy chciałbyś otworzyć stronę warsztatu z daną zawartością?",
+	contentTitle = "Nie znaleziono zawartości dla trybu Windswept",
+	contentWarning = "Zawartość dla trybu Windswept nie został wgrana. Rezultatem tego może być brak części funkcji.\nCzy chciałbyś otworzyć stronę warsztatu z daną zawartością?",
 	flags = "Flagi",
 	mapRestarting = "Restart mapy za %d sekund!",
 	chooseTip = "Wybierz postać do gry.",
@@ -337,7 +337,7 @@ LANGUAGE = {
 	optOpenBags = "Otwórz torbe z ekwipunkiem",
 	optdOpenBags = "Automatycznie pokazuje wszystkie torby w twoim ekwipunku gdy menu jest otwarte.",
 	optShowIntro = "Pokaż intro przy wchodzeniu na serwer",
-	optdShowIntro = "Pokazuje wstęp do Helixa następnym razem gdy będziesz wchodzić. Ta opcja jest zawsze wyłączona po tym gdy obejrzałeś wstęp.",
+	optdShowIntro = "Pokazuje wstęp do Windswepta następnym razem gdy będziesz wchodzić. Ta opcja jest zawsze wyłączona po tym gdy obejrzałeś wstęp.",
 	optCheapBlur = "Wyłącz rozmazanie",
 	optdCheapBlur = "Zastępuje rozmazanie interfejsu z zwykłym przyciemnieniem.",
 	optObserverTeleportBack = "Przywraca cię do poprzedniej lokalizacji",
@@ -355,7 +355,7 @@ LANGUAGE = {
 	optAltLower = "Ukryj ręce gdy są opuszczone.",
 	optdAltLower = "Ukrywa ręce, gdy są opuszczone.",
 	optThirdpersonEnabled = "Włącz trzecią osobe",
-	optdThirdpersonEnabled = "Przenosi kamerę za ciebie. Również może być włączone w konsoli za pomocą \"ix_togglethirdperson\" ",
+	optdThirdpersonEnabled = "Przenosi kamerę za ciebie. Również może być włączone w konsoli za pomocą \"ws_togglethirdperson\" ",
 	optThirdpersonClassic = "Włącz klasyczną trzecią osobe",
 	optdThirdpersonClassic = "Moves your character's view with your mouse.",
 	optThirdpersonVertical = "Wysokość kamery",

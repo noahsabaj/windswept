@@ -9,7 +9,7 @@ PLUGIN.author = "Chessnut"
 PLUGIN.description = "Adds NPC vendors that can sell things."
 
 CAMI.RegisterPrivilege({
-	Name = "Helix - Manage Vendors",
+	Name = "Windswept - Manage Vendors",
 	MinAccess = "admin"
 })
 
@@ -38,7 +38,7 @@ VENDOR_BUYONLY = 3
 if (SERVER) then
 	util.AddNetworkString("wsVendorOpen")
 	util.AddNetworkString("wsVendorClose")
-	util.AddNetworkString("wsVendorTrade")
+	-- wsVendorTrade's networkstring is registered by ws.action.Register below.
 
 	util.AddNetworkString("wsVendorEdit")
 	util.AddNetworkString("wsVendorEditFinish")
@@ -50,7 +50,7 @@ if (SERVER) then
 	function PLUGIN:SaveData()
 		local data = {}
 
-		for _, entity in ipairs(ents.FindByClass("ix_vendor")) do
+		for _, entity in ipairs(ents.FindByClass("ws_vendor")) do
 			local bodygroups = {}
 
 			for _, v in ipairs(entity:GetBodyGroups() or {}) do
@@ -79,7 +79,7 @@ if (SERVER) then
 
 	function PLUGIN:LoadData()
 		for _, v in ipairs(self:GetData() or {}) do
-			local entity = ents.Create("ix_vendor")
+			local entity = ents.Create("ws_vendor")
 			entity:SetPos(v.pos)
 			entity:SetAngles(v.angles)
 			entity:Spawn()
@@ -166,7 +166,7 @@ if (SERVER) then
 	end
 
 	net.Receive("wsVendorEdit", function(length, client)
-		if (!CAMI.PlayerHasAccess(client, "Helix - Manage Vendors", nil)) then
+		if (!CAMI.PlayerHasAccess(client, "Windswept - Manage Vendors", nil)) then
 			return
 		end
 
@@ -259,7 +259,7 @@ if (SERVER) then
 		elseif (key == "class") then
 			local class
 
-			for _, v in ipairs(ws.class.list) do
+			for _, v in pairs(ws.class.list) do
 				if (v.uniqueID == data) then
 					class = v
 
@@ -306,7 +306,7 @@ if (SERVER) then
 			local receivers = {}
 
 			for _, v in ipairs(entity.receivers) do
-				if (CAMI.PlayerHasAccess(v, "Helix - Manage Vendors", nil)) then
+				if (CAMI.PlayerHasAccess(v, "Windswept - Manage Vendors", nil)) then
 					receivers[#receivers + 1] = v
 				end
 			end
@@ -318,25 +318,41 @@ if (SERVER) then
 		end
 	end)
 
-	net.Receive("wsVendorTrade", function(length, client)
-		if ((client.wsVendorTry or 0) < CurTime()) then
-			client.wsVendorTry = CurTime() + 0.33
-		else
-			return
-		end
+	ws.action.Register("wsVendorTrade", {
+		-- The vendor entity is supplied by the client (target). Authority is enforced
+		-- in onValidate: it must be a ws_vendor within the original 192u reach and the
+		-- caller must satisfy the vendor's faction/class access rule (entity:CanAccess).
+		-- range = "none" because the legacy contract uses a 192u Distance check, not
+		-- ws.access's 100u "interaction" range; we replicate the exact distance below.
+		target = true,
+		range = "none",
+		rateLimit = 0.33,
+		read = function()
+			return {
+				uniqueID = net.ReadString(),
+				isSellingToVendor = net.ReadBool()
+			}
+		end,
+		onValidate = function(client, ctx)
+			local entity = ctx.target
 
-		local entity = client.wsVendor
+			-- Must be an actual vendor (the entity now arrives from the client).
+			if (entity:GetClass() != "ws_vendor") then
+				return false
+			end
 
-		if (!IsValid(entity) or client:GetPos():Distance(entity:GetPos()) > 192) then
-			return
-		end
+			if (client:GetPos():Distance(entity:GetPos()) > 192) then
+				return false
+			end
 
-		if (!entity:CanAccess(client)) then
-			return
-		end
-
-		local uniqueID = net.ReadString()
-		local isSellingToVendor = net.ReadBool()
+			if (!entity:CanAccess(client)) then
+				return false
+			end
+		end,
+		run = function(client, ctx)
+		local entity = ctx.target
+		local uniqueID = ctx.data.uniqueID
+		local isSellingToVendor = ctx.data.isSellingToVendor
 
 		if (entity.items[uniqueID] and
 			hook.Run("CanPlayerTradeWithVendor", client, entity, uniqueID, isSellingToVendor) != false) then
@@ -414,7 +430,12 @@ if (SERVER) then
 
 				local name = L(ws.item.list[uniqueID].name, client)
 
-				client:GetCharacter():TakeMoney(price, price == 0)
+				-- Abort if the money can't actually be taken (e.g. can't make change in a full
+				-- inventory), or the player would receive the item and keep their money. (fw-currency-economy-5 ripple)
+				if (!client:GetCharacter():TakeMoney(price, price == 0)) then
+					return client:NotifyLocalized("canNotAfford")
+				end
+
 				client:NotifyLocalized("businessPurchase", name, ws.currency.Get(price))
 
 				entity:GiveMoney(price)
@@ -437,7 +458,8 @@ if (SERVER) then
 		else
 			client:NotifyLocalized("vendorNoTrade")
 		end
-	end)
+		end
+	})
 else
 	VENDOR_TEXT = {}
 	VENDOR_TEXT[VENDOR_SELLANDBUY] = "vendorBoth"
@@ -463,7 +485,7 @@ else
 	net.Receive("wsVendorEditor", function()
 		local entity = net.ReadEntity()
 
-		if (!IsValid(entity) or !CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Manage Vendors", nil)) then
+		if (!IsValid(entity) or !CAMI.PlayerHasAccess(LocalPlayer(), "Windswept - Manage Vendors", nil)) then
 			return
 		end
 
@@ -682,10 +704,10 @@ properties.Add("vendor_edit", {
 
 	Filter = function(self, entity, client)
 		if (!IsValid(entity)) then return false end
-		if (entity:GetClass() != "ix_vendor") then return false end
+		if (entity:GetClass() != "ws_vendor") then return false end
 		if (!gamemode.Call( "CanProperty", client, "vendor_edit", entity)) then return false end
 
-		return CAMI.PlayerHasAccess(client, "Helix - Manage Vendors", nil)
+		return CAMI.PlayerHasAccess(client, "Windswept - Manage Vendors", nil)
 	end,
 
 	Action = function(self, entity)

@@ -2,7 +2,7 @@
 --[[--
 Player model animation.
 
-Helix comes with support for using NPC animations/models as regular player models by manually translating animations. There are
+Windswept comes with support for using NPC animations/models as regular player models by manually translating animations. There are
 a few standard animation sets that are built-in that should cover most non-player models:
 	citizen_male
 	citizen_female
@@ -415,8 +415,8 @@ if (SERVER) then
 	-- animation is playing.
 	-- @realm server
 	-- @string sequence Name of the animation sequence to play
-	-- @func[opt=nil] callback Function to call when the animation finishes. This is also called immediately if the animation
-	-- fails to play
+	-- @func[opt=nil] callback Function to call when the animation finishes, invoked as callback(player). This is also
+	-- called (with the same signature) immediately if the animation fails to play
 	-- @number[opt=nil] time How long to play the animation for. This defaults to the duration of the animation
 	-- @bool[opt=false] bNoFreeze Whether or not to avoid freezing this player in place while the animation is playing
 	-- @see LeaveSequence
@@ -463,7 +463,7 @@ if (SERVER) then
 
 			return time
 		elseif (callback) then
-			callback()
+			callback(self) -- consistent signature with LeaveSequence's self:wsSeqCallback() (fw-hooks-7)
 		end
 
 		return false

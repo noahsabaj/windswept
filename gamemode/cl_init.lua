@@ -33,9 +33,8 @@ if (!system.IsWindows()) then
 end
 
 DeriveGamemode("sandbox")
--- Windswept framework global table (`ws`); `ix` is a temporary transition alias.
+-- Windswept framework global table.
 ws = ws or {util = {}, gui = {}, meta = {}}
-ix = ws
 
 -- Include core files.
 include("core/sh_util.lua")

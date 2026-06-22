@@ -55,7 +55,14 @@ function ws.db.InsertSchema(schemaType, field, fieldType)
 	if (!schema[field]) then
 		schema[field] = true
 
-		local query = mysql:Update("ix_schema")
+		-- Ensure a ws_schema row exists for this schemaType so the columns UPDATE
+		-- below actually lands (a missing row would silently no-op). (fw-persistence-db-5)
+		local query = mysql:InsertIgnore("ws_schema")
+			query:Insert("table", schemaType)
+			query:Insert("columns", util.TableToJSON({}))
+		query:Execute()
+
+		query = mysql:Update("ws_schema")
 			query:Update("columns", util.TableToJSON(schema))
 			query:Where("table", schemaType)
 		query:Execute()
@@ -69,7 +76,7 @@ end
 function ws.db.LoadTables()
 	local query
 
-	query = mysql:Create("ix_schema")
+	query = mysql:Create("ws_schema")
 		query:Create("table", "VARCHAR(64) NOT NULL")
 		query:Create("columns", "TEXT NOT NULL")
 		query:PrimaryKey("table")
@@ -77,19 +84,19 @@ function ws.db.LoadTables()
 
 	-- table structure will be populated with more fields when vars
 	-- are registered using ws.char.RegisterVar
-	query = mysql:Create("ix_characters")
+	query = mysql:Create("ws_characters")
 		query:Create("id", "INT(11) UNSIGNED NOT NULL AUTO_INCREMENT")
 		query:PrimaryKey("id")
 	query:Execute()
 
-	query = mysql:Create("ix_inventories")
+	query = mysql:Create("ws_inventories")
 		query:Create("inventory_id", "INT(11) UNSIGNED NOT NULL AUTO_INCREMENT")
 		query:Create("character_id", "INT(11) UNSIGNED NOT NULL")
 		query:Create("inventory_type", "VARCHAR(150) DEFAULT NULL")
 		query:PrimaryKey("inventory_id")
 	query:Execute()
 
-	query = mysql:Create("ix_items")
+	query = mysql:Create("ws_items")
 		query:Create("item_id", "INT(11) UNSIGNED NOT NULL AUTO_INCREMENT")
 		query:Create("inventory_id", "INT(11) UNSIGNED NOT NULL")
 		query:Create("unique_id", "VARCHAR(60) NOT NULL")
@@ -101,7 +108,7 @@ function ws.db.LoadTables()
 		query:PrimaryKey("item_id")
 	query:Execute()
 
-	query = mysql:Create("ix_players")
+	query = mysql:Create("ws_players")
 		query:Create("steamid", "VARCHAR(20) NOT NULL")
 		query:Create("steam_name", "VARCHAR(32) NOT NULL")
 		query:Create("play_time", "INT(11) UNSIGNED DEFAULT NULL")
@@ -112,7 +119,7 @@ function ws.db.LoadTables()
 	query:Execute()
 
 	-- Faction governance tables
-	query = mysql:Create("ix_faction_classes")
+	query = mysql:Create("ws_faction_classes")
 		query:Create("id", "INT(11) UNSIGNED NOT NULL AUTO_INCREMENT")
 		query:Create("faction", "VARCHAR(64) NOT NULL")
 		query:Create("unique_id", "VARCHAR(64) NOT NULL")
@@ -130,7 +137,7 @@ function ws.db.LoadTables()
 		query:PrimaryKey("id")
 	query:Execute()
 
-	query = mysql:Create("ix_faction_votes")
+	query = mysql:Create("ws_faction_votes")
 		query:Create("id", "INT(11) UNSIGNED NOT NULL AUTO_INCREMENT")
 		query:Create("faction", "VARCHAR(64) NOT NULL")
 		query:Create("vote_type", "VARCHAR(32) NOT NULL")
@@ -144,7 +151,7 @@ function ws.db.LoadTables()
 		query:PrimaryKey("id")
 	query:Execute()
 
-	query = mysql:Create("ix_faction_ballots")
+	query = mysql:Create("ws_faction_ballots")
 		query:Create("id", "INT(11) UNSIGNED NOT NULL AUTO_INCREMENT")
 		query:Create("vote_id", "INT(11) UNSIGNED NOT NULL")
 		query:Create("char_id", "INT(11) UNSIGNED NOT NULL")
@@ -153,7 +160,7 @@ function ws.db.LoadTables()
 		query:PrimaryKey("id")
 	query:Execute()
 
-	query = mysql:Create("ix_faction_config")
+	query = mysql:Create("ws_faction_config")
 		query:Create("faction", "VARCHAR(64) NOT NULL")
 		query:Create("subordinate_of", "VARCHAR(64)")
 		query:Create("anchor_class_id", "INT(11) UNSIGNED")
@@ -163,13 +170,13 @@ function ws.db.LoadTables()
 	query:Execute()
 
 	-- populate schema table if rows don't exist
-	query = mysql:InsertIgnore("ix_schema")
-		query:Insert("table", "ix_characters")
+	query = mysql:InsertIgnore("ws_schema")
+		query:Insert("table", "ws_characters")
 		query:Insert("columns", util.TableToJSON({}))
 	query:Execute()
 
 	-- load schema from database
-	query = mysql:Select("ix_schema")
+	query = mysql:Select("ws_schema")
 		query:Callback(function(result)
 			if (!istable(result)) then
 				return
@@ -179,11 +186,14 @@ function ws.db.LoadTables()
 				ws.db.schema[v.table] = util.JSONToTable(v.columns)
 			end
 
-			-- update schema if needed
+			-- update schema if needed, then clear the queue so a second drain
+			-- (e.g. a reconnect) can't replay these entries. (fw-persistence-db-5)
 			for i = 1, #ws.db.schemaQueue do
 				local entry = ws.db.schemaQueue[i]
 				ws.db.InsertSchema(entry[1], entry[2], entry[3])
 			end
+
+			ws.db.schemaQueue = {}
 		end)
 	query:Execute()
 end
@@ -191,19 +201,34 @@ end
 function ws.db.WipeTables(callback)
 	local query
 
-	query = mysql:Drop("ix_schema")
+	query = mysql:Drop("ws_schema")
 	query:Execute()
 
-	query = mysql:Drop("ix_characters")
+	query = mysql:Drop("ws_characters")
 	query:Execute()
 
-	query = mysql:Drop("ix_inventories")
+	query = mysql:Drop("ws_inventories")
 	query:Execute()
 
-	query = mysql:Drop("ix_items")
+	query = mysql:Drop("ws_items")
 	query:Execute()
 
-	query = mysql:Drop("ix_players")
+	-- Faction governance tables. These are created in LoadTables but were not dropped here,
+	-- so a DB wipe left orphaned class/vote/ballot/config rows referencing destroyed
+	-- characters. (fw-persistence-db-1)
+	query = mysql:Drop("ws_faction_classes")
+	query:Execute()
+
+	query = mysql:Drop("ws_faction_votes")
+	query:Execute()
+
+	query = mysql:Drop("ws_faction_ballots")
+	query:Execute()
+
+	query = mysql:Drop("ws_faction_config")
+	query:Execute()
+
+	query = mysql:Drop("ws_players")
 		query:Callback(callback)
 	query:Execute()
 end
@@ -213,27 +238,37 @@ hook.Add("InitPostEntity", "wsDatabaseConnect", function()
 	ws.db.Connect()
 end)
 
-local resetCalled = 0
+-- Confirm token for ws_wipedb. Tying the second invocation to a one-shot nonce
+-- (instead of a shared time window) removes the re-arm race where an unrelated or
+-- automated double-invocation could trip the wipe. (fw-persistence-db-9)
+local wipeToken = nil
+local wipeTokenExpires = 0
 
-concommand.Add("ix_wipedb", function(client, cmd, arguments)
+concommand.Add("ws_wipedb", function(client, cmd, arguments)
 	-- can only be ran through the server's console
-	if (!IsValid(client)) then
-		if (resetCalled < RealTime()) then
-			resetCalled = RealTime() + 3
+	if (IsValid(client)) then return end
 
-			MsgC(Color(255, 0, 0),
-				"[Helix] WIPING THE DATABASE WILL PERMENANTLY REMOVE ALL PLAYER, CHARACTER, ITEM, AND INVENTORY DATA.\n")
-			MsgC(Color(255, 0, 0), "[Helix] THE SERVER WILL RESTART TO APPLY THESE CHANGES WHEN COMPLETED.\n")
-			MsgC(Color(255, 0, 0), "[Helix] TO CONFIRM DATABASE RESET, RUN 'ix_wipedb' AGAIN WITHIN 3 SECONDS.\n")
-		else
-			resetCalled = 0
-			MsgC(Color(255, 0, 0), "[Helix] DATABASE WIPE IN PROGRESS...\n")
+	local provided = arguments and arguments[1]
 
-			hook.Run("OnWipeTables")
-			ws.db.WipeTables(function()
-				MsgC(Color(255, 255, 0), "[Helix] DATABASE WIPE COMPLETED!\n")
-				RunConsoleCommand("changelevel", game.GetMap())
-			end)
-		end
+	if (wipeToken and provided == wipeToken and RealTime() < wipeTokenExpires) then
+		wipeToken = nil
+		wipeTokenExpires = 0
+
+		MsgC(Color(255, 0, 0), "[Windswept] DATABASE WIPE IN PROGRESS...\n")
+
+		hook.Run("OnWipeTables")
+		ws.db.WipeTables(function()
+			MsgC(Color(255, 255, 0), "[Windswept] DATABASE WIPE COMPLETED!\n")
+			RunConsoleCommand("changelevel", game.GetMap())
+		end)
+	else
+		wipeToken = tostring(math.random(100000, 999999))
+		wipeTokenExpires = RealTime() + 30
+
+		MsgC(Color(255, 0, 0),
+			"[Windswept] WIPING THE DATABASE WILL PERMENANTLY REMOVE ALL PLAYER, CHARACTER, ITEM, AND INVENTORY DATA.\n")
+		MsgC(Color(255, 0, 0), "[Windswept] THE SERVER WILL RESTART TO APPLY THESE CHANGES WHEN COMPLETED.\n")
+		MsgC(Color(255, 0, 0), string.format(
+			"[Windswept] TO CONFIRM DATABASE RESET, RUN 'ws_wipedb %s' WITHIN 30 SECONDS.\n", wipeToken))
 	end
 end)

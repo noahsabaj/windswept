@@ -14,7 +14,7 @@ ws.pac = ws.pac or {}
 ws.pac.list = ws.pac.list or {}
 
 CAMI.RegisterPrivilege({
-	Name = "Helix - Manage PAC",
+	Name = "Windswept - Manage PAC",
 	MinAccess = "superadmin"
 })
 
@@ -23,7 +23,7 @@ function ws.pac.RegisterPart(id, outfit)
 	ws.pac.list[id] = outfit
 end
 
--- Fixing the PAC3's default stuffs to fit on Helix.
+-- Fixing the PAC3's default stuffs to fit on Windswept.
 if (CLIENT) then
 	-- Disable the "in editor" HUD element.
 	hook.Add("InitializedPlugins", "PAC3Fixer", function()
@@ -40,14 +40,14 @@ if (CLIENT) then
 
 	-- you need the proper permission to open the editor
 	function PLUGIN:PrePACEditorOpen()
-		if (!CAMI.PlayerHasAccess(LocalPlayer(), "Helix - Manage PAC", nil)) then
+		if (!CAMI.PlayerHasAccess(LocalPlayer(), "Windswept - Manage PAC", nil)) then
 			return false
 		end
 	end
 end
 
 function PLUGIN:pac_CanWearParts(client)
-	if (!CAMI.PlayerHasAccess(client, "Helix - Manage PAC", nil)) then
+	if (!CAMI.PlayerHasAccess(client, "Windswept - Manage PAC", nil)) then
 		return false
 	end
 end
@@ -206,9 +206,9 @@ else
 		end
 	end
 
-	hook.Add("Think", "ix_pacupdate", function()
+	hook.Add("Think", "ws_pacupdate", function()
 		if (!pac) then
-			hook.Remove("Think", "ix_pacupdate")
+			hook.Remove("Think", "ws_pacupdate")
 			return
 		end
 
@@ -225,7 +225,7 @@ else
 				end
 			end
 
-			hook.Remove("Think", "ix_pacupdate")
+			hook.Remove("Think", "ws_pacupdate")
 		end
 	end)
 
@@ -334,7 +334,7 @@ else
 		end
 	end
 
-	function PLUGIN:DrawHelixModelView(panel, ent)
+	function PLUGIN:DrawWindsweptModelView(panel, ent)
 		if (!pac) then
 			return
 		end

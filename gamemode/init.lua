@@ -1,14 +1,8 @@
 
--- Include Helix content.
-resource.AddWorkshop("1267236756")
-
 -- Include features from the Sandbox gamemode.
 DeriveGamemode("sandbox")
--- Define the global shared table. The Windswept framework uses `ws`; `ix` is a
--- temporary backwards-compat alias kept during the ix->ws transition (removed in
--- the final phase). Both names point at the SAME table.
+-- Define the global shared table.
 ws = ws or {util = {}, meta = {}}
-ix = ws
 
 -- Send the following files to players.
 AddCSLuaFile("cl_init.lua")
@@ -21,18 +15,21 @@ include("core/sh_util.lua")
 include("core/sh_data.lua")
 include("shared.lua")
 
--- Resources that are required for players to download are here.
-resource.AddFile("materials/helix/gui/vignette.png")
+-- Resources required for players to download. These ship loose in this gamemode's
+-- content/ folder (de-helixed: paths renamed helix/ -> windswept/; the Helix workshop
+-- content pack is no longer a dependency — the assets are bundled with the framework).
+resource.AddFile("materials/windswept/gui/vignette.png")
+resource.AddFile("materials/windswept/gui/radial-gradient.png")
 resource.AddFile("resource/fonts/fontello.ttf")
-resource.AddFile("sound/helix/intro.mp3")
-resource.AddFile("sound/helix/ui/press.wav")
-resource.AddFile("sound/helix/ui/rollover.wav")
-resource.AddFile("sound/helix/ui/whoosh1.wav")
-resource.AddFile("sound/helix/ui/whoosh2.wav")
-resource.AddFile("sound/helix/ui/whoosh3.wav")
-resource.AddFile("sound/helix/ui/whoosh4.wav")
-resource.AddFile("sound/helix/ui/whoosh5.wav")
-resource.AddFile("sound/helix/ui/whoosh6.wav")
+resource.AddFile("sound/windswept/intro.mp3")
+resource.AddFile("sound/windswept/ui/press.wav")
+resource.AddFile("sound/windswept/ui/rollover.wav")
+resource.AddFile("sound/windswept/ui/whoosh1.wav")
+resource.AddFile("sound/windswept/ui/whoosh2.wav")
+resource.AddFile("sound/windswept/ui/whoosh3.wav")
+resource.AddFile("sound/windswept/ui/whoosh4.wav")
+resource.AddFile("sound/windswept/ui/whoosh5.wav")
+resource.AddFile("sound/windswept/ui/whoosh6.wav")
 
 cvars.AddChangeCallback("sbox_persist", function(name, old, new)
 	-- A timer in case someone tries to rapily change the convar, such as addons with "live typing" or whatever

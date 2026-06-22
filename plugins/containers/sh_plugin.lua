@@ -33,7 +33,7 @@ if (SERVER) then
 		if (data) then
 			if (hook.Run("CanPlayerSpawnContainer", client, model, entity) == false) then return end
 
-			local container = ents.Create("ix_container")
+			local container = ents.Create("ws_container")
 			container:SetPos(entity:GetPos())
 			container:SetAngles(entity:GetAngles())
 			container:SetModel(model)
@@ -61,7 +61,7 @@ if (SERVER) then
 	function PLUGIN:SaveContainer()
 		local data = {}
 
-		for _, v in ipairs(ents.FindByClass("ix_container")) do
+		for _, v in ipairs(ents.FindByClass("ws_container")) do
 			if (hook.Run("CanSaveContainer", v, v:GetInventory()) != false) then
 				local inventory = v:GetInventory()
 
@@ -79,11 +79,11 @@ if (SERVER) then
 			else
 				local index = v:GetID()
 
-				local query = mysql:Delete("ix_items")
+				local query = mysql:Delete("ws_items")
 					query:Where("inventory_id", index)
 				query:Execute()
 
-				query = mysql:Delete("ix_inventories")
+				query = mysql:Delete("ws_inventories")
 					query:Where("inventory_id", index)
 				query:Execute()
 			end
@@ -114,13 +114,13 @@ if (SERVER) then
 
 					if (!inventoryID or inventoryID < 1) then
 						ErrorNoHalt(string.format(
-							"[Helix] Attempted to restore container inventory with invalid inventory ID '%s' (%s, %s)\n",
+							"[Windswept] Attempted to restore container inventory with invalid inventory ID '%s' (%s, %s)\n",
 							tostring(inventoryID), v[6] or "no name", v[4] or "no model"))
 
 						continue
 					end
 
-					local entity = ents.Create("ix_container")
+					local entity = ents.Create("ws_container")
 					entity:SetPos(v[1])
 					entity:SetAngles(v[2])
 					entity:Spawn()
@@ -165,30 +165,54 @@ if (SERVER) then
 			return
 		end
 
+		-- Set the cooldown up front so spammed/invalid packets are throttled too.
+		client.wsNextContainerPassword = RealTime() + 1
+
 		local entity = net.ReadEntity()
+		local password = net.ReadString()
+
+		-- Validate the entity before touching any of its fields: a crafted packet can carry a
+		-- NULL or non-container entity, in which case entity.PasswordAttempts is nil and the
+		-- original code raised a Lua error in the net thread (remote DoS). (fw-plugins-net-1 / tb-2)
+		if (!IsValid(entity) or entity:GetClass() != "ws_container" or !istable(entity.PasswordAttempts)) then
+			return
+		end
+
+		-- Distance check (engine USE range ~ 16384 sq).
+		if (entity:GetPos():DistToSqr(client:GetPos()) >= 16384) then
+			return
+		end
+
+		-- Bound the password string. (fw-plugins-net-8)
+		if (!isstring(password) or password == "" or #password > 128) then
+			return
+		end
+
 		local steamID = client:SteamID()
+
+		-- Decay the failed-attempt counter so a lockout isn't permanent per-steamID:
+		-- after 60s with no further attempts the count resets. (fw-plugins-net-8)
+		entity.PasswordAttemptTime = entity.PasswordAttemptTime or {}
+		if (entity.PasswordAttemptTime[steamID] and RealTime() - entity.PasswordAttemptTime[steamID] > 60) then
+			entity.PasswordAttempts[steamID] = nil
+		end
+
 		local attempts = entity.PasswordAttempts[steamID]
 
 		if (attempts and attempts >= 10) then
 			client:NotifyLocalized("passwordAttemptLimit")
-
 			return
 		end
 
-		local password = net.ReadString()
-		local dist = entity:GetPos():DistToSqr(client:GetPos())
-
-		if (dist < 16384 and password) then
-			if (entity.password and entity.password == password) then
-				entity:OpenInventory(client)
-			else
-				entity.PasswordAttempts[steamID] = attempts and attempts + 1 or 1
-
-				client:NotifyLocalized("wrongPassword")
-			end
+		if (entity.password and entity.password == password) then
+			entity.PasswordAttempts[steamID] = nil
+			entity.PasswordAttemptTime[steamID] = nil
+			entity:OpenInventory(client)
+		else
+			entity.PasswordAttempts[steamID] = attempts and attempts + 1 or 1
+			entity.PasswordAttemptTime[steamID] = RealTime()
+			client:NotifyLocalized("wrongPassword")
 		end
-
-		client.wsNextContainerPassword = RealTime() + 1
 	end)
 
 	ws.log.AddType("containerPassword", function(client, ...)
@@ -238,7 +262,7 @@ function PLUGIN:InitializedPlugins()
 		if (v.name and v.width and v.height) then
 			ws.inventory.Register("container:" .. k:lower(), v.width, v.height)
 		else
-			ErrorNoHalt("[Helix] Container for '"..k.."' is missing all inventory information!\n")
+			ErrorNoHalt("[Windswept] Container for '"..k.."' is missing all inventory information!\n")
 			ws.container.stored[k] = nil
 		end
 	end
@@ -251,7 +275,7 @@ properties.Add("container_setpassword", {
 	MenuIcon = "icon16/lock_edit.png",
 
 	Filter = function(self, entity, client)
-		if (entity:GetClass() != "ix_container") then return false end
+		if (entity:GetClass() != "ws_container") then return false end
 		if (!gamemode.Call("CanProperty", client, "container_setpassword", entity)) then return false end
 
 		return true
@@ -302,7 +326,7 @@ properties.Add("container_setname", {
 	MenuIcon = "icon16/tag_blue_edit.png",
 
 	Filter = function(self, entity, client)
-		if (entity:GetClass() != "ix_container") then return false end
+		if (entity:GetClass() != "ws_container") then return false end
 		if (!gamemode.Call("CanProperty", client, "container_setname", entity)) then return false end
 
 		return true

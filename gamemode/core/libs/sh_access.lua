@@ -34,6 +34,40 @@ function ws.access.CanInteractClose(client, target)
     return ws.access.WithinRange(client, target, ws.access.RANGE_INTERACTION_CLOSE)
 end
 
+--- Enforce single-character item ownership. Returns whether `client` may interact with
+--- `item` under the multi-character rule, optionally claiming an unowned item for the
+--- caller's character (first-pickup assignment). Consolidates the checks that were
+--- duplicated across Transfer / PerformInventoryAction / inventory Add. (fw-character-item-10)
+--- @return bool ok, string|nil reason ("itemOwned" when denied)
+function ws.access.EnsureItemOwnership(client, item, bAssign)
+    if not item or item.bAllowMultiCharacterInteraction then return true end
+    if not IsValid(client) then return true end
+
+    local character = client:GetCharacter()
+    if not character then return true end
+
+    local itemPlayerID = item:GetPlayerID()
+    local itemCharacterID = item:GetCharacterID()
+
+    if itemPlayerID and itemCharacterID then
+        if itemPlayerID == client:SteamID64() and itemCharacterID ~= character:GetID() then
+            return false, "itemOwned"
+        end
+    elseif bAssign and SERVER then
+        -- Unowned item: claim it for this character (persisted, like the old Transfer path).
+        item.characterID = character:GetID()
+        item.playerID = client:SteamID64()
+
+        local query = mysql:Update("ws_items")
+            query:Update("character_id", character:GetID())
+            query:Update("player_id", client:SteamID64())
+            query:Where("item_id", item:GetID())
+        query:Execute()
+    end
+
+    return true
+end
+
 if SERVER then
     --- Verify a client owns an item in their MAIN inventory.
     -- @return item or nil
@@ -68,7 +102,22 @@ if SERVER then
         if not inv or not mainInv then return nil end
 
         if inv:GetID() == mainInv:GetID() then return item end
-        if inv.owner and inv.owner == character:GetID() then return item end
+
+        -- A stale inv.owner could widen access on edge transfer paths, so anchor
+        -- accessibility to a container the caller can actually reach: the bag item
+        -- whose inventory this is must currently live in the caller's MAIN inventory.
+        -- inv.owner is still required (single source of truth), but the bag-item
+        -- lookup makes a possibly-stale owner field insufficient on its own. (fw-core-security-8)
+        if inv.owner and inv.owner == character:GetID() then
+            local invID = inv:GetID()
+
+            for _, bagItem in pairs(mainInv:GetItems()) do
+                if (bagItem.base == "base_bags" or bagItem.isBag) and bagItem.data and bagItem.data.id == invID then
+                    return item
+                end
+            end
+        end
+
         return nil
     end
 end

@@ -90,7 +90,7 @@ function PANEL:OnCursorEntered()
 		target = {currentBackgroundAlpha = self.backgroundAlpha}
 	})
 
-	LocalPlayer():EmitSound("Helix.Rollover")
+	LocalPlayer():EmitSound("Windswept.Rollover")
 end
 
 function PANEL:OnCursorExited()
@@ -120,7 +120,7 @@ function PANEL:OnMousePressed(code)
 		self:SetTextColor(ws.config.Get("color"))
 	end
 
-	LocalPlayer():EmitSound("Helix.Press")
+	LocalPlayer():EmitSound("Windswept.Press")
 
 	if (code == MOUSE_LEFT and self.DoClick) then
 		self:DoClick(self)

@@ -32,7 +32,7 @@ function PANEL:SetItems(entity, items)
 			item.icon:SetPos(2, 2)
 			item.icon:SetSize(32, 32)
 			item.icon:SetModel(itemTable:GetModel())
-			item.icon:SetHelixTooltip(function(tooltip)
+			item.icon:SetWindsweptTooltip(function(tooltip)
 				ws.hud.PopulateItemTooltip(tooltip, itemTable)
 			end)
 
