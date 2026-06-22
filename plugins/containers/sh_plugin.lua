@@ -160,60 +160,63 @@ if (SERVER) then
 		end
 	end
 
-	net.Receive("wsContainerPassword", function(length, client)
-		if ((client.wsNextContainerPassword or 0) > RealTime()) then
-			return
+	-- Password submission (client->server). Migrated to ws.action: target + targetClass = "ws_container"
+	-- reproduce the IsValid + class guard; range = 128 reproduces the DistToSqr >= 16384 (128u) check;
+	-- rateLimit = 1 replaces the hand-rolled wsNextContainerPassword gate (now charged only after guards
+	-- pass -- the per-steamID 10-attempt lockout in run() remains the brute-force cap). The "wsContainerPassword"
+	-- netstring stays shared: the server->client prompt direction (ENT:Use -> the client net.Receive below)
+	-- still uses it, which is why ws.action's server net.Receive doesn't collide with the client one.
+	ws.action.Register("wsContainerPassword", {
+		target = true,
+		targetClass = "ws_container",
+		range = 128,        -- 128*128 = 16384, the engine USE range
+		rateLimit = 1,
+		read = function() return net.ReadString() end,  -- password
+		onValidate = function(client, ctx)
+			-- A locked/initialized container has a PasswordAttempts table; reject otherwise. A crafted
+			-- packet could carry a non-locked container whose field is nil. (fw-plugins-net-1 / tb-2)
+			if (!istable(ctx.target.PasswordAttempts)) then
+				return false
+			end
+
+			-- Bound the password string. (fw-plugins-net-8)
+			local password = ctx.data
+			if (!isstring(password) or password == "" or #password > 128) then
+				return false
+			end
+
+			return true
+		end,
+		run = function(client, ctx)
+			local entity = ctx.target
+			local password = ctx.data
+			local steamID = client:SteamID()
+
+			-- Decay the failed-attempt counter so a lockout isn't permanent per-steamID:
+			-- after 60s with no further attempts the count resets. (fw-plugins-net-8)
+			entity.PasswordAttemptTime = entity.PasswordAttemptTime or {}
+			if (entity.PasswordAttemptTime[steamID] and RealTime() - entity.PasswordAttemptTime[steamID] > 60) then
+				entity.PasswordAttempts[steamID] = nil
+			end
+
+			local attempts = entity.PasswordAttempts[steamID]
+
+			if (attempts and attempts >= 10) then
+				client:NotifyLocalized("passwordAttemptLimit")
+				return
+			end
+
+			if (entity.password and entity.password == password) then
+				entity.PasswordAttempts[steamID] = nil
+				entity.PasswordAttemptTime[steamID] = nil
+				entity:OpenInventory(client)
+			else
+				entity.PasswordAttempts[steamID] = attempts and attempts + 1 or 1
+				entity.PasswordAttemptTime[steamID] = RealTime()
+				client:NotifyLocalized("wrongPassword")
+			end
 		end
-
-		-- Set the cooldown up front so spammed/invalid packets are throttled too.
-		client.wsNextContainerPassword = RealTime() + 1
-
-		local entity = net.ReadEntity()
-		local password = net.ReadString()
-
-		-- Validate the entity before touching any of its fields: a crafted packet can carry a
-		-- NULL or non-container entity, in which case entity.PasswordAttempts is nil and the
-		-- original code raised a Lua error in the net thread (remote DoS). (fw-plugins-net-1 / tb-2)
-		if (!IsValid(entity) or entity:GetClass() != "ws_container" or !istable(entity.PasswordAttempts)) then
-			return
-		end
-
-		-- Distance check (engine USE range ~ 16384 sq).
-		if (entity:GetPos():DistToSqr(client:GetPos()) >= 16384) then
-			return
-		end
-
-		-- Bound the password string. (fw-plugins-net-8)
-		if (!isstring(password) or password == "" or #password > 128) then
-			return
-		end
-
-		local steamID = client:SteamID()
-
-		-- Decay the failed-attempt counter so a lockout isn't permanent per-steamID:
-		-- after 60s with no further attempts the count resets. (fw-plugins-net-8)
-		entity.PasswordAttemptTime = entity.PasswordAttemptTime or {}
-		if (entity.PasswordAttemptTime[steamID] and RealTime() - entity.PasswordAttemptTime[steamID] > 60) then
-			entity.PasswordAttempts[steamID] = nil
-		end
-
-		local attempts = entity.PasswordAttempts[steamID]
-
-		if (attempts and attempts >= 10) then
-			client:NotifyLocalized("passwordAttemptLimit")
-			return
-		end
-
-		if (entity.password and entity.password == password) then
-			entity.PasswordAttempts[steamID] = nil
-			entity.PasswordAttemptTime[steamID] = nil
-			entity:OpenInventory(client)
-		else
-			entity.PasswordAttempts[steamID] = attempts and attempts + 1 or 1
-			entity.PasswordAttemptTime[steamID] = RealTime()
-			client:NotifyLocalized("wrongPassword")
-		end
-	end)
+	})
 
 	ws.log.AddType("containerPassword", function(client, ...)
 		local arg = {...}
@@ -248,10 +251,9 @@ else
 			L("containerPasswordWrite"),
 			"",
 			function(val)
-				net.Start("wsContainerPassword")
-					net.WriteEntity(entity)
+				ws.action.Send("wsContainerPassword", nil, entity, function()
 					net.WriteString(val)
-				net.SendToServer()
+				end)
 			end
 		)
 	end)

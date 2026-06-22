@@ -63,14 +63,12 @@ wsConfigPluginToggle
 wsConfigSet
 wsConfigUnloadedList
 wsContainerPassword
-wsContainerRename
 wsCurrencyMergeSelect
 wsCurrencySplit
 wsData
 wsDataSync
 wsDateSync
 wsDocumentData
-wsDocumentWrite
 wsDoorMenu
 wsDoorPermission
 wsDoorsSync
@@ -84,8 +82,6 @@ wsInventorySet
 wsInventorySync
 wsKnockoutEnd
 wsKnockoutGiveUp
-wsKnockoutLoot
-wsKnockoutRevive
 wsKnockoutStart
 wsKnockoutTimerSync
 wsLocalVarSet
@@ -117,7 +113,6 @@ wsPlayerDeath
 wsRadioVoiceStart
 wsRadioVoiceStop
 wsRadioVolume
-wsRadioVolumeSet
 wsRecognizeDone
 wsRecognizeMenu
 wsSequenceReset
@@ -146,5 +141,4 @@ wsVendorMoney
 wsVendorOpen
 wsVendorStock
 wsVoiceAmplitude
-wsWalletGive
 wsZipTieUse
