@@ -145,7 +145,6 @@ end)
 
 local wasLMBDown = false
 local wasRMBDown = false
-local currentDragTarget = nil
 local cachedDraggingState = nil  -- Cache to avoid GetNetVar every frame
 local lastDragCheckTime = 0
 local DRAG_CHECK_INTERVAL = 0.1  -- Only check NetVar every 0.1 seconds
@@ -213,7 +212,6 @@ hook.Add("Think", "wsDragInput", function()
                     -- Can't drag if leashed
                     if not target:GetNetVar("leashed") then
                         -- Start dragging
-                        currentDragTarget = target
                         ws.action.Send("wsDragStart", nil, target)
                         cachedDraggingState = target:EntIndex()  -- Optimistic update
                     end
@@ -224,7 +222,6 @@ hook.Add("Think", "wsDragInput", function()
         if wasLMBDown and cachedDraggingState then
             -- Released LMB while dragging - stop
             ws.action.Send("wsDragStop")
-            currentDragTarget = nil
             cachedDraggingState = nil  -- Optimistic update
         end
     end
