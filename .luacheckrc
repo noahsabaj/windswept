@@ -37,6 +37,7 @@ stds.windswept.read_globals = {
 	"mysql",
 	"pon",
 	"ikon",
+	"ws_fire",
 	"BaseClass",
 
 	"SetNetVar",
