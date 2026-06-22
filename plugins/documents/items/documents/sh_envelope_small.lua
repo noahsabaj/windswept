@@ -1,0 +1,10 @@
+ITEM.name = "Small Envelope"
+ITEM.description = "A small paper envelope for documents."
+ITEM.model = "models/props_c17/paper01.mdl"
+ITEM.category = "Containers"
+ITEM.base = "base_document_container"
+ITEM.width = 1
+ITEM.height = 1
+ITEM.invWidth = 5
+ITEM.invHeight = 1
+ITEM.containerLabel = "envelope"
