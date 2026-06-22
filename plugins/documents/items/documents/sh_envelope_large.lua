@@ -1,0 +1,10 @@
+ITEM.name = "Large Envelope"
+ITEM.description = "A large manila envelope for documents."
+ITEM.model = "models/props_c17/paper01.mdl"
+ITEM.category = "Containers"
+ITEM.base = "base_document_container"
+ITEM.width = 2
+ITEM.height = 1
+ITEM.invWidth = 10
+ITEM.invHeight = 5
+ITEM.containerLabel = "envelope"
