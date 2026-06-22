@@ -1,0 +1,7 @@
+"skeleton"
+{
+	"base"		"windswept"
+	"title"		"Windswept Skeleton Schema"
+	"author"	"Windswept"
+	"menusystem"	"1"
+}
