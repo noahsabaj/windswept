@@ -8,6 +8,14 @@ PLUGIN.name = "Vendors"
 PLUGIN.author = "Chessnut"
 PLUGIN.description = "Adds NPC vendors that can sell things."
 
+-- Conservation is a framework default: a vendor must not mint money or items. With this
+-- off (the default), a vendor can only BUY from a player out of a finite money pool and
+-- only SELL items it has finite stock of -- an unbacked vendor (infinite money, or an
+-- item with no max stock) is refused rather than conjuring cash/items from nowhere. Turn
+-- it on for an admin-shop / sandbox economy that may mint freely. (cons / layer-vendor)
+ws.config.Add("vendorAllowInfinite", false,
+	"Lets vendors mint money/items (admin-shop mode). Off = conservation: finite money + stock required.")
+
 CAMI.RegisterPrivilege({
 	Name = "Windswept - Manage Vendors",
 	MinAccess = "admin"
@@ -353,6 +361,17 @@ if (SERVER) then
 		local entity = ctx.target
 		local uniqueID = ctx.data.uniqueID
 		local isSellingToVendor = ctx.data.isSellingToVendor
+
+		-- Conservation default: refuse trades that would mint. Unless vendorAllowInfinite
+		-- is set, a vendor with infinite money (money == nil) can't BUY from a player, and a
+		-- vendor with no configured max stock (GetStock == nil) can't SELL. (cons / layer-vendor)
+		if (entity.items[uniqueID] and !ws.config.Get("vendorAllowInfinite")) then
+			if (isSellingToVendor and entity.money == nil) then
+				return client:NotifyLocalized("vendorCannotMint")
+			elseif (!isSellingToVendor and entity:GetStock(uniqueID) == nil) then
+				return client:NotifyLocalized("vendorCannotMint")
+			end
+		end
 
 		if (entity.items[uniqueID] and
 			hook.Run("CanPlayerTradeWithVendor", client, entity, uniqueID, isSellingToVendor) != false) then
