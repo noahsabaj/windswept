@@ -1945,12 +1945,12 @@ ws.util.NotifyLocalized											</a>
 Add											</a>
 										</li>
 										<li>
-											<span class="realm client"></span>
+											<span class="realm server"></span>
 											<a href="../../libraries/ws.option/#ws.option.Get">
 Get											</a>
 										</li>
 										<li>
-											<span class="realm server"></span>
+											<span class="realm client"></span>
 											<a href="../../libraries/ws.option/#ws.option.Get">
 Get											</a>
 										</li>
@@ -2973,6 +2973,12 @@ ToggleWepRaised											</a>
 
 					<ul>
 							<li>
+									<a href="../../manual/authoring-plugins/">Authoring a framework plugin</a>
+
+
+
+							</li>
+							<li>
 									<a href="../../manual/getting-started/">Getting Started</a>
 
 
@@ -3023,6 +3029,48 @@ ToggleWepRaised											</a>
 <p>The <code>hostname</code> field can either be a domain name (like <code>myexampledatabase.com</code>) or an IP address (<code>123.123.123.123</code>). If you don't know what the <code>port</code> field should be, simply leave it as the default <code>3306</code>; this is the default port for MySQL database connections. The <code>database</code> field is the name of the database that you've created for Windswept. Note that it does not need to be <code>windswept</code>, it can be whatever you'd like.</p>
 
 <p>Another important thing to note about this configuration file is that you <strong>must</strong> indent with <strong>two spaces only</strong>. <code>database</code> should not have any spacing before it, and all other entries must have two spaces before them. Failing to ensure this will make the configuration file fail to load.</p>
+
+<h1>Creating your schema (Recommended)</h1>
+<p>The fastest way to start is the <strong>skeleton schema</strong> that ships with the framework, at <code>windswept/docs/templates/skeleton-schema/</code>. It boots to character creation with zero plugins enabled and one example item.</p>
+
+<ol>
+    <li>Copy <code>skeleton-schema/</code> to <code>garrysmod/gamemodes/&lt;your-id&gt;/</code>.</li>
+    <li>Rename <code>skeleton.txt</code> → <code>&lt;your-id&gt;.txt</code> and change its <code>id</code> and <code>title</code>.</li>
+    <li>Edit <code>schema/sh_schema.lua</code> (<code>Schema.name</code> / <code>author</code> / <code>description</code>).</li>
+    <li>Launch with <code>+gamemode &lt;your-id&gt;</code> — you should reach character creation.</li>
+</ol>
+
+<p>A schema needs no <code>init.lua</code>/<code>cl_init.lua</code>/<code>shared.lua</code> of its own: the <code>.txt</code>'s <code>base = &quot;windswept&quot;</code> makes the framework load your <code>schema/</code> folder. From there, enable the plugins you want (next section) and add content under <code>schema/items/</code>, <code>schema/factions/</code>, <code>schema/libs/</code>, etc. The skeleton's <code>schema/sh_configs.lua</code> has the enable snippets ready to uncomment.</p>
+
+<h1>Enabling framework plugins</h1>
+<p>Every framework plugin is <strong>off by default</strong> — booting clean is the whole point of the skeleton. There are two kinds:</p>
+
+<ul>
+    <li><strong>Feature plugins</strong> are turned on with a config flag, in an <code>InitializedConfig</code> hook in your <code>sh_configs.lua</code>:
+```lua
+hook.Add("InitializedConfig", "myschemaPlugins", function()
+
+<pre>
+ws.config.Set(<span class="string">"doorsEnabled"</span>, <span class="keyword">true</span>)
+</pre>
+
+end)
+```</li>
+    <li><strong>Base-library plugins</strong> need no flag — they're inert until your content uses their item bases. Just add items that set <code>ITEM.base = &quot;base_…&quot;</code>.</li>
+</ul>
+
+<p>| Plugin | Kind | Turn on with | Needs |
+|--------|------|--------------|-------|
+| <code>doors</code> (physical doors/locks/keys) | feature | <code>doorsEnabled</code> + content seams | door/key/lock items |
+| <code>radio</code> (frequency voice + eavesdropping) | feature | <code>radioEnabled</code> + <code>ws.radio.itemID</code>/<code>stationaryClass</code> | radio items (battery → <code>power</code>) |
+| <code>wallet</code> (currency routing) | feature | <code>walletEnabled</code> + <code>ws.wallet.itemID</code> | a wallet item + denominations |
+| <code>business</code> (shipment ordering menu) | feature | <code>businessEnabled</code> | — (off-by-default keeps conservation) |
+| <code>vendor</code> | always on | — (<code>vendorAllowInfinite</code> opts OUT of conservation) | vendor entities |
+| <code>power</code> (battery devices) | base-library | — | items with <code>ITEM.base = &quot;base_battery_device&quot;</code> |
+| <code>documents</code> (paper/pens/signatures) | base-library | — | writeable items |
+| <code>restraints</code>, <code>photography</code>, <code>permadeath</code> | base-library | — | their items (permadeath's defibrillator needs <code>power</code>) |</p>
+
+<p>Cross-plugin notes: radio and permadeath build on <strong>power</strong> — their battery items derive <code>base_battery_device</code>, which the schema includes as content (it loads after the framework). To write your own plugin, see <code>docs/manual/authoring-plugins.md</code>; for a maximal schema that turns all of these on, read <code>windswept-colony</code>.</p>
 
 <h1>Starting from scratch (Intermediate)</h1>
 <p>You can always create the gamemode files yourself if you'd like (although we suggest the skeleton schema in general). In general, a schema is a gamemode that is derived from <code>windswept</code> and automatically loads <code>schema/sh_schema.lua</code>. You shouldn't have your schema files outside of the <code>schema</code> folder. The files you'll need are as follows:</p>

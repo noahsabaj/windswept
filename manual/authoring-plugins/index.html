@@ -2,13 +2,17 @@
 
 <html>
 	<head>
-		<title>core.libs.sh_access - Windswept Documentation</title>
+		<title>Authoring a framework plugin - Windswept Documentation</title>
 
 		<meta property="og:type" content="website" />
-		<meta property="og:title" content="core.libs.sh_access - Windswept Documentation" />
+		<meta property="og:title" content="Authoring a framework plugin - Windswept Documentation" />
 		<meta property="og:site_name" content="Windswept Documentation" />
 
-			<meta property="og:description" content="Get a player&#39;s character and main inventory, or nil, nil." />
+			<meta property="og:description" content="
+
+A Windswept plugin is a self-contained, **disabled-by-default** system that any schema can
+turn on. The framework ships a stack of them (doors, radio, wallet, power, documents,
+restraints, photography, permadeath, vendors, business…); this guide is ho..." />
 
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Code+Pro" />
 		<link rel="stylesheet" href="../../ldoc.css" />
@@ -1165,7 +1169,7 @@ SizeToContentsY											</a>
 
 					<ul>
 							<li>
-									<details open>
+									<details >
 									<summary><a href="../../libraries/core.libs.sh_access/">core.libs.sh_access</a></summary>
 
 									<ul>
@@ -1944,12 +1948,12 @@ ws.util.NotifyLocalized											</a>
 Add											</a>
 										</li>
 										<li>
-											<span class="realm server"></span>
+											<span class="realm client"></span>
 											<a href="../../libraries/ws.option/#ws.option.Get">
 Get											</a>
 										</li>
 										<li>
-											<span class="realm client"></span>
+											<span class="realm server"></span>
 											<a href="../../libraries/ws.option/#ws.option.Get">
 Get											</a>
 										</li>
@@ -2992,287 +2996,212 @@ ToggleWepRaised											</a>
 			<article>
 					<div class="wrapper">
 
-<header class="module">
-	<h1>core.libs.sh_access</h1>
-	<h2>Get a player's character and main inventory, or nil, nil.</h2>
-</header>
+<h1>Authoring a framework plugin</h1>
 
-<p>
+<p>A Windswept plugin is a self-contained, <strong>disabled-by-default</strong> system that any schema can
+turn on. The framework ships a stack of them (doors, radio, wallet, power, documents,
+restraints, photography, permadeath, vendors, business…); this guide is how to write your
+own, and the rule for deciding what belongs in a plugin versus a schema.</p>
 
-</p>
+<p><a name="Where_code_goes__the_rule_"></a></p>
+<h2>Where code goes (the rule)</h2>
 
-	<h1 class="title">Functions</h1>
+<ul>
+    <li>Any schema would want it <strong>+ core infrastructure</strong> → the <strong>framework core</strong>.</li>
+    <li>Any schema would want it <strong>+ a self-contained on/off system</strong> → a <strong>framework plugin</strong>.</li>
+    <li>Assumes <em>your game's</em> specifics (this setting, these items, this faction policy) → the
+    <strong>schema</strong>.</li>
+</ul>
 
-		<section class="method">
-			<header>
-				<a class="anchor" id="ws.access.EnsureItemOwnership">
-					<h1><span class="realm "></span></span>ws.access.EnsureItemOwnership(client, item, bAssign)</h1>
-				</a>
+<p>A plugin is <strong>mechanism</strong>; the schema supplies <strong>content</strong> and <strong>tuning</strong>. Before extracting
+anything, sort it into three buckets:</p>
 
+<ul>
+    <li><strong>ENGINE</strong> → the plugin: the generic mechanism — lib functions, net/action handlers,
+    entity behaviour, item <strong>bases</strong> (<code>base_battery_device</code>, <code>base_clothing</code>), the config
+    flag, neutral defaults.</li>
+    <li><strong>CONTENT</strong> → the schema: concrete items (your cash/coins, your outfits, your weapons),
+    model→material maps, world flavour. They set <code>ITEM.base = &quot;base_x&quot;</code>.</li>
+    <li><strong>TUNING / GLUE</strong> → the schema: your numbers, palettes, and the cross-plugin wiring for
+    <em>your</em> game (often a thin "bridge" plugin — see <code>photography_windswept_bridge</code>, or the
+    Colony's <code>plugins/doors</code> / <code>plugins/radio</code> bridges).</li>
+</ul>
 
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_access.lua#L42">View source &raquo;</a>
+<p>Litmus: <em>"would a bright-UI faction-war server want this exact value or item?"</em> If no, it's
+content/tuning — keep it in the schema.</p>
 
-					<p>Enforce single-character item ownership.  Returns whether <code>client</code> may interact with
- <code>item</code> under the multi-character rule, optionally claiming an unowned item for the
- caller's character (first-pickup assignment). Consolidates the checks that were
- duplicated across Transfer / PerformInventoryAction / inventory Add. (fw-character-item-10)</p>
-			</header>
+<p><a name="Folder_shape"></a></p>
+<h2>Folder shape</h2>
 
+<p>Drop your plugin under <code>windswept/plugins/&lt;name&gt;/</code> (or your schema's <code>plugins/&lt;name&gt;/</code> for a
+schema-local one). The per-plugin loader sweeps these subfolders automatically, in order:</p>
 
-					<h3>Parameters</h3>
+<pre><code> plugins/&lt;name&gt;/
+ ├── sh_plugin.lua     manifest + config flag (loaded LAST, after the sweep below)
+ ├── languages/        sh_english.lua … (your localized strings)
+ ├── libs/             sh_*/sv_*/cl_* library files (your ws.&lt;name&gt;.* API)
+ ├── items/            items + item bases
+ ├── derma/            client panels
+ └── entities/         entities/ weapons/ effects/
+</code></pre>
 
 
-					<ul>
+<p>Realm is by <strong>filename prefix</strong> — <code>sh_</code> (shared), <code>sv_</code> (server), <code>cl_</code> (client) — not by
+<code>if SERVER</code>/<code>if CLIENT</code> blocks. Don't manually <a href="../../libraries/ws.util/#ws.util.Include">ws.util.Include</a> a swept subfolder; that
+double-loads it.</p>
 
-							<li>
-								<span class="tag parameter">client</span>
+<p><a name="The_manifest___the_kill_switch"></a></p>
+<h2>The manifest + the kill-switch</h2>
 
+<p><code>sh_plugin.lua</code> declares the plugin and (for a feature plugin) its config flag:</p>
 
 
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">item</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">bAssign</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-
-				<h3>Returns</h3>
-				<ul>
-
-							<li>
-									<span class="tag type">any</span>
-
-								<p>bool ok, string|nil reason ("itemOwned" when denied)</p>
-							</li>
-
-				</ul>
-
-
-		</section>
-		<section class="method">
-			<header>
-				<a class="anchor" id="ws.access.VerifyItemAccessible">
-					<h1><span class="realm "></span></span>ws.access.VerifyItemAccessible(client, itemID, expectedUniqueID)</h1>
-				</a>
-
-
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_access.lua#L92">View source &raquo;</a>
-
-					<p>Verify a client can ACCESS an item: in their main inventory OR in a bag /
- container inventory they own (one level deep; bags don't nest).  Use this for
- items that legitimately live inside owned containers.</p>
-			</header>
-
-
-					<h3>Parameters</h3>
-
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">client</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">itemID</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">expectedUniqueID</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-
-				<h3>Returns</h3>
-				<ul>
-
-							<li>
-									<span class="tag type">any</span>
-
-								<p>item or nil</p>
-							</li>
-
-				</ul>
-
-
-		</section>
-		<section class="method">
-			<header>
-				<a class="anchor" id="ws.access.VerifyItemOwnership">
-					<h1><span class="realm "></span></span>ws.access.VerifyItemOwnership(client, itemID, expectedUniqueID)</h1>
-				</a>
-
-
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_access.lua#L74">View source &raquo;</a>
-
-					<p>Verify a client owns an item in their MAIN inventory.</p>
-			</header>
-
-
-					<h3>Parameters</h3>
-
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">client</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">itemID</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">expectedUniqueID</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-
-				<h3>Returns</h3>
-				<ul>
-
-							<li>
-									<span class="tag type">any</span>
-
-								<p>item or nil</p>
-							</li>
-
-				</ul>
-
-
-		</section>
-		<section class="method">
-			<header>
-				<a class="anchor" id="ws.access.WithinRange">
-					<h1><span class="realm "></span></span>ws.access.WithinRange(a, b, rangeSquared)</h1>
-				</a>
-
-
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_access.lua#L24">View source &raquo;</a>
-
-					<p>Are two entities within a squared range of each other?</p>
-			</header>
-
-
-					<h3>Parameters</h3>
-
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">a</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">b</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">rangeSquared</span>
-
-
-
-								<p>
-
-</p>
-							</li>
-					</ul>
-
-
-
-		</section>
+<pre>
+<span class="keyword">local</span> PLUGIN = PLUGIN
+
+PLUGIN.name = <span class="string">"Doors"</span>
+PLUGIN.author = <span class="string">"Windswept"</span>
+PLUGIN.description = <span class="string">"Physical doors, locks, and keys. Off by default."</span>
+
+ws.doors = ws.doors <span class="keyword">or</span> {}
+
+ws.config.Add(<span class="string">"doorsEnabled"</span>, <span class="keyword">false</span>, <span class="string">"Enables the physical door/lock system."</span>)  <span class="comment">-- DEFAULT FALSE</span>
+</pre>
+
+
+<p>Two kinds of plugin:</p>
+
+<ul>
+    <li><strong>Base-library plugins</strong> (power, documents) have <strong>no flag</strong>. They are inert until a
+    schema includes items that build on their bases — nothing happens otherwise, so there's
+    nothing to gate.</li>
+    <li><strong>Feature plugins</strong> that <em>do something on their own</em> (a hook that rewrites map doors, a
+    voice override, a routing wrapper) <strong>must be gated</strong> with `ws.config.Add("<x>Enabled",
+    false)` and a kill-switch, so the framework — and a zero-plugin skeleton schema — boot
+    untouched. The kill-switch is an early return at the top of every active hook/handler:</li>
+</ul>
+
+<p>  ```lua
+  hook.Add("InitPostEntity", "wsDoorsInit", function()</p>
+
+<pre>
+<span class="keyword">if</span> (!ws.config.Get(<span class="string">"doorsEnabled"</span>)) <span class="keyword">then</span> <span class="keyword">return</span> <span class="keyword">end</span>
+<span class="comment">-- … take over the map's doors …</span>
+</pre>
+
+<p>  end)
+  ```</p>
+
+<p>A schema <strong>enables</strong> a feature plugin from its <code>sh_configs.lua</code>, in an <code>InitializedConfig</code>
+hook (it fires during config load — before <code>InitPostEntity</code> — and again after the saved
+config loads, so it lands in time <em>and</em> wins over any persisted value):</p>
+
+
+<pre>
+hook.Add(<span class="string">"InitializedConfig"</span>, <span class="string">"myschemaPlugins"</span>, <span class="keyword">function</span>()
+    ws.config.Set(<span class="string">"doorsEnabled"</span>, <span class="keyword">true</span>)
+<span class="keyword">end</span>)
+</pre>
+
+
+<p><a name="Dependencies_and_load_order__read_this_twice_"></a></p>
+<h2>Dependencies and load order (read this twice)</h2>
+
+<p><code>ws.plugin.Initialize</code> loads <strong>framework plugins first, then the schema, then the schema's
+plugins.</strong> Within a directory, plugins load <strong>alphabetically</strong> — <code>PLUGIN.dependencies</code> is
+metadata only; the loader does <strong>not</strong> reorder by it.</p>
+
+<p>Consequences:</p>
+
+<ul>
+    <li>**<code>ws.constants</code> (a schema lib) does not exist when a framework plugin loads.** Any
+    moved file that references <code>ws.constants.X</code> (or any schema global) must do so at
+    <strong>runtime</strong> (inside a function body), never at file scope. Framework-side, the canonical
+    ownership/range helpers live in **<code>ws.access</code>** (<code>GetCharacterInventory</code>,
+    <code>VerifyItemOwnership</code>, <code>WithinRange</code>, …) — use those in plugin code.</li>
+    <li><strong>Item bases resolve eagerly.</strong> A framework-plugin item whose <code>ITEM.base</code> lives in a
+    <em>later-sorting</em> plugin fails to load. So battery-powered or clothing <strong>items stay schema
+    content</strong> (the schema loads after every framework plugin); the plugin ships only the
+    <strong>base</strong>.</li>
+</ul>
+
+<p>When a plugin needs game-specific names it must not hardcode them — expose a <strong>seam</strong> the
+schema fills. The door engine carries no weapon class names; the schema registers them:</p>
+
+
+<pre>
+<span class="comment">-- framework: plugins/doors/libs/sh_doors_core.lua
+</span><span class="keyword">function</span> ws.doors.RegisterDamageSource(class, opts) ws.doors.damageSources[class] = opts <span class="keyword">end</span>
+ws.doors.installToolClass = ws.doors.installToolClass  <span class="comment">-- a schema sets this
+</span>
+<span class="comment">-- schema: plugins/doors/sh_plugin.lua (a thin bridge)
+</span>ws.doors.RegisterDamageSource(<span class="string">"ws_hands"</span>, { fist = <span class="keyword">true</span> })
+ws.doors.installToolClass = <span class="string">"ws_door"</span>
+</pre>
+
+
+<p>The radio (<code>ws.radio.itemID</code> / <code>stationaryClass</code>), wallet (<code>ws.wallet.itemID</code> /
+<code>cashID</code> / <code>coinID</code>), and appearance (model/option registration) plugins follow the same
+pattern — generic engine, content wired in through seams.</p>
+
+<p><a name="Trust_boundary__non_negotiable_"></a></p>
+<h2>Trust boundary (non-negotiable)</h2>
+
+<p>This is multiplayer: treat <strong>every</strong> <code>net.Read*</code> as attacker-controlled.</p>
+
+<ul>
+    <li>Route client→server actions through **<code>ws.action.Register</code><em>* (it enforces caller
+    authority, target ownership/accessibility, interaction range, and numeric bounds *by
+    construction</em>). The active-weapon analogue is **<a href="../../libraries/ws.weapon/#ws.weapon.NetReceive">ws.weapon.NetReceive</a>**.</li>
+    <li>Never hand-roll a <code>net.Receive</code> that mutates state. A <strong>net-handler gate</strong>
+    (<code>tools/check-net-handlers.sh</code>, in CI) fails on any new raw <code>net.Receive(&quot;…&quot;)</code> that
+    isn't on the reviewed allowlist — so a genuinely-needed raw handler (a server→client
+    receiver, a two-phase token) is a conscious, reviewed line.</li>
+    <li>Conserved quantities (money, charge, ink, durability) move through **<code>ws.resource</code><em>* /
+    *</em><a href="../../libraries/ws.currency/#">ws.currency</a>** — atomic, all-or-nothing. Never inline-mutate a quantity across the net
+    boundary; that's the money-dupe bug class.</li>
+    <li>When you move a <code>net.Receive</code> into a plugin, <code>util.AddNetworkString</code> moves with it (so
+    the plugin is self-contained), and its allowlist line moves to the plugin's repo.</li>
+</ul>
+
+<p><a name="Conservation___faction_optional_are_framework_defaults"></a></p>
+<h2>Conservation &amp; faction-optional are framework defaults</h2>
+
+<p>Two pillars are baked into the engine, so your plugin should respect them:</p>
+
+<ul>
+    <li><strong>Conservation of matter</strong> — vendors refuse to mint money/items unless
+    <code>vendorAllowInfinite</code> is set; item spawning is gated; the business menu is off by
+    default. Don't add a "spawn from nowhere" path without an explicit opt-in config.</li>
+    <li><strong>Faction-optional</strong> — factions are a choice (<code>factionMode</code>, default <code>optional</code>). Don't
+    assume a character has a faction; consult <code>ws.faction.GetMode()</code> / the helpers.</li>
+</ul>
+
+<p><a name="Smallest_possible_examples"></a></p>
+<h2>Smallest possible examples</h2>
+
+<ul>
+    <li>**<code>plugins/salary</code><em>* / *</em><code>plugins/business</code>** — a near-minimal feature plugin (a config
+    flag + a couple of handlers).</li>
+    <li>**<code>plugins/power</code>** — a base-library plugin: ships <code>base_battery_device</code>; no flag, inert
+    until a schema adds a battery-powered item.</li>
+    <li>**<code>plugins/wallet</code>** — a faithful routing engine behind seams + a kill-switch.</li>
+    <li>**<code>photography_windswept_bridge</code>** (Colony) — the cross-plugin glue pattern: a thin
+    schema plugin that wires two systems together for one game.</li>
+</ul>
+
+<p><a name="Ship_checklist"></a></p>
+<h2>Ship checklist</h2>
+
+<ol>
+    <li><code>glualint lint &lt;your plugin&gt;</code> clean (no <code>[Error]</code>, no unused).</li>
+    <li><code>luacheck .</code> clean (it catches >128-char lines and unused locals/values glualint won't).</li>
+    <li>Net-gate green: <code>bash tools/check-net-handlers.sh</code>.</li>
+    <li><code>ldoc . --fatalwarnings</code> green (only matters if you documented core API; <code>ldoc</code> ignores
+    <code>plugins/</code>).</li>
+    <li>Boot a schema with your plugin <strong>on</strong> and a skeleton schema with it <strong>off</strong> — both must
+    reach character creation.</li>
+</ol>
 
 					</div>
 			</article>
