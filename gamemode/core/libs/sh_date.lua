@@ -17,7 +17,9 @@ ws.date.lib = ws.date.lib or include("thirdparty/sh_date.lua")
 ws.date.timeScale = ws.date.timeScale or ws.config.Get("secondsPerMinute", 60) -- seconds per minute
 ws.date.current = ws.date.current or ws.date.lib() -- current in-game date/time
 ws.date.start = ws.date.start or CurTime() -- arbitrary start time for calculating date/time offset
-ws.date.yearOffset = 174 -- offset from real year (2026 + 174 = 2200)
+-- In-game year = real year + this offset. The framework is era-agnostic (default 0 = real year);
+-- a schema may set ws.date.yearOffset before ws.date.Initialize() runs (e.g. Colony sets 174 for 2200).
+ws.date.yearOffset = ws.date.yearOffset or 0
 
 if (SERVER) then
 	util.AddNetworkString("wsDateSync")
@@ -26,8 +28,7 @@ if (SERVER) then
 	-- @realm server
 	-- @internal
 	function ws.date.Initialize()
-		-- Always sync with real-world date, applying year offset
-		-- Real year 2026 + offset 174 = in-game year 2200
+		-- Always sync with real-world date, applying the schema's year offset (0 = real year)
 		local realYear = tonumber(os.date("%Y")) or 2026
 		local currentDate = {
 			year = realYear + ws.date.yearOffset,

@@ -278,8 +278,8 @@ if (SERVER) then
 
 	-- REMOVED: Physical currency system - money transfer UI disabled
 	-- Cash and coins are now inventory items that can be dragged like any other item
-	-- net.Receive("wsStorageMoneyTake", ...) removed
-	-- net.Receive("wsStorageMoneyGive", ...) removed
+	-- the wsStorageMoneyTake handler was removed
+	-- the wsStorageMoneyGive handler was removed
 else
 	net.Receive("wsStorageOpen", function()
 		if (IsValid(ws.gui.menu)) then
@@ -325,5 +325,5 @@ else
 	end)
 
 	-- REMOVED: Physical currency system - money update net message disabled
-	-- net.Receive("wsStorageMoneyUpdate", ...) removed
+	-- the wsStorageMoneyUpdate handler was removed
 end
