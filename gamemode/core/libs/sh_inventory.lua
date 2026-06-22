@@ -82,7 +82,11 @@ function ws.inventory.Restore(invID, width, height, callback)
 					local characterID, playerID = tonumber(item.character_id), tostring(item.player_id)
 
 					if (x and y and itemID) then
-						if (x <= inventory.w and x > 0 and y <= inventory.h and y > 0) then
+						if (!ws.item.list[item.unique_id]) then
+							-- Saved item whose type is no longer registered (e.g. a removed item type) -- drop it
+							-- gracefully instead of letting ws.item.New ErrorNoHalt once per orphaned row on every load.
+							ErrorNoHalt("[Windswept] Skipping saved item of unknown/removed type '" .. tostring(item.unique_id) .. "'\n")
+						elseif (x <= inventory.w and x > 0 and y <= inventory.h and y > 0) then
 							local item2 = ws.item.New(item.unique_id, itemID)
 
 							if (item2) then
