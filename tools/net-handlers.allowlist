@@ -64,7 +64,6 @@ wsConfigSet
 wsConfigUnloadedList
 wsContainerPassword
 wsContainerRename
-wsCurrencyMergeAll
 wsCurrencyMergeSelect
 wsCurrencySplit
 wsData
@@ -130,9 +129,6 @@ wsSignatureSave
 wsStationaryRadioOpen
 wsStorageClose
 wsStorageExpired
-wsStorageMoneyGive
-wsStorageMoneyTake
-wsStorageMoneyUpdate
 wsStorageOpen
 wsStringRequest
 wsSuicideExecute
