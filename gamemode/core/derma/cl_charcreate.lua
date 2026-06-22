@@ -451,26 +451,30 @@ function PANEL:Populate()
 			end
 		end
 
-		-- Add factionless/none option
-		local noneButton = self.factionButtonsPanel:Add("wsMenuSelectionButton")
-		noneButton:SetBackgroundColor(Color(128, 128, 128))
-		noneButton:SetText(L("noFaction"):utf8upper())
-		noneButton:SizeToContents()
-		noneButton:SetButtonList(self.factionButtons)
-		noneButton.faction = nil
-		noneButton.OnSelected = function(panel)
-			self.payload:Set("faction", nil)
-			local defaultModels = ws.config.Get("factionlessModels")
-			if (defaultModels and #defaultModels > 0) then
-				self.payload:Set("model", math.random(1, #defaultModels))
-			else
-				self.payload:Set("model", 1)
+		-- Only offer a "no faction" choice when the schema allows factionless characters
+		-- (optional/disabled modes). In "required" mode every character must pick a faction.
+		if (ws.faction.AllowsFactionless()) then
+			-- Add factionless/none option
+			local noneButton = self.factionButtonsPanel:Add("wsMenuSelectionButton")
+			noneButton:SetBackgroundColor(Color(128, 128, 128))
+			noneButton:SetText(L("noFaction"):utf8upper())
+			noneButton:SizeToContents()
+			noneButton:SetButtonList(self.factionButtons)
+			noneButton.faction = nil
+			noneButton.OnSelected = function(panel)
+				self.payload:Set("faction", nil)
+				local defaultModels = ws.config.Get("factionlessModels")
+				if (defaultModels and #defaultModels > 0) then
+					self.payload:Set("model", math.random(1, #defaultModels))
+				else
+					self.payload:Set("model", 1)
+				end
 			end
-		end
 
-		-- Auto-select factionless if no default faction selected
-		if (!lastSelected) then
-			noneButton:SetSelected(true)
+			-- Auto-select factionless if no default faction selected
+			if (!lastSelected) then
+				noneButton:SetSelected(true)
+			end
 		end
 	end
 

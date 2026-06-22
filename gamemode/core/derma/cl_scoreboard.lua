@@ -272,8 +272,13 @@ function PANEL:AddPlayer(client, index)
 end
 
 function PANEL:SetFaction(faction)
-	-- All factions use same gray color (no faction color metagaming)
-	self:SetColor(Color(200, 200, 200))
+	-- Tint the faction header by colour only when the schema opts in (showFactionColors);
+	-- otherwise stay neutral grey -- anti-metagaming, don't leak faction identity by colour.
+	if (ws.faction.ShowColors() and faction.color) then
+		self:SetColor(faction.color)
+	else
+		self:SetColor(Color(200, 200, 200))
+	end
 	self:SetText(L(faction.name))
 
 	self.faction = faction

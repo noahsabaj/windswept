@@ -57,6 +57,7 @@ LANGUAGE = {
 	skills = "Skills",
 	choose = "Choose",
 	chooseFaction = "Choose a Faction",
+	factionRequired = "You must choose a faction.",
 	chooseDescription = "Define your Narrative",
 	chooseSkills = "Hone your Skills",
 	name = "Name",
