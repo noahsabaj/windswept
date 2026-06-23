@@ -7,15 +7,13 @@ function GM:PlayerInitialSpawn(client)
 	if (client:IsBot()) then
 		local botID = os.time() + client:EntIndex()
 
-		-- Bots are factionless like regular new characters
-		local models = ws.config.Get("factionlessModels") or {"models/gman.mdl"}
+		local models = ws.config.Get("defaultModels") or {"models/gman.mdl"}
 		local model = models[math.random(#models)]
 		if (istable(model)) then model = model[1] end
 		if (!isstring(model)) then model = "models/gman.mdl" end
 
 		local character = ws.char.New({
 			name = client:Name(),
-			faction = nil,
 			model = model,
 		}, botID, client, client:SteamID64())
 		character.isBot = true
@@ -273,24 +271,11 @@ function GM:PlayerLoadedCharacter(client, character, lastChar)
 		lastChar:SetVar("charEnts", nil)
 	end
 
-	if (character) then
-		for _, v in pairs(ws.class.list) do
-			if (v.faction == client:Team() and v.isDefault) then
-				character:SetClass(v.index)
-
-				break
-			end
-		end
-	end
-
 	if (IsValid(client.wsRagdoll)) then
 		client.wsRagdoll.wsNoReset = true
 		client.wsRagdoll.wsIgnoreDelete = true
 		client.wsRagdoll:Remove()
 	end
-
-	-- Salary (faction pay) lives in the salary plugin (windswept/plugins/salary), which hooks
-	-- PlayerLoadedCharacter. (fw-hooks-8: relocated out of framework core.)
 
 	hook.Run("PlayerLoadout", client)
 end
@@ -510,42 +495,6 @@ function GM:PlayerLoadout(client)
 		client:SetWalkSpeed(ws.config.Get("walkSpeed"))
 		client:SetRunSpeed(ws.config.Get("runSpeed"))
 		client:SetHealth(character:GetData("health", client:GetMaxHealth()))
-
-		local faction = ws.faction.indices[client:Team()]
-
-		if (faction) then
-			-- If their faction wants to do something when the player spawns, let it.
-			if (faction.OnSpawn) then
-				faction:OnSpawn(client)
-			end
-
-			-- @todo add docs for player:Give() failing if player already has weapon - which means if a player is given a weapon
-			-- here due to the faction weapons table, the weapon's :Give call in the weapon base will fail since the player
-			-- will already have it by then. This will cause issues for weapons that have pac data since the parts are applied
-			-- only if the weapon returned by :Give() is valid
-
-			-- If the faction has default weapons, give them to the player.
-			if (faction.weapons) then
-				for _, v in ipairs(faction.weapons) do
-					client:Give(v)
-				end
-			end
-		end
-
-		-- Ditto, but for classes.
-		local class = ws.class.list[client:GetCharacter():GetClass()]
-
-		if (class) then
-			if (class.OnSpawn) then
-				class:OnSpawn(client)
-			end
-
-			if (class.weapons) then
-				for _, v in ipairs(class.weapons) do
-					client:Give(v)
-				end
-			end
-		end
 
 		-- Apply any flags as needed.
 		ws.flag.OnSpawn(client)

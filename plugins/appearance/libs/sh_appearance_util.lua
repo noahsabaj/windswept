@@ -105,7 +105,7 @@ end
 
 -- Get model path from model index
 function ws.appearance.GetModelPath(modelIndex)
-    local models = ws.config.Get("factionlessModels") or {}
+    local models = ws.config.Get("defaultModels") or {}
     local model = models[modelIndex]
 
     if istable(model) then

@@ -41,7 +41,7 @@ The fastest way to start is the **skeleton schema** that ships with the framewor
 3. Edit `schema/sh_schema.lua` (`Schema.name` / `author` / `description`).
 4. Launch with `+gamemode <your-id>` — you should reach character creation.
 
-A schema needs no `init.lua`/`cl_init.lua`/`shared.lua` of its own: the `.txt`'s `base = "windswept"` makes the framework load your `schema/` folder. From there, enable the plugins you want (next section) and add content under `schema/items/`, `schema/factions/`, `schema/libs/`, etc. The skeleton's `schema/sh_configs.lua` has the enable snippets ready to uncomment.
+A schema needs no `init.lua`/`cl_init.lua`/`shared.lua` of its own: the `.txt`'s `base = "windswept"` makes the framework load your `schema/` folder. From there, enable the plugins you want (next section) and add content under `schema/items/`, `schema/libs/`, etc. The skeleton's `schema/sh_configs.lua` has the enable snippets ready to uncomment.
 
 # Enabling framework plugins
 Every framework plugin is **off by default** — booting clean is the whole point of the skeleton. There are two kinds:

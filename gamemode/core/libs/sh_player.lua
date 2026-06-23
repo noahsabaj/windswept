@@ -39,29 +39,7 @@ do
 	end
 end
 
--- Whitelist networking information here.
 do
-	function playerMeta:HasWhitelist(faction)
-		-- Factionless is always allowed
-		if (faction == nil) then
-			return true
-		end
-
-		local data = ws.faction.indices[faction]
-
-		if (data) then
-			if (data.isDefault) then
-				return true
-			end
-
-			local wsData = self:GetData("whitelists", {})
-
-			return wsData[Schema.folder] and wsData[Schema.folder][data.uniqueID] == true or false
-		end
-
-		return false
-	end
-
 	function playerMeta:GetItems()
 		local char = self:GetCharacter()
 
@@ -74,19 +52,6 @@ do
 		end
 	end
 
-	function playerMeta:GetClassData()
-		local char = self:GetCharacter()
-
-		if (char) then
-			local class = char:GetClass()
-
-			if (class) then
-				local classData = ws.class.list[class]
-
-				return classData
-			end
-		end
-	end
 end
 
 do

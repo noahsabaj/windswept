@@ -2,18 +2,13 @@
 
 [![CI](https://github.com/noahsabaj/windswept/actions/workflows/ci.yml/badge.svg)](https://github.com/noahsabaj/windswept/actions/workflows/ci.yml)
 
-**Windswept** is a **faction-optional** roleplay framework for [Garry's Mod](https://gmod.facepunch.com/). It gives you a stable, open-source engine — characters, inventories, items, a plugin system, and a hardened client→server trust boundary — so you can spend your time on gameplay instead of plumbing.
+**Windswept** is a roleplay framework for [Garry's Mod](https://gmod.facepunch.com/) built for **diegetic, anti-metagaming survival RP**. It gives you a stable, open-source engine — characters, inventories, items, a plugin system, and a hardened client→server trust boundary — so you can spend your time on gameplay instead of plumbing.
 
-The guiding idea: **the framework provides mechanism; the schema provides policy.** Factions, the currency model, UI affordances, and every gameplay system are choices a developer opts into — never defaults the engine forces on you.
+The guiding idea: **the framework provides mechanism; the schema provides policy** — and authority should **emerge from play, never be assigned by the engine.** There are no factions, no classes, no whitelists: the engine has zero notion of who belongs to what. Groups and territory are things players *do* in-world.
 
 ## What makes it different
 
-- **Faction-optional.** Factions are a *choice*. The `factionMode` config supports:
-  - `required` — every character belongs to a faction (the classic Helix model),
-  - `optional` — factionless characters are allowed,
-  - `disabled` — no factions at all.
-
-  Every faction-aware subsystem (character creation, scoreboard, HUD, whitelist, vendors, default names/models) degrades gracefully in all three modes. `showFactionColors` further decouples faction identity from UI color, so an anti-metagaming schema can drop faction colors without dropping factions.
+- **Emergent, not assigned.** No factions, no classes, no whitelists. Every character is just a character; the engine never groups players, colors them by team, or gates content by an assigned identity. Authority comes from holding things (a locked door, a key, a leashed prisoner) and information comes from physical objects — not from a role the server handed out. This is opinionated where Helix is configurable: building a faction-war server is an explicit non-goal.
 - **A real trust boundary.** Client→server actions route through **`ws.action`** (automatic caller / ownership / range / bounds checks); active-weapon SWEPs use **`ws.weapon.NetReceive`**. Conserved resources (money, charge, …) move through atomic primitives (**`ws.resource`**, the currency registry) so quantities are never duplicated across the net boundary. A CI ratchet (`tools/check-net-handlers.sh`) blocks new unchecked `net.Receive` handlers.
 - **Self-contained.** The UI assets (fonts, sounds, vignette) ship with the framework — no external workshop content pack required.
 

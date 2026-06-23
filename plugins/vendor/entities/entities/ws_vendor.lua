@@ -29,8 +29,6 @@ function ENT:Initialize()
 
 		self.items = {}
 		self.messages = {}
-		self.factions = {}
-		self.classes = {}
 
 		self:SetDisplayName("John Doe")
 		self:SetDescription("")
@@ -65,32 +63,7 @@ function ENT:GetAxisAlignedBoundingBox()
 end
 
 function ENT:CanAccess(client)
-	local bAccess = false
-	local faction = ws.faction.indices[client:Team()]
-	local uniqueID = faction and faction.uniqueID
-
-	if (self.factions and !table.IsEmpty(self.factions)) then
-		-- Factionless players can't access faction-restricted vendors
-		if (uniqueID and self.factions[uniqueID]) then
-			bAccess = true
-		else
-			return false
-		end
-	end
-
-	if (bAccess and self.classes and !table.IsEmpty(self.classes)) then
-		-- No character -> can't verify class membership on a class-restricted vendor; deny.
-		local character = client:GetCharacter()
-		if (!character) then return false end
-
-		local class = ws.class.list[character:GetClass()]
-		local classID = class and class.uniqueID
-
-		if (classID and !self.classes[classID]) then
-			return false
-		end
-	end
-
+	-- Vendors have no faction/class gating; physical access is handled in-world (doors/keys).
 	return true
 end
 

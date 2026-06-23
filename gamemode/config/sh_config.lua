@@ -92,7 +92,7 @@ ws.config.Add("minDescriptionLength", 0, "The minimum number of characters in a 
 	data = {min = 0, max = 300},
 	category = "characters"
 })
-ws.config.Add("factionlessModels", {
+ws.config.Add("defaultModels", {
 	"models/humans/group01/male_01.mdl",
 	"models/humans/group01/male_02.mdl",
 	"models/humans/group01/male_03.mdl",
@@ -108,7 +108,7 @@ ws.config.Add("factionlessModels", {
 	"models/humans/group01/female_04.mdl",
 	"models/humans/group01/female_06.mdl",
 	"models/humans/group01/female_07.mdl"
-}, "The models available to factionless characters during character creation.", nil, {
+}, "The models available to characters during character creation.", nil, {
 	category = "characters",
 	type = ws.type.array,
 	hidden = function() return true end

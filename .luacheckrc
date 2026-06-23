@@ -10,6 +10,7 @@ stds.windswept = {}
 stds.windswept.globals = {
 	"ws",
 	"Schema",
+	"TEAM_PLAYER",
 	"HOOKS_CACHE",
 
 	"ITEM",

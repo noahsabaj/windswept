@@ -138,46 +138,6 @@ function GM:CanPlayerUseBusiness(client, uniqueID)
 		return false
 	end
 
-	if (itemTable.factions) then
-		local allowed = false
-
-		if (istable(itemTable.factions)) then
-			for _, v in pairs(itemTable.factions) do
-				if (client:Team() == v) then
-					allowed = true
-
-					break
-				end
-			end
-		elseif (client:Team() != itemTable.factions) then
-			allowed = false
-		end
-
-		if (!allowed) then
-			return false
-		end
-	end
-
-	if (itemTable.classes) then
-		local allowed = false
-
-		if (istable(itemTable.classes)) then
-			for _, v in pairs(itemTable.classes) do
-				if (client:GetCharacter():GetClass() == v) then
-					allowed = true
-
-					break
-				end
-			end
-		elseif (client:GetCharacter():GetClass() == itemTable.classes) then
-			allowed = true
-		end
-
-		if (!allowed) then
-			return false
-		end
-	end
-
 	if (itemTable.flag) then
 		if (!client:GetCharacter():HasFlags(itemTable.flag)) then
 			return false
@@ -403,27 +363,6 @@ function GM:CanPlayerThrowPunch(client)
 	return true
 end
 
-function GM:OnCharacterCreated(client, character)
-	local factionIndex = character:GetFaction()
-
-	if (factionIndex) then
-		local faction = ws.faction.Get(factionIndex)
-
-		if (faction and faction.OnCharacterCreated) then
-			faction:OnCharacterCreated(client, character)
-		end
-	end
-	-- Factionless characters don't trigger faction OnCharacterCreated
-end
-
-function GM:GetDefaultCharacterName(client, faction)
-	local info = ws.faction.indices[faction]
-
-	if (info and info.GetDefaultName) then
-		return info:GetDefaultName(client)
-	end
-end
-
 function GM:CanPlayerUseCharacter(client, character)
 	local banned = character:GetData("banned")
 
@@ -437,18 +376,6 @@ function GM:CanPlayerUseCharacter(client, character)
         end
 	end
 
-	local factionIndex = character:GetFaction()
-
-	-- Factionless characters don't need whitelist
-	if (factionIndex == nil) then
-		return
-	end
-
-	local bHasWhitelist = client:HasWhitelist(factionIndex)
-
-	if (!bHasWhitelist) then
-		return false, "@noWhitelist"
-	end
 end
 
 function GM:CanProperty(client, property, entity)

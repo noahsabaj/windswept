@@ -73,60 +73,10 @@ function PANEL:Init()
 
 	self:ResetPayload(true)
 
-	self.factionButtons = {}
 	self.repopulatePanels = {}
 
-	-- faction selection subpanel
-	self.factionPanel = self:AddSubpanel("faction", true)
-	self.factionPanel:SetTitle("chooseFaction")
-	self.factionPanel.OnSetActive = function()
-		-- if we only have one faction, we are always selecting that one so we can skip to the description section
-		if (#self.factionButtons == 1) then
-			self:SetActiveSubpanel("description", 0)
-		end
-	end
-
-	local modelList = self.factionPanel:Add("Panel")
-	modelList:Dock(RIGHT)
-	modelList:SetSize(halfWidth + padding * 2, halfHeight)
-
-	local proceed = modelList:Add("wsMenuButton")
-	proceed:SetText("proceed")
-	proceed:SetContentAlignment(6)
-	proceed:Dock(BOTTOM)
-	proceed:SizeToContents()
-	proceed.DoClick = function()
-		self.progress:IncrementProgress()
-
-		self:Populate()
-		self:SetActiveSubpanel("description")
-	end
-
-	self.factionModel = modelList:Add("wsModelPanel")
-	self.factionModel:Dock(FILL)
-	self.factionModel:SetModel("models/error.mdl")
-	self.factionModel:SetFOV(modelFOV)
-	self.factionModel.PaintModel = self.factionModel.Paint
-
-	self.factionButtonsPanel = self.factionPanel:Add("wsCharMenuButtonList")
-	self.factionButtonsPanel:SetWide(halfWidth)
-	self.factionButtonsPanel:Dock(FILL)
-
-	local factionBack = self.factionPanel:Add("wsMenuButton")
-	factionBack:SetText("return")
-	factionBack:SizeToContents()
-	factionBack:Dock(BOTTOM)
-	factionBack.DoClick = function()
-		self.progress:DecrementProgress()
-
-		self:SetActiveSubpanel("faction", 0)
-		self:SlideDown()
-
-		parent.mainPanel:Undim()
-	end
-
-	-- character customization subpanel
-	self.description = self:AddSubpanel("description")
+	-- character customization subpanel (first step)
+	self.description = self:AddSubpanel("description", true)
 	self.description:SetTitle("chooseDescription")
 
 	local descriptionModelList = self.description:Add("Panel")
@@ -139,18 +89,16 @@ function PANEL:Init()
 	descriptionBack:SizeToContents()
 	descriptionBack:Dock(BOTTOM)
 	descriptionBack.DoClick = function()
-		self.progress:DecrementProgress()
+		-- description is the first step; returning closes the creation menu
+		self:SetActiveSubpanel("description", 0)
+		self:SlideDown()
 
-		if (#self.factionButtons == 1) then
-			factionBack:DoClick()
-		else
-			self:SetActiveSubpanel("faction")
-		end
+		parent.mainPanel:Undim()
 	end
 
 	self.descriptionModel = descriptionModelList:Add("wsModelPanel")
 	self.descriptionModel:Dock(FILL)
-	self.descriptionModel:SetModel(self.factionModel:GetModel())
+	self.descriptionModel:SetModel("models/error.mdl")
 	self.descriptionModel:SetFOV(modelFOV - 13)
 	self.descriptionModel.PaintModel = self.descriptionModel.Paint
 
@@ -202,7 +150,7 @@ function PANEL:Init()
 
 	self.attributesModel = attributesModelList:Add("wsModelPanel")
 	self.attributesModel:Dock(FILL)
-	self.attributesModel:SetModel(self.factionModel:GetModel())
+	self.attributesModel:SetModel(self.descriptionModel:GetModel())
 	self.attributesModel:SetFOV(modelFOV - 13)
 	self.attributesModel.PaintModel = self.attributesModel.Paint
 
@@ -232,25 +180,15 @@ function PANEL:Init()
 
 	-- setup payload hooks
 	self:AddPayloadHook("model", function(value)
-		local faction = ws.faction.indices[self.payload.faction]
-		local models
-
-		if (faction) then
-			models = faction:GetModels(LocalPlayer())
-		else
-			models = ws.config.Get("factionlessModels") or {}
-		end
-
+		local models = ws.config.Get("defaultModels") or {}
 		local model = models[value]
 
 		if (model) then
 			-- assuming bodygroups
 			if (istable(model)) then
-				self.factionModel:SetModel(model[1], model[2] or 0, model[3])
 				self.descriptionModel:SetModel(model[1], model[2] or 0, model[3])
 				self.attributesModel:SetModel(model[1], model[2] or 0, model[3])
 			else
-				self.factionModel:SetModel(model)
 				self.descriptionModel:SetModel(model)
 				self.attributesModel:SetModel(model)
 			end
@@ -343,9 +281,7 @@ function PANEL:OnSlideUp()
 	self:Populate()
 	self.progress:SetProgress(1)
 
-	-- the faction subpanel will skip to next subpanel if there is only one faction to choose from,
-	-- so we don't have to worry about it here
-	self:SetActiveSubpanel("faction", 0)
+	self:SetActiveSubpanel("description", 0)
 end
 
 function PANEL:OnSlideDown()
@@ -411,91 +347,12 @@ function PANEL:AttachCleanup(panel)
 end
 
 function PANEL:Populate()
-	if (!self.bInitialPopulate) then
-		-- setup buttons for the faction panel
-		-- TODO: make this a bit less janky
-		local lastSelected
-
-		for _, v in pairs(self.factionButtons) do
-			if (v:GetSelected()) then
-				lastSelected = v.faction
-			end
-
-			if (IsValid(v)) then
-				v:Remove()
-			end
-		end
-
-		self.factionButtons = {}
-
-		for _, v in SortedPairs(ws.faction.teams) do
-			if (ws.faction.HasWhitelist(v.index)) then
-				local button = self.factionButtonsPanel:Add("wsMenuSelectionButton")
-				button:SetBackgroundColor(v.color or color_white)
-				button:SetText(L(v.name):utf8upper())
-				button:SizeToContents()
-				button:SetButtonList(self.factionButtons)
-				button.faction = v.index
-				button.OnSelected = function(panel)
-					local faction = ws.faction.indices[panel.faction]
-					local models = faction:GetModels(LocalPlayer())
-
-					self.payload:Set("faction", panel.faction)
-					self.payload:Set("model", math.random(1, #models))
-				end
-
-				if ((lastSelected and lastSelected == v.index) or (!lastSelected and v.isDefault)) then
-					button:SetSelected(true)
-					lastSelected = v.index
-				end
-			end
-		end
-
-		-- Only offer a "no faction" choice when the schema allows factionless characters
-		-- (optional/disabled modes). In "required" mode every character must pick a faction.
-		if (ws.faction.AllowsFactionless()) then
-			-- Add factionless/none option
-			local noneButton = self.factionButtonsPanel:Add("wsMenuSelectionButton")
-			noneButton:SetBackgroundColor(Color(128, 128, 128))
-			noneButton:SetText(L("noFaction"):utf8upper())
-			noneButton:SizeToContents()
-			noneButton:SetButtonList(self.factionButtons)
-			noneButton.faction = nil
-			noneButton.OnSelected = function(panel)
-				self.payload:Set("faction", nil)
-				local defaultModels = ws.config.Get("factionlessModels")
-				if (defaultModels and #defaultModels > 0) then
-					self.payload:Set("model", math.random(1, #defaultModels))
-				else
-					self.payload:Set("model", 1)
-				end
-			end
-
-			-- Auto-select factionless if no default faction selected
-			if (!lastSelected) then
-				noneButton:SetSelected(true)
-			end
-		end
-	end
-
 	-- remove panels created for character vars
 	for i = 1, #self.repopulatePanels do
 		self.repopulatePanels[i]:Remove()
 	end
 
 	self.repopulatePanels = {}
-
-	-- payload is empty because we attempted to send it - for whatever reason we're back here again so we need to repopulate
-	if (!self.payload.faction) then
-		for _, v in pairs(self.factionButtons) do
-			if (v:GetSelected()) then
-				v:SetSelected(true)
-				break
-			end
-		end
-	end
-
-	self.factionButtonsPanel:SizeToContents()
 
 	local zPos = 1
 
@@ -553,10 +410,6 @@ function PANEL:Populate()
 
 	if (!self.bInitialPopulate) then
 		-- setup progress bar segments
-		if (#self.factionButtons > 1) then
-			self.progress:AddSegment("@faction")
-		end
-
 		self.progress:AddSegment("@description")
 
 		if (#self.attributesPanel:GetCanvas():GetChildren() > 0) then

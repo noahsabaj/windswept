@@ -1,8 +1,8 @@
 # Windswept skeleton schema
 
-The smallest schema that boots on the Windswept framework: zero plugins enabled, no
-factions, one example item. Copy it to start your own schema, or use it as the reference
-for "everything default-off works."
+The smallest schema that boots on the Windswept framework: zero plugins enabled, one
+example item. Copy it to start your own schema, or use it as the reference for
+"everything default-off works."
 
 ## What's here
 
@@ -12,7 +12,7 @@ skeleton-schema/
 ├── README.md                 this file
 └── schema/
     ├── sh_schema.lua         Schema.name / author / description
-    ├── sh_configs.lua        faction mode + how to enable framework plugins
+    ├── sh_configs.lua        how to enable framework plugins
     └── items/
         └── sh_canned_food.lua  one trivial custom item
 ```
@@ -36,8 +36,8 @@ the business menu, etc. Some plugins (power batteries, documents, restraints, ph
 permadeath) are inert until your content uses their item bases — no flag needed.
 
 Conservation of matter is the framework default: vendors won't mint money or items unless
-you set `vendorAllowInfinite`. Faction support is opt-in (`factionMode`, default
-`optional`). For a full, real-world build on this same framework, read `windswept-colony`.
+you set `vendorAllowInfinite`. For a full, real-world build on this same framework, read
+`windswept-colony`.
 
 See also: `windswept/docs/manual/authoring-plugins.md` for writing your own framework
 plugin, and the API docs at <https://noahsabaj.github.io/windswept/>.

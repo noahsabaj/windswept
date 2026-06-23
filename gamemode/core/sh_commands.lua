@@ -24,34 +24,6 @@ ws.command.Add("Event", {
 	end
 })
 
--- Lets a player switch to a class in their current faction. The Classes menu sends this
--- via ws.command.Send("BecomeClass", index); the command was dropped during the ix->ws
--- port, which silently broke class switching. (fw-faction-class-1)
-ws.command.Add("BecomeClass", {
-	description = "@cmdBecomeClass",
-	arguments = ws.type.number,
-	OnRun = function(self, client, class)
-		local character = client:GetCharacter()
-
-		if (!character) then
-			return
-		end
-
-		class = tonumber(class)
-
-		if (!class or !ws.class.list[class]) then
-			return "@invalidArg", 1
-		end
-
-		-- character:JoinClass re-runs ws.class.CanSwitchTo and returns false if denied.
-		if (character:JoinClass(class)) then
-			return "@classSwitched", L(ws.class.list[class].name, client)
-		end
-
-		return "@classSwitchFail"
-	end
-})
-
 ws.command.Add("CharGiveFlag", {
 	description = "@cmdCharGiveFlag",
 	privilege = "Manage Character Flags",

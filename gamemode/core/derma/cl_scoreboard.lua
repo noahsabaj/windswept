@@ -218,7 +218,7 @@ function PANEL:Think()
 	if (CurTime() >= self.nextThink) then
 		local client = self.player
 
-		if (!IsValid(client) or !client:GetCharacter() or self.character != client:GetCharacter() or self.team != client:Team()) then
+		if (!IsValid(client) or !client:GetCharacter() or self.character != client:GetCharacter()) then
 			self:Remove()
 			self:GetParent():SizeToContents()
 		end
@@ -229,7 +229,6 @@ end
 
 function PANEL:SetPlayer(client)
 	self.player = client
-	self.team = client:Team()
 	self.character = client:GetCharacter()
 
 	self:Update()
@@ -241,14 +240,14 @@ end
 
 vgui.Register("wsScoreboardRow", PANEL, "EditablePanel")
 
--- faction grouping
+-- player list section (single flat list of everyone)
 PANEL = {}
 
-AccessorFunc(PANEL, "faction", "Faction")
-
 function PANEL:Init()
-	self:DockMargin(0, 0, 0, 16)
-	self:SetTall(32)
+	-- No header - just a raw player list. Sized by its children.
+	self:SetTall(0)
+	self:DockMargin(0, 8, 0, 8)
+	self:DockPadding(0, 0, 0, 0)
 
 	self.nextThink = 0
 end
@@ -271,37 +270,9 @@ function PANEL:AddPlayer(client, index)
 	return true
 end
 
-function PANEL:SetFaction(faction)
-	-- Tint the faction header by colour only when the schema opts in (showFactionColors);
-	-- otherwise stay neutral grey -- anti-metagaming, don't leak faction identity by colour.
-	if (ws.faction.ShowColors() and faction.color) then
-		self:SetColor(faction.color)
-	else
-		self:SetColor(Color(200, 200, 200))
-	end
-	self:SetText(L(faction.name))
-
-	self.faction = faction
-end
-
-function PANEL:SetFactionless()
-	self.faction = nil
-	self.bFactionless = true
-	-- No header for factionless - just raw player list
-	self:SetTall(0)  -- Will be sized by children
-	self:DockMargin(0, 8, 0, 8)  -- Small margin to separate from factions above
-	-- Remove the header padding that wsCategoryPanel adds
-	self.paddingTop = 0
-	self:DockPadding(0, 0, 0, 0)
-end
-
 function PANEL:SizeToContents()
+	-- No header height - just children.
 	local height = 0
-
-	-- For factionless, no header height - just children
-	if (!self.bFactionless) then
-		height = 32  -- Header height for normal factions
-	end
 
 	for _, child in ipairs(self:GetChildren()) do
 		if (IsValid(child) and child:IsVisible()) then
@@ -314,45 +285,11 @@ function PANEL:SizeToContents()
 end
 
 function PANEL:Update()
-	local faction = self.faction
+	-- Populate from every valid player; one flat list.
+	local bHasPlayers = false
 
-	-- Handle factionless section
-	if (self.bFactionless) then
-		local bHasPlayers = false
-
-		for k, v in ipairs(player.GetAll()) do
-			if (IsValid(v) and v:GetCharacter()) then
-				local playerFaction = v:Team()
-				if (playerFaction == nil or playerFaction == TEAM_UNASSIGNED) then
-					if (!IsValid(v.wsScoreboardSlot)) then
-						if (self:AddPlayer(v, k)) then
-							bHasPlayers = true
-						end
-					else
-						v.wsScoreboardSlot:Update()
-						bHasPlayers = true
-					end
-				end
-			end
-		end
-
-		self:SetVisible(bHasPlayers)
-		self:GetParent():InvalidateLayout()
-		return
-	end
-
-	-- Original faction code
-	if (!faction) then
-		return
-	end
-
-	if (team.NumPlayers(faction.index) == 0) then
-		self:SetVisible(false)
-		self:GetParent():InvalidateLayout()
-	else
-		local bHasPlayers
-
-		for k, v in ipairs(team.GetPlayers(faction.index)) do
+	for k, v in ipairs(player.GetAll()) do
+		if (IsValid(v) and v:GetCharacter()) then
 			if (!IsValid(v.wsScoreboardSlot)) then
 				if (self:AddPlayer(v, k)) then
 					bHasPlayers = true
@@ -362,23 +299,17 @@ function PANEL:Update()
 				bHasPlayers = true
 			end
 		end
-
-		self:SetVisible(bHasPlayers)
-		self:GetParent():InvalidateLayout()
 	end
+
+	self:SetVisible(bHasPlayers)
+	self:GetParent():InvalidateLayout()
 end
 
 function PANEL:Paint(width, height)
-	-- Factionless section has no header/background - just raw list
-	if (self.bFactionless) then
-		return
-	end
-
-	-- Normal faction header
-	derma.SkinFunc("PaintCategoryPanel", self, self.text, self.color)
+	-- No header/background - just the raw list.
 end
 
-vgui.Register("wsScoreboardFaction", PANEL, "wsCategoryPanel")
+vgui.Register("wsScoreboardList", PANEL, "wsCategoryPanel")
 
 -- main scoreboard panel
 PANEL = {}
@@ -390,38 +321,19 @@ function PANEL:Init()
 
 	self:Dock(FILL)
 
-	self.factions = {}
 	self.nextThink = 0
 
-	for i = 1, #ws.faction.indices do
-		local faction = ws.faction.indices[i]
-
-		local panel = self:Add("wsScoreboardFaction")
-		panel:SetFaction(faction)
-		panel:Dock(TOP)
-
-		self.factions[i] = panel
-	end
-
-	-- Add factionless section at the end
-	self.factionless = self:Add("wsScoreboardFaction")
-	self.factionless:SetFactionless()
-	self.factionless:Dock(TOP)
+	-- Single flat list of all players.
+	self.list = self:Add("wsScoreboardList")
+	self.list:Dock(TOP)
 
 	ws.gui.scoreboard = self
 end
 
 function PANEL:Think()
 	if (CurTime() >= self.nextThink) then
-		for i = 1, #self.factions do
-			local factionPanel = self.factions[i]
-
-			factionPanel:Update()
-		end
-
-		-- Update factionless section
-		if (self.factionless) then
-			self.factionless:Update()
+		if (IsValid(self.list)) then
+			self.list:Update()
 		end
 
 		self.nextThink = CurTime() + 0.5

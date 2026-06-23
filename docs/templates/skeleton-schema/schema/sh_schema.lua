@@ -11,7 +11,7 @@
       2. Rename skeleton.txt -> <your-id>.txt and change its id ("skeleton") + title.
       3. Set Schema.name / author / description below.
       4. Enable the framework plugins you want in schema/sh_configs.lua (all off by default).
-      5. Add your content under schema/items/, schema/factions/, schema/libs/, etc.
+      5. Add your content under schema/items/, schema/libs/, etc.
 
     See windswept-colony for a maximal, real-world schema built on the same framework.
 ]]--

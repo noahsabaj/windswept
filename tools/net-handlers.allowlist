@@ -53,11 +53,6 @@ wsCharacterMenu
 wsCharacterVar
 wsCharacterVarChanged
 wsChatMessage
-wsClassCreated
-wsClassDeleted
-wsClassListSync
-wsClassUpdate
-wsClassUpdated
 wsConfigList
 wsConfigPluginToggle
 wsConfigSet
