@@ -72,7 +72,7 @@ function ws.inventory.Restore(invID, width, height, callback)
 
 					if (!itemInvID or !invInfo) then
 						-- don't restore items with an invalid inventory id or type
-						ErrorNoHalt("[Windswept] Skipping saved item with invalid/orphaned inventory ID '" .. tostring(item.inventory_id) .. "'\n")
+						ErrorNoHalt("[Windswept] Skipping item with orphaned inventory id '" .. tostring(item.inventory_id) .. "'\n")
 						continue
 					end
 
