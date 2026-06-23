@@ -138,7 +138,7 @@ function PANEL:SetWritingTool(toolType, toolItem)
     if toolType == "pen" then
         if toolItem then
             self.resourceRemaining = toolItem:GetInk()
-            self.maxResource = toolItem.maxInk or 1000
+            self.maxResource = toolItem.maxResource or 1000
             self.strokeColor = toolItem:GetInkColor()
         else
             self.strokeColor = {100, 100, 200}  -- Default blue
@@ -148,7 +148,7 @@ function PANEL:SetWritingTool(toolType, toolItem)
     else
         if toolItem then
             self.resourceRemaining = toolItem:GetLead()
-            self.maxResource = toolItem.maxLead or 500
+            self.maxResource = toolItem.maxResource or 500
         end
         self.strokeColor = {150, 150, 150}  -- Gray for pencil
         -- Pencils CAN sign (but signature will be erasable)

@@ -464,6 +464,9 @@ do
 
 				if (inventory) then
 					local item = (uniqueID != "" and id != 0) and ws.item.New(uniqueID, id) or nil
+					-- ws.item.New returns nil for an unregistered uniqueID (content/version
+					-- mismatch); don't deref it below.
+					if (!item) then return end
 					item.invID = invID
 					item.data = {}
 

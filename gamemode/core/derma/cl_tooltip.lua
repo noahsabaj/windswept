@@ -314,7 +314,7 @@ function PANEL:Paint(width, height)
 	end
 
 	-- arrow
-	if (self.bDrawArrow or (self.bDrawArrow and self.bRaised and !self.bHideArrowWhenRaised)) then
+	if (self.bDrawArrow and (!self.bRaised or !self.bHideArrowWhenRaised)) then
 		local x, y = self:ScreenToLocal(self.arrowX, self.arrowY)
 
 		DisableClipping(true)

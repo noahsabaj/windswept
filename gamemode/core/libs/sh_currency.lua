@@ -102,7 +102,7 @@ end
 -- @angle[opt=angle_zero] angle The angle of the entity being spawned.
 -- @treturn entity The spawned money entity.
 function ws.currency.Spawn(pos, amount, angle)
-    if (!amount or amount < 0) then
+    if (!isnumber(amount) or amount != amount or amount != math.floor(amount) or amount < 0) then
         print("[Windswept] Can't create currency entity: Invalid Amount of money")
         return
     end

@@ -12,15 +12,19 @@ if (SERVER) then
 
 		if (faction and faction.pay and faction.pay > 0) then
 			timer.Create(uniqueID, faction.payTime or 300, 0, function()
-				if (IsValid(client)) then
-					if (hook.Run("CanPlayerEarnSalary", client, faction) != false) then
-						local pay = hook.Run("GetSalaryAmount", client, faction) or faction.pay
-
-						character:GiveMoney(pay)
-						client:NotifyLocalized("salary", ws.currency.Get(pay))
-					end
-				else
+				if (!IsValid(client)) then
 					timer.Remove(uniqueID)
+					return
+				end
+
+				if (hook.Run("CanPlayerEarnSalary", client, faction) == false) then return end
+
+				local pay = hook.Run("GetSalaryAmount", client, faction) or faction.pay
+
+				-- Only tell the player they were paid if the cash actually fit in their
+				-- inventory (GiveMoney fails on a full inventory).
+				if (character:GiveMoney(pay)) then
+					client:NotifyLocalized("salary", ws.currency.Get(pay))
 				end
 			end)
 		elseif (timer.Exists(uniqueID)) then
