@@ -539,10 +539,3 @@ function PANEL:OnRemove()
 end
 
 vgui.Register("wsCharMenu", PANEL, "EditablePanel")
-
-if (IsValid(ws.gui.characterMenu)) then
-	ws.gui.characterMenu:Remove()
-
-	--TODO: REMOVE ME
-	ws.gui.characterMenu = vgui.Create("wsCharMenu")
-end

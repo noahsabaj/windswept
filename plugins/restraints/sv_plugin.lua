@@ -340,21 +340,20 @@ end
 
 -- Stop drag and unleash when target is unrestrained
 hook.Add("OnPlayerUnRestricted", "wsStopDragOnUnrestrain", function(target)
-    local plugin = ws.plugin.Get("prisoner")
-    if not plugin then return end
-
+    -- Use the file-local PLUGIN reference; the old ws.plugin.Get("prisoner") lookup
+    -- returned nil (this plugin is keyed "restraints"), so this cleanup never ran.
     -- Stop drag
     local draggedBy = target:GetNetVar("wsDraggedBy")
     if draggedBy then
         local dragger = Entity(draggedBy)
         if IsValid(dragger) then
-            plugin:StopDrag(dragger)
+            restraintPlugin:StopDrag(dragger)
         end
     end
 
     -- Unleash if leashed
     if target:GetNetVar("leashed") then
-        plugin:UnleashPlayer(target)
+        restraintPlugin:UnleashPlayer(target)
     end
 end)
 

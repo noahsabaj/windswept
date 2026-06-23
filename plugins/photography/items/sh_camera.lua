@@ -215,7 +215,7 @@ ITEM.functions.LoadFilm = {
         end
 
         -- Clamp shots: the value is copied from item data and must not be trusted blindly.
-        local shots = math.Clamp(math.floor(tonumber(filmItem:GetData("shots", 10)) or 0), 0, 100)
+        local shots = math.min(math.floor(tonumber(filmItem:GetData("shots", 10)) or 0), filmItem.maxShots or 10)
         item:SetFilm({shots = shots})
         filmItem:Remove()
 

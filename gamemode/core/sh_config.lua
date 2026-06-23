@@ -106,7 +106,7 @@ function ws.config.Set(key, value)
 	local config = ws.config.stored[key]
 
 	if (config) then
-		local oldValue = value
+		local oldValue = config.value
 		config.value = value
 
 		if (SERVER) then

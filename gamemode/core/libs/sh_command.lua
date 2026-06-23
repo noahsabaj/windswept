@@ -116,8 +116,10 @@ local function ArgumentCheckStub(command, client, given)
 				return L(bPlayer and "plyNoExist" or "charNoExist", client)
 			end
 
-			-- check for the character if we're using the character type
-			if (!bPlayer) then
+			-- check for the character if we're using the character type. An omitted
+			-- optional character arg leaves value nil (required+missing already errored
+			-- above), so only resolve the character when we actually have a player.
+			if (!bPlayer and value) then
 				local character = value:GetCharacter()
 
 				if (!character) then

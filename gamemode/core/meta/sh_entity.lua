@@ -186,20 +186,10 @@ if (SERVER) then
 	end
 
 else
-	-- Returns the door's slave entity.
+	-- Doors are server-authoritative; the partner link (wsPartner) is set and consumed
+	-- only on the server, and no client code needs the partner. No-op stub (replaces the
+	-- dead inherited Helix ownership-door scan, which had zero client callers).
 	function meta:GetDoorPartner()
-		local owner = self:GetOwner() or self.wsDoorOwner
-
-		if (IsValid(owner) and owner:IsDoor()) then
-			return owner
-		end
-
-		for _, v in ipairs(ents.FindByClass("prop_door_rotating")) do
-			if (v:GetOwner() == self) then
-				self.wsDoorOwner = v
-
-				return v
-			end
-		end
+		return nil
 	end
 end

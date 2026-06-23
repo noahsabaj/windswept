@@ -91,8 +91,9 @@ if (SERVER) then
 				end
 			})
 
-			if (self:GetLocked()) then
-				self.Sessions[activator:GetCharacter():GetID()] = true
+			local character = activator:GetCharacter()
+			if (self:GetLocked() and character) then
+				self.Sessions[character:GetID()] = true
 			end
 
 			ws.log.Add(activator, "openContainer", name, inventory:GetID())

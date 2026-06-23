@@ -113,7 +113,9 @@ if (SERVER) then
 			entity.items = items
 			entity.factions = v.factions or {}
 			entity.classes = v.classes or {}
-			entity.money = v.money
+			-- Sanitize persisted money to the same [0, 65535] range SetMoney enforces, so a
+			-- corrupted save can't load an out-of-range value (client reads it as UInt16).
+			entity.money = v.money and math.Clamp(math.floor(v.money), 0, 65535) or nil
 			entity.scale = v.scale or 0.5
 		end
 	end
@@ -391,6 +393,13 @@ if (SERVER) then
 					return client:NotifyLocalized("vendorMaxStock")
 				end
 
+				-- Server-side vendor-mode enforcement, symmetric to the buy branch's
+				-- CanSellToPlayer guard: a sell-only vendor must not buy from players.
+				-- (The client UI hides this, but wsVendorTrade is attacker-reachable.)
+				if (!entity:CanBuyFromPlayer(client, uniqueID)) then
+					return
+				end
+
 				-- Locate the item to sell, but do NOT remove it yet. With physical
 				-- currency GiveMoney can fail (no inventory space for the cash/coins),
 				-- so we must pay first and only destroy the item once payment lands;
@@ -408,7 +417,7 @@ if (SERVER) then
 				end
 
 				if (!found) then
-					return
+					return client:NotifyLocalized("itemNoExist")
 				end
 
 				-- Pay the seller first; abort (keep the item) if it cannot fit.

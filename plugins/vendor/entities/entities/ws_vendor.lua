@@ -79,7 +79,11 @@ function ENT:CanAccess(client)
 	end
 
 	if (bAccess and self.classes and !table.IsEmpty(self.classes)) then
-		local class = ws.class.list[client:GetCharacter():GetClass()]
+		-- No character -> can't verify class membership on a class-restricted vendor; deny.
+		local character = client:GetCharacter()
+		if (!character) then return false end
+
+		local class = ws.class.list[character:GetClass()]
 		local classID = class and class.uniqueID
 
 		if (classID and !self.classes[classID]) then
@@ -136,11 +140,13 @@ function ENT:CanBuyFromPlayer(client, uniqueID)
 		return false
 	end
 
-	if (data[VENDOR_MODE] != VENDOR_SELLONLY) then
+	-- A sell-only vendor must NOT buy items from players.
+	if (data[VENDOR_MODE] == VENDOR_SELLONLY) then
 		return false
 	end
 
-	if (!self:HasMoney(data[VENDOR_PRICE] or ws.item.list[uniqueID].price or 0)) then
+	-- The vendor pays the scaled sell price; check it can actually afford that.
+	if (!self:HasMoney(self:GetPrice(uniqueID, true))) then
 		return false
 	end
 

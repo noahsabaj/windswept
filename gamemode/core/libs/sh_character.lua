@@ -259,7 +259,7 @@ if (SERVER) then
 							value = v.default
 						end
 					elseif (istable(v.default)) then
-						value = istable(value) and value or util.JSONToTable(value)
+						value = istable(value) and value or util.JSONToTable(value) or v.default
 					end
 
 					data[k] = value

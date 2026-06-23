@@ -105,6 +105,7 @@ ITEM.functions.MergeAll = {
 
 		local mergedTotal = 0
 		local itemsToRemove = {}
+		local partialReduce -- single partial donor { item, newQty }, applied in phase 2
 		local sameType = inventory:GetItemsByUniqueID(item.uniqueID, false)
 
 		for _, otherItem in ipairs(sameType) do
@@ -116,8 +117,10 @@ ITEM.functions.MergeAll = {
 					canAdd = canAdd - otherQuantity
 					table.insert(itemsToRemove, otherItem)
 				elseif canAdd > 0 then
+					-- Plan only; reduce the donor in phase 2 so there is no mid-loop mutation
+					-- (matches the plan-then-apply discipline of Add/RemoveFromInventory).
 					mergedTotal = mergedTotal + canAdd
-					otherItem:SetData("quantity", otherQuantity - canAdd)
+					partialReduce = { item = otherItem, newQty = otherQuantity - canAdd }
 					break
 				end
 
@@ -131,6 +134,10 @@ ITEM.functions.MergeAll = {
 		end
 
 		item:SetData("quantity", currentQuantity + mergedTotal)
+
+		if partialReduce then
+			partialReduce.item:SetData("quantity", partialReduce.newQty)
+		end
 
 		for _, otherItem in ipairs(itemsToRemove) do
 			otherItem:Remove()

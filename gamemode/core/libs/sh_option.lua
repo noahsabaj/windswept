@@ -241,6 +241,10 @@ if (CLIENT) then
 			value = validated
 		elseif (option.type == ws.type.number) then
 			value = math.Clamp(math.Round(value, option.decimals), option.min, option.max)
+		else
+			-- Validator rejected a type-mismatched value; drop it rather than store an
+			-- unvalidated value the server would reject (avoids client/server desync).
+			return
 		end
 
 		local oldValue = ws.option.client[key]
