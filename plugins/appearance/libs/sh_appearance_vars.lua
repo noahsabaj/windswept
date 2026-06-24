@@ -322,8 +322,10 @@ ws.char.RegisterVar("physEyeColor", {
     index = 17,
     category = "description",
     OnValidate = function(self, value, payload, client)
+        -- Coerce a missing/invalid value to the default instead of rejecting, so an empty
+        -- eyeColors list (content-less boot) can't block creation. (cf. physHairColor)
         if not value or not table.HasValue(ws.appearance.eyeColors, value) then
-            return false, "invalidEyeColor"
+            return "Brown"
         end
         return value
     end,
@@ -353,8 +355,10 @@ ws.char.RegisterVar("physFacialHair", {
     index = 18,
     category = "description",
     OnValidate = function(self, value, payload, client)
+        -- Coerce a missing/invalid value to the default instead of rejecting, so an empty
+        -- facialHairOptions list (content-less boot) can't block creation. (cf. physHairColor)
         if not value or not table.HasValue(ws.appearance.facialHairOptions, value) then
-            return false, "invalidFacialHair"
+            return "None"
         end
         return value
     end,
