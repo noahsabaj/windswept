@@ -120,8 +120,10 @@ ws.char.RegisterVar("physSkinTone", {
     index = 13,
     category = "description",
     OnValidate = function(self, value, payload, client)
+        -- Skin tones are model-dependent and can be empty for a model with no skin-tone content,
+        -- so coerce a missing value to the default instead of blocking creation (cf. physBirthDay).
         if not value or value == "" then
-            return false, "invalidSkinTone"
+            return "Medium"
         end
         return value
     end,
@@ -167,8 +169,10 @@ ws.char.RegisterVar("physHairColor", {
         if payload.physHairLength == "Bald" then
             return value or "Brown"
         end
+        -- Coerce a missing/invalid value to the default instead of rejecting, so an empty
+        -- hairColors list (content-less boot) or a crafted payload can't block creation.
         if not value or not table.HasValue(ws.appearance.hairColors, value) then
-            return false, "invalidHairColor"
+            return "Brown"
         end
         return value
     end,
@@ -213,8 +217,9 @@ ws.char.RegisterVar("physHairType", {
         if payload.physHairLength == "Bald" then
             return value or "Straight"
         end
+        -- Coerce a missing/invalid value to the default instead of rejecting (see physHairColor).
         if not value or not table.HasValue(ws.appearance.hairTypes, value) then
-            return false, "invalidHairType"
+            return "Straight"
         end
         return value
     end,
@@ -255,8 +260,10 @@ ws.char.RegisterVar("physHairLength", {
     index = 16,
     category = "description",
     OnValidate = function(self, value, payload, client)
+        -- Coerce a missing/invalid value to the default instead of rejecting, so an empty
+        -- hairLengths list can't block creation.
         if not value or not table.HasValue(ws.appearance.hairLengths, value) then
-            return false, "invalidHairLength"
+            return "Medium"
         end
         return value
     end,
