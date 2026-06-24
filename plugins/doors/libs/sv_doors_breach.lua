@@ -35,7 +35,7 @@ function ws.doors.SpawnDebris(pos, velocity, material, count)
     local gibModels = ws.doors.gibs[material] or ws.doors.gibs.wood
     count = count or 6
 
-    for i = 1, count do
+    for _ = 1, count do
         local gib = ents.Create("prop_physics")
         if not IsValid(gib) then continue end
 

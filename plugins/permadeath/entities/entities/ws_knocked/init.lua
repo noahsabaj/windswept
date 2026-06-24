@@ -403,7 +403,6 @@ end
 function ENT:OnTakeDamage(dmgInfo)
     if self:GetPermadead() then return end
 
-    local attacker = dmgInfo:GetAttacker()
     local plugin = ws.plugin.Get("permadeath")
     if not plugin then return end
 

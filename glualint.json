@@ -1,0 +1,33 @@
+{
+    "lint_ignoreFiles": [
+        "**thirdparty**",
+        "**tests**"
+    ],
+
+    "lint_syntaxErrors": true,
+    "lint_unusedVars": true,
+    "lint_unusedLoopVars": true,
+    "lint_doubleNegations": true,
+    "lint_gotos": true,
+    "lint_duplicateTableKeys": true,
+    "lint_beginnerMistakes": true,
+
+    "lint_shadowing": false,
+    "lint_emptyBlocks": false,
+    "lint_deprecated": false,
+    "lint_unusedParameters": false,
+    "lint_whitespaceStyle": false,
+    "lint_spaceAfterComma": false,
+    "lint_spaceBeforeComma": false,
+    "lint_spaceBetweenParens": false,
+    "lint_spaceBetweenBrackets": false,
+    "lint_spaceBetweenBraces": false,
+    "lint_syntaxInconsistencies": false,
+    "lint_inconsistentVariableStyle": false,
+    "lint_redundantIfStatements": false,
+    "lint_redundantParentheses": false,
+    "lint_trailingWhitespace": false,
+    "lint_profanity": false,
+    "lint_maxScopeDepth": 0,
+    "lint_maxLineLength": 0
+}

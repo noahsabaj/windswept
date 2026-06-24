@@ -154,7 +154,7 @@ if (CLIENT) then
 		local words = string.Explode("%s", text, true)
 		local lines = {}
 		local line = ""
-		local lineWidth = 0 -- luacheck: ignore 231
+		local _ = 0
 
 		-- we don't need to calculate wrapping if we're under the max width
 		if (surface.GetTextSize(text) <= maxWidth) then
@@ -182,7 +182,7 @@ if (CLIENT) then
 					line = line .. character
 				end
 
-				lineWidth = newWidth
+				_ = newWidth
 				continue
 			end
 
@@ -195,11 +195,11 @@ if (CLIENT) then
 				lines[#lines + 1] = line
 
 				line = word
-				lineWidth = wordWidth
+				_ = wordWidth
 			else
 				-- otherwise we tack on the new word and continue
 				line = newLine
-				lineWidth = newWidth
+				_ = newWidth
 			end
 		end
 

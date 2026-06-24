@@ -5,7 +5,6 @@ ws.markup = ws.markup or {}
 -- Temporary information used when building text frames.
 local colour_stack = { {r=255,g=255,b=255,a=255} }
 local font_stack = { "DermaDefault" }
-local curtag = nil
 local blocks = {}
 
 local colourmap = {
@@ -84,7 +83,7 @@ local function ExtractParams(p1,p2,p3)
 				rgba = {}
 				local x = { "r", "g", "b", "a" }
 				local n = 1
-				for k, v in string.gmatch(p2, "(%d+),?") do
+				for k, _ in string.gmatch(p2, "(%d+),?") do
 					rgba[ x[n] ] = math.Clamp(tonumber(k) or 0, 0, 255) -- (fw-derma-8)
 					n = n + 1
 				end
@@ -308,7 +307,7 @@ function ws.markup.Parse(ml, maxwidth)
 					end
 
 					if (string.utf8len(curString) > 0) then
-						local x1,y1 = surface.GetTextSize(curString)
+						local x1 = surface.GetTextSize(curString)
 
 						local new_block = {}
 						new_block.text = curString
@@ -334,7 +333,7 @@ function ws.markup.Parse(ml, maxwidth)
 				elseif (ch == "\t") then
 
 					if (string.utf8len(curString) > 0) then
-						local x1,y1 = surface.GetTextSize(curString)
+						local x1 = surface.GetTextSize(curString)
 
 						local new_block = {}
 						new_block.text = curString
@@ -437,7 +436,7 @@ function ws.markup.Parse(ml, maxwidth)
 
 			if (string.utf8len(curString) > 0) then
 
-				local x1,y1 = surface.GetTextSize(curString)
+				local x1 = surface.GetTextSize(curString)
 
 				local new_block = {}
 				new_block.text = curString

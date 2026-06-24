@@ -9,7 +9,7 @@
 local isKnockedOut = false
 local knockoutStartTime = 0
 local knockoutDuration = 0
-local knockoutCount = 0
+local _ = 0
 
 -- Memorial state
 local memorialActive = false
@@ -334,7 +334,7 @@ function PANEL:Paint(w, h)
     -- Draw instruction at bottom
     local instructionText = "You are knocked out. Wait for rescue or death."
     surface.SetFont("wsSmallFont")
-    local iw, ih = surface.GetTextSize(instructionText)
+    local iw = surface.GetTextSize(instructionText)
     surface.SetTextColor(100, 100, 100, 255)
     surface.SetTextPos(w / 2 - iw / 2, h - 100)
     surface.DrawText(instructionText)
@@ -456,7 +456,7 @@ function MEMORIAL:Paint(w, h)
     -- Lifespan
     surface.SetFont("wsSmallFont")
     local lifespanText = self.birthDate .. "  —  " .. self.deathDate
-    local lifespanW, lifespanH = surface.GetTextSize(lifespanText)
+    local lifespanW = surface.GetTextSize(lifespanText)
     surface.SetTextColor(180, 180, 180, 255)
     surface.SetTextPos(centerX - lifespanW / 2, y)
     surface.DrawText(lifespanText)
@@ -532,7 +532,7 @@ net.Receive("wsKnockoutStart", function()
     isKnockedOut = true
     knockoutStartTime = RealTime()
     knockoutDuration = duration
-    knockoutCount = count
+    _ = count
 
     -- Remove existing panel if any
     if IsValid(knockoutPanel) then
@@ -563,7 +563,7 @@ local function CleanupKnockoutUI()
     isKnockedOut = false
     knockoutStartTime = 0
     knockoutDuration = 0
-    knockoutCount = 0
+    _ = 0
 
     if IsValid(knockoutPanel) then
         knockoutPanel:Remove()

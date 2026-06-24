@@ -18,7 +18,7 @@ net.Receive("wsDoorsSync", function()
     local count = net.ReadUInt(16)
     ws.doors.clientFrames = {}
 
-    for i = 1, count do
+    for _ = 1, count do
         local mapID = net.ReadUInt(32)
         local pos = net.ReadVector()
         local ang = net.ReadAngle()
@@ -50,7 +50,7 @@ hook.Add("PostDrawTranslucentRenderables", "wsDoorsFramePulse", function(_, bSky
     local pulse = math.sin(framePulseTime) * 0.5 + 0.5
 
     -- Draw pulsating effect for empty frames
-    for mapID, frameData in pairs(ws.doors.clientFrames) do
+    for _, frameData in pairs(ws.doors.clientFrames) do
         if not frameData.hasDoor and not frameData.disabled then
             local dist = ply:GetPos():Distance(frameData.pos)
             if dist < FRAME_PULSE_DISTANCE then

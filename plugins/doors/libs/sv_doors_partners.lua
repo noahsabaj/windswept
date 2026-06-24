@@ -23,7 +23,7 @@ function ws.doors.LinkPartners()
 
     -- First pass: Try keyvalue-based linking (targetname/slavename)
     local byTargetname = {}
-    for mapID, frameData in pairs(ws.doors.frames) do
+    for _, frameData in pairs(ws.doors.frames) do
         if frameData.hasDoor and IsValid(frameData.doorEntity) then
             local door = frameData.doorEntity
             local targetname = frameData.keyvalues and frameData.keyvalues.targetname
@@ -33,7 +33,7 @@ function ws.doors.LinkPartners()
         end
     end
 
-    for mapID, frameData in pairs(ws.doors.frames) do
+    for _, frameData in pairs(ws.doors.frames) do
         if frameData.hasDoor and IsValid(frameData.doorEntity) then
             local door = frameData.doorEntity
             local slavename = frameData.keyvalues and frameData.keyvalues.slavename
@@ -61,7 +61,7 @@ function ws.doors.LinkPartners()
     local YAW_TOLERANCE = 10             -- degrees; leaves must be parallel or mirrored
 
     local allDoors = {}
-    for mapID, frameData in pairs(ws.doors.frames) do
+    for _, frameData in pairs(ws.doors.frames) do
         if frameData.hasDoor and IsValid(frameData.doorEntity) then
             local door = frameData.doorEntity
             table.insert(allDoors, {

@@ -276,7 +276,7 @@ end
 local function GetStationaryRadioBroadcastFrequencies(speaker, speakerAmplitude)
     local frequencies = {}
 
-    for source, txData in pairs(ws.radio.transmitters) do
+    for _, txData in pairs(ws.radio.transmitters) do
         if txData.isStationary and IsValid(txData.entity) then
             -- Check if speaker is within voice range of the stationary radio
             if IsSpeakerInRangeOfPosition(speaker, txData.entity:GetPos(), speakerAmplitude) then
@@ -293,7 +293,7 @@ end
 
 -- Helper: Check if listener is at a stationary radio receiving on any of these frequencies
 local function IsListenerAtStationaryRadioReceiving(listener, frequencies)
-    for source, txData in pairs(ws.radio.transmitters) do
+    for _, txData in pairs(ws.radio.transmitters) do
         if txData.isStationary and IsValid(txData.entity) and txData.user == listener then
             -- Listener is at this stationary radio - check RX frequencies
             local rxFreqs = txData.entity:GetRXFrequencies()
