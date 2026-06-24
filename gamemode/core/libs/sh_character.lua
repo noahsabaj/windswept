@@ -472,6 +472,19 @@ do
 
 			return scroll
 		end,
+		OnPostSetup = function(self, panel, payload)
+			-- The faction step used to seed a default model; with factions removed, seed the
+			-- first model here so the preview isn't left on models/error.mdl and the create
+			-- button isn't blocked until the user picks one. (idempotent)
+			if (payload.model) then return end
+
+			local models = ws.config.Get("defaultModels") or {}
+
+			for k in SortedPairs(models) do
+				payload:Set("model", k)
+				break
+			end
+		end,
 		OnValidate = function(self, value, payload, client)
 			local models = ws.config.Get("defaultModels") or {}
 
