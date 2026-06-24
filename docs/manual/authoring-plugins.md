@@ -9,7 +9,7 @@ own, and the rule for deciding what belongs in a plugin versus a schema.
 
 - Any schema would want it **+ core infrastructure** → the **framework core**.
 - Any schema would want it **+ a self-contained on/off system** → a **framework plugin**.
-- Assumes *your game's* specifics (this setting, these items, this faction policy) → the
+- Assumes *your game's* specifics (this setting, these items, this content policy) → the
   **schema**.
 
 A plugin is **mechanism**; the schema supplies **content** and **tuning**. Before extracting
@@ -24,7 +24,7 @@ anything, sort it into three buckets:
   *your* game (often a thin "bridge" plugin — see `photography_windswept_bridge`, or the
   Colony's `plugins/doors` / `plugins/radio` bridges).
 
-Litmus: *"would a bright-UI faction-war server want this exact value or item?"* If no, it's
+Litmus: *"would a wildly different server want this exact value or item?"* If no, it's
 content/tuning — keep it in the schema.
 
 ## Folder shape
@@ -141,20 +141,18 @@ This is multiplayer: treat **every** `net.Read*` as attacker-controlled.
 - When you move a `net.Receive` into a plugin, `util.AddNetworkString` moves with it (so
   the plugin is self-contained), and its allowlist line moves to the plugin's repo.
 
-## Conservation & faction-optional are framework defaults
+## Conservation of matter is a framework default
 
-Two pillars are baked into the engine, so your plugin should respect them:
+This pillar is baked into the engine, so your plugin should respect it:
 
 - **Conservation of matter** — vendors refuse to mint money/items unless
   `vendorAllowInfinite` is set; item spawning is gated; the business menu is off by
   default. Don't add a "spawn from nowhere" path without an explicit opt-in config.
-- **Faction-optional** — factions are a choice (`factionMode`, default `optional`). Don't
-  assume a character has a faction; consult `ws.faction.GetMode()` / the helpers.
 
 ## Smallest possible examples
 
-- **`plugins/salary`** / **`plugins/business`** — a near-minimal feature plugin (a config
-  flag + a couple of handlers).
+- **`plugins/business`** — a near-minimal feature plugin (a config flag + a couple of
+  handlers).
 - **`plugins/power`** — a base-library plugin: ships `base_battery_device`; no flag, inert
   until a schema adds a battery-powered item.
 - **`plugins/wallet`** — a faithful routing engine behind seams + a kill-switch.

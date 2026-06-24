@@ -110,22 +110,6 @@ function PANEL:Init()
 		end
 	end
 
-	self.faction = self:Add("DButton")
-	self.faction:SetText(L"vendorFaction")
-	self.faction:Dock(TOP)
-	self.faction:SetTextColor(color_white)
-	self.faction:DockMargin(0, 4, 0, 0)
-	self.faction.DoClick = function(this)
-		if (IsValid(ws.gui.editorFaction)) then
-			ws.gui.editorFaction:Remove()
-		end
-
-		ws.gui.editorFaction = vgui.Create("wsVendorFactionEditor")
-		ws.gui.editorFaction.updateVendor = self.updateVendor
-		ws.gui.editorFaction.entity = entity
-		ws.gui.editorFaction:Setup()
-	end
-
 	self.searchBar = self:Add("DTextEntry")
 	self.searchBar:Dock(TOP)
 	self.searchBar:DockMargin(0, 4, 0, 0)
@@ -269,10 +253,6 @@ end
 function PANEL:OnRemove()
 	if (IsValid(ws.gui.vendor)) then
 		ws.gui.vendor:Remove()
-	end
-
-	if (IsValid(ws.gui.editorFaction)) then
-		ws.gui.editorFaction:Remove()
 	end
 end
 

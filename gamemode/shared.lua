@@ -86,6 +86,12 @@ ws.util.IncludeDir("core/libs")
 ws.util.IncludeDir("core/derma")
 ws.util.IncludeDir("core/hooks")
 
+-- Every player shares one neutral team; the framework has no faction concept, so groups
+-- are pure in-world content rather than an engine-assigned identity.
+-- luacheck: globals TEAM_PLAYER
+TEAM_PLAYER = 1
+team.SetUp(TEAM_PLAYER, "Player", Color(125, 125, 125))
+
 -- Include language and default base items.
 ws.lang.LoadFromDir(ws.FRAMEWORK_FOLDER.."/gamemode/languages")
 ws.item.LoadFromDir(ws.FRAMEWORK_FOLDER.."/gamemode/items")
@@ -112,17 +118,6 @@ function GM:OnReloaded()
 		-- Reload the scoreboard.
 		if (IsValid(ws.gui.scoreboard)) then
 			ws.gui.scoreboard:Remove()
-		end
-	else
-		-- Auto-reload support for faction pay timers.
-		for index, faction in ipairs(ws.faction.indices) do
-			for _, v in ipairs(team.GetPlayers(index)) do
-				if (faction.pay and faction.pay > 0) then
-					timer.Adjust("wsSalary"..v:SteamID64(), faction.payTime or 300, 0)
-				else
-					timer.Remove("wsSalary"..v:SteamID64())
-				end
-			end
 		end
 	end
 

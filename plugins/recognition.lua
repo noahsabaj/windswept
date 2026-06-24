@@ -37,16 +37,6 @@ do
 			return true
 		end
 
-		local other = ws.char.loaded[id]
-
-		if (other) then
-			local faction = ws.faction.indices[other:GetFaction()]
-
-			if (faction and faction.isGloballyRecognized) then
-				return true
-			end
-		end
-
 		local recognized = char:GetData("rgn", "")
 
 		if (recognized != "" and recognized:find(","..id..",")) then

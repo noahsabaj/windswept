@@ -332,10 +332,8 @@ function PANEL:AddLine(elements, bShouldScroll)
 		elseif (istable(v) and v.r and v.g and v.b) then
 			buffer[#buffer + 1] = string.format("<color=%d,%d,%d>", v.r, v.g, v.b)
 		elseif (type(v) == "Player") then
-			-- Gate name colour on the faction-colour policy to match the HUD/scoreboard
-			-- (anti-metagaming): neutral when disabled. (fw-derma-9)
-			local color = (ws.faction and ws.faction.ShowColors() == false) and ws.config.Get("color")
-				or team.GetColor(v:Team())
+			-- No factions: everyone's name uses the neutral UI colour (anti-metagaming).
+			local color = ws.config.Get("color")
 
 			buffer[#buffer + 1] = string.format("<color=%d,%d,%d>%s", color.r, color.g, color.b,
 				v:GetName():gsub("<", "&lt;"):gsub(">", "&gt;"))

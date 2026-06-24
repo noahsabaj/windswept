@@ -111,18 +111,6 @@ function PANEL:Init()
 			this:SetTall(height)
 		end
 
-		if (!suppress.faction) then
-			self.faction = self.characterInfo:Add("wsListRow")
-			self.faction:SetList(self.characterInfo.list)
-			self.faction:Dock(TOP)
-		end
-
-		if (!suppress.class) then
-			self.class = self.characterInfo:Add("wsListRow")
-			self.class:SetList(self.characterInfo.list)
-			self.class:Dock(TOP)
-		end
-
 		if (!suppress.money) then
 			self.money = self.characterInfo:Add("wsListRow")
 			self.money:SetList(self.characterInfo.list)
@@ -195,10 +183,6 @@ function PANEL:Update(character)
 		return
 	end
 
-	local factionIndex = character:GetFaction()
-	local faction = factionIndex and ws.faction.indices[factionIndex]
-	local class = ws.class.list[character:GetClass()]
-
 	if (self.name) then
 		self.name:SetText(character:GetName())
 		-- All players use same gray color (no faction color metagaming)
@@ -209,35 +193,6 @@ function PANEL:Update(character)
 	if (self.description) then
 		self.description:SetText(character:GetDescription())
 		self.description:SizeToContents()
-	end
-
-	if (self.faction) then
-		if (faction) then
-			self.faction:SetLabelText(L("faction"))
-			self.faction:SetText(L(faction.name))
-			self.faction:SizeToContents()
-			self.faction:SetVisible(true)
-		else
-			-- Factionless characters don't show faction row at all
-			self.faction:SetVisible(false)
-		end
-	end
-
-	if (self.class) then
-		if (class and faction and class.name != faction.name) then
-			self.class:SetLabelText(L("class"))
-			self.class:SetText(L(class.name))
-			self.class:SizeToContents()
-			self.class:SetVisible(true)
-		elseif (class and !faction) then
-			-- Factionless with class (edge case)
-			self.class:SetLabelText(L("class"))
-			self.class:SetText(L(class.name))
-			self.class:SizeToContents()
-			self.class:SetVisible(true)
-		else
-			self.class:SetVisible(false)
-		end
 	end
 
 	if (self.money) then

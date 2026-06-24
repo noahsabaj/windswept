@@ -58,7 +58,6 @@ if (SERVER) then
 			query:Insert("create_time", data.createTime)
 			query:Insert("last_join_time", data.lastJoinTime)
 			query:Insert("steamid", data.steamID)
-			query:Insert("faction", data.faction or "Unknown")
 			query:Insert("money", data.money)
 			query:Insert("data", util.TableToJSON(data.data or {}))
 			query:Callback(function(result, status, lastID)
@@ -345,10 +344,10 @@ do
 				return false, "nameMaxLen", maxLength
 			end
 
-			return hook.Run("GetDefaultCharacterName", client, payload.faction) or value:utf8sub(1, 70)
+			return hook.Run("GetDefaultCharacterName", client) or value:utf8sub(1, 70)
 		end,
 		OnPostSetup = function(self, panel, payload)
-			local name, disabled = hook.Run("GetDefaultCharacterName", LocalPlayer(), payload.faction)
+			local name, disabled = hook.Run("GetDefaultCharacterName", LocalPlayer())
 
 			if (name) then
 				panel:SetText(name)
@@ -442,14 +441,7 @@ do
 			layout:SetSpaceX(1)
 			layout:SetSpaceY(1)
 
-			local faction = payload.faction and ws.faction.indices[payload.faction]
-			local models
-
-			if (faction) then
-				models = faction:GetModels(LocalPlayer())
-			else
-				models = ws.config.Get("factionlessModels") or {}
-			end
+			local models = ws.config.Get("defaultModels") or {}
 
 			for k, v in SortedPairs(models) do
 				local icon = layout:Add("SpawnIcon")
@@ -480,29 +472,28 @@ do
 
 			return scroll
 		end,
-		OnValidate = function(self, value, payload, client)
-			local faction = payload.faction and ws.faction.indices[payload.faction]
-			local models
+		OnPostSetup = function(self, panel, payload)
+			-- The faction step used to seed a default model; with factions removed, seed the
+			-- first model here so the preview isn't left on models/error.mdl and the create
+			-- button isn't blocked until the user picks one. (idempotent; defaultModels is an
+			-- array, and index 1 is the first icon shown via SortedPairs.)
+			if (payload.model) then return end
 
-			if (faction) then
-				models = faction:GetModels(client)
-			else
-				models = ws.config.Get("factionlessModels") or {}
+			local models = ws.config.Get("defaultModels") or {}
+
+			if (models[1]) then
+				payload:Set("model", 1)
 			end
+		end,
+		OnValidate = function(self, value, payload, client)
+			local models = ws.config.Get("defaultModels") or {}
 
 			if (!payload.model or !models[payload.model]) then
 				return false, "needModel"
 			end
 		end,
 		OnAdjust = function(self, client, data, value, newData)
-			local faction = data.faction and ws.faction.indices[data.faction]
-			local models
-
-			if (faction) then
-				models = faction:GetModels(client)
-			else
-				models = ws.config.Get("factionlessModels") or {}
-			end
+			local models = ws.config.Get("defaultModels") or {}
 
 			local model = models[value]
 
@@ -524,118 +515,9 @@ do
 			end
 		end,
 		ShouldDisplay = function(self, container, payload)
-			local faction = payload.faction and ws.faction.indices[payload.faction]
-			local models
-
-			if (faction) then
-				models = faction:GetModels(LocalPlayer())
-			else
-				models = ws.config.Get("factionlessModels") or {}
-			end
+			local models = ws.config.Get("defaultModels") or {}
 
 			return models and #models > 1 or false
-		end
-	})
-
-	-- SetClass shouldn't be used here, character:JoinClass should be used instead
-
-	--- Returns this character's current class.
-	-- @realm shared
-	-- @treturn number Index of the class this character is in
-	-- @function GetClass
-	ws.char.RegisterVar("class", {
-		field = "class_id",
-		fieldType = ws.type.number,
-		bNoDisplay = true,
-		OnSet = function(character, value)
-			-- Update in-memory
-			character.vars.class = value
-
-			-- Network to clients
-			local client = character:GetPlayer()
-			if IsValid(client) and SERVER then
-				net.Start("wsCharacterVarChanged")
-					net.WriteUInt(character:GetID(), 32)
-					net.WriteString("class")
-					net.WriteType(value)
-				net.Broadcast()
-			end
-		end,
-	})
-
-	--- Sets this character's faction. Note that this doesn't do the initial setup for the player after the faction has been
-	-- changed, so you'll have to update some character vars manually.
-	-- @realm server
-	-- @number faction Index of the faction to transfer this character to
-	-- @function SetFaction
-
-	--- Returns this character's faction.
-	-- @realm shared
-	-- @treturn number Index of the faction this character is currently in
-	-- @function GetFaction
-	ws.char.RegisterVar("faction", {
-		field = "faction",
-		fieldType = ws.type.string,
-		default = nil,
-		bNoDisplay = true,
-		bCreatable = true, -- chosen by the client at creation (fw-character-item-13)
-		-- NOTE: FilterValues removed to allow factionless (NULL) characters to load
-		-- Characters with invalid faction IDs will be treated as factionless via OnGet
-		OnSet = function(self, value)
-			local client = self:GetPlayer()
-
-			if (IsValid(client)) then
-				if (value == nil or value == 0) then
-					self.vars.faction = nil
-					client:SetTeam(TEAM_UNASSIGNED)
-				else
-					self.vars.faction = ws.faction.indices[value] and ws.faction.indices[value].uniqueID
-					client:SetTeam(value)
-				end
-
-				-- @todo refactor networking of character vars so this doesn't need to be repeated on every OnSet override
-				net.Start("wsCharacterVarChanged")
-					net.WriteUInt(self:GetID(), 32)
-					net.WriteString("faction")
-					net.WriteType(self.vars.faction)
-				net.Broadcast()
-			end
-		end,
-		OnGet = function(self, default)
-			if (self.vars.faction == nil) then
-				return nil
-			end
-			local faction = ws.faction.teams[self.vars.faction]
-			return faction and faction.index or nil
-		end,
-		OnValidate = function(self, index, data, client)
-			-- Factions disabled: ignore any submitted faction (OnAdjust forces factionless).
-			if (ws.faction.IsDisabled()) then
-				return true
-			end
-
-			-- nil faction = factionless
-			if (index == nil) then
-				-- Allowed when optional; rejected when the schema requires a faction.
-				if (ws.faction.IsRequired()) then
-					return false, "factionRequired"
-				end
-				return true
-			end
-
-			if (client:HasWhitelist(index)) then
-				return true
-			end
-			return false
-		end,
-		OnAdjust = function(self, client, data, value, newData)
-			-- Force factionless when factions are disabled, regardless of a (tampered) submitted index.
-			if (value == nil or ws.faction.IsDisabled()) then
-				newData.faction = nil
-			else
-				local faction = ws.faction.indices[value]
-				newData.faction = faction and faction.uniqueID or nil
-			end
 		end
 	})
 

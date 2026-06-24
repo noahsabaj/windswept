@@ -162,11 +162,11 @@ if (SERVER) then
 		local client = self:GetPlayer()
 
 		if (IsValid(client)) then
-			-- Set the faction, model, and character index for the player.
+			-- Set the model and character index for the player. Everyone shares one team.
 			local model = self:GetModel()
 
 			client:SetNetVar("char", self:GetID())
-			client:SetTeam(self:GetFaction() or TEAM_UNASSIGNED)
+			client:SetTeam(TEAM_PLAYER)
 			client:SetModel(istable(model) and model[1] or model)
 
 			-- Apply saved body groups.

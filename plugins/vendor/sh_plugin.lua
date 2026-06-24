@@ -75,8 +75,6 @@ if (SERVER) then
 				bodygroups = bodygroups,
 				bubble = entity:GetNoBubble(),
 				items = entity.items,
-				factions = entity.factions,
-				classes = entity.classes,
 				money = entity.money,
 				scale = entity.scale
 			}
@@ -111,8 +109,6 @@ if (SERVER) then
 			end
 
 			entity.items = items
-			entity.factions = v.factions or {}
-			entity.classes = v.classes or {}
 			-- Sanitize persisted money to the same [0, 65535] range SetMoney enforces, so a
 			-- corrupted save can't load an out-of-range value (client reads it as UInt16).
 			entity.money = v.money and math.Clamp(math.floor(v.money), 0, 65535) or nil
@@ -253,40 +249,6 @@ if (SERVER) then
 			UpdateEditReceivers(entity.receivers, key, data)
 
 			data = uniqueID
-		elseif (key == "faction") then
-			local faction = ws.faction.teams[data]
-
-			if (faction) then
-				entity.factions[data] = !entity.factions[data]
-
-				if (!entity.factions[data]) then
-					entity.factions[data] = nil
-				end
-			end
-
-			local uniqueID = data
-			data = {uniqueID, entity.factions[uniqueID]}
-		elseif (key == "class") then
-			local class
-
-			for _, v in pairs(ws.class.list) do
-				if (v.uniqueID == data) then
-					class = v
-
-					break
-				end
-			end
-
-			if (class) then
-				entity.classes[data] = !entity.classes[data]
-
-				if (!entity.classes[data]) then
-					entity.classes[data] = nil
-				end
-			end
-
-			local uniqueID = data
-			data = {uniqueID, entity.classes[uniqueID]}
 		elseif (key == "model") then
 			entity:SetModel(data)
 			entity:InitPhysObj()
@@ -331,7 +293,7 @@ if (SERVER) then
 	ws.action.Register("wsVendorTrade", {
 		-- The vendor entity is supplied by the client (target). Authority is enforced
 		-- in onValidate: it must be a ws_vendor within the original 192u reach and the
-		-- caller must satisfy the vendor's faction/class access rule (entity:CanAccess).
+		-- caller must satisfy the vendor's access rule (entity:CanAccess).
 		-- range = "none" because the legacy contract uses a 192u Distance check, not
 		-- ws.access's 100u "interaction" range; we replicate the exact distance below.
 		target = true,
@@ -521,8 +483,6 @@ else
 		entity.items = net.ReadTable()
 		entity.scale = net.ReadFloat()
 		entity.messages = net.ReadTable()
-		entity.factions = net.ReadTable()
-		entity.classes = net.ReadTable()
 
 		ws.gui.vendor = vgui.Create("wsVendor")
 		ws.gui.vendor:SetReadOnly(true)
@@ -629,26 +589,6 @@ else
 			local current, max = entity:GetStock(data)
 
 			editor.lines[data]:SetValue(5, current.."/"..max)
-		elseif (key == "faction") then
-			local uniqueID = data[1]
-			local state = data[2]
-			local editPanel = ws.gui.editorFaction
-
-			entity.factions[uniqueID] = state
-
-			if (IsValid(editPanel) and IsValid(editPanel.factions[uniqueID])) then
-				editPanel.factions[uniqueID]:SetChecked(state == true)
-			end
-		elseif (key == "class") then
-			local uniqueID = data[1]
-			local state = data[2]
-			local editPanel = ws.gui.editorFaction
-
-			entity.classes[uniqueID] = state
-
-			if (IsValid(editPanel) and IsValid(editPanel.classes[uniqueID])) then
-				editPanel.classes[uniqueID]:SetChecked(state == true)
-			end
 		elseif (key == "model") then
 			editor.model:SetText(entity:GetModel())
 		elseif (key == "scale") then
@@ -768,8 +708,6 @@ properties.Add("vendor_edit", {
 			net.WriteTable(itemsTable)
 			net.WriteFloat(entity.scale or 0.5)
 			net.WriteTable(entity.messages)
-			net.WriteTable(entity.factions)
-			net.WriteTable(entity.classes)
 		net.Send(client)
 	end
 })

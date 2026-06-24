@@ -19,13 +19,6 @@
     (e.g. ws.radio.itemID, ws.wallet.itemID); see windswept-colony for examples.
 ]]--
 
--- Factions are a CHOICE in Windswept (this is the headline difference from Helix). The
--- framework defaults to "optional" (factionless characters allowed). This skeleton turns
--- them off entirely; use "optional" or "required" instead if your schema has factions.
-hook.Add("InitializedConfig", "skeletonConfig", function()
-    ws.config.Set("factionMode", "disabled")
-end)
-
 -- Physical money is optional. To use it, register your currency denominations (cents):
 -- ws.currency.RegisterDenomination("cash", 100, 100)  -- $1 note (100c), stacks of 100
 -- ws.currency.RegisterDenomination("coins", 1, 100)   -- 1c coin, stacks of 100

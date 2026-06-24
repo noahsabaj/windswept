@@ -63,8 +63,6 @@ end
 -- - `name` - name of the character
 -- - `description` - description of the character
 -- - `characterInfo` - entire panel showing a list of additional character info
--- - `faction` - faction name of the character
--- - `class` - name of the character's class if they're in one
 -- - `money` - current money the character has
 -- - `attributes` - attributes list for the character
 --
@@ -130,18 +128,6 @@ end
 -- 	return false -- Never allow dropping items.
 -- end
 function CanPlayerDropItem(client, item)
-end
-
---- Whether or not a player can earn money at regular intervals. This hook runs only if the player's character faction has
--- a salary set - i.e `FACTION.pay` is set to something other than `0` for their faction.
--- @realm server
--- @player client Player to give money to
--- @tab faction Faction of the player's character
--- @treturn bool Whether or not to allow the player to earn salary
--- @usage function PLUGIN:CanPlayerEarnSalary(client, faction)
--- 	return client:IsAdmin() -- Restricts earning salary to admins only.
--- end
-function CanPlayerEarnSalary(client, faction)
 end
 
 --- Whether or not the player is allowed to enter observer mode. This is allowed only for admins by default and can be
@@ -213,18 +199,6 @@ end
 function CanPlayerInteractItem(client, action, item, data)
 end
 
---- Whether or not a plyer is allowed to join a class.
--- @realm shared
--- @player client Player attempting to join
--- @number class ID of the class
--- @tab info The class table
--- @treturn bool Whether or not to allow the player to join the class
--- @usage function PLUGIN:CanPlayerJoinClass(client, class, info)
--- 	return client:IsAdmin() -- Restrict joining classes to admins only.
--- end
-function CanPlayerJoinClass(client, class, info)
-end
-
 --- Whether or not a player can knock on the door with the hands SWEP.
 -- @realm server
 -- @player client Player attempting to knock
@@ -242,7 +216,7 @@ end
 -- @entity entity Shipment entity
 -- @treturn bool Whether or not to allow the player to open the shipment
 -- @usage function PLUGIN:CanPlayerOpenShipment(client, entity)
--- 	return client:Team() == FACTION_BMD -- Restricts opening shipments to FACTION_BMD.
+-- 	return client:IsAdmin() -- Restricts opening shipments to admins.
 -- end
 function CanPlayerOpenShipment(client, entity)
 end
@@ -508,7 +482,7 @@ function GetDefaultAttributePoints(client, count)
 end
 
 --- @realm shared
-function GetDefaultCharacterName(client, faction)
+function GetDefaultCharacterName(client)
 end
 
 --- @realm shared
@@ -552,18 +526,6 @@ end
 
 --- @realm shared
 function GetPlayerPunchDamage(client, damage, context)
-end
-
---- Returns the salary that character should get instead of his faction salary.
--- @realm server
--- @player client Client that is receiving salary
--- @tab faction Faction of the player's character
--- @treturn number Character salary
--- @see CanPlayerEarnSalary
--- @usage function PLUGIN:GetSalaryAmount(client, faction)
---  return 0 -- Everyone get no salary.
--- end
-function GetSalaryAmount(client, faction)
 end
 
 --- @realm client
@@ -780,14 +742,6 @@ end
 -- @string action Action selected by the player
 -- @tab item Item being interacted with
 function PlayerInteractItem(client, action, item)
-end
-
---- Called when a player has joined a class.
--- @realm server
--- @player client Player that has joined a class
--- @number class Index of the class player has joined to
--- @number oldClass Index of the player's previous class
-function PlayerJoinedClass(client, class, oldClass)
 end
 
 --- @realm shared
