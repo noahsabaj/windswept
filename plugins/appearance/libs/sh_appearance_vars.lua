@@ -417,15 +417,14 @@ ws.char.RegisterVar("physBirthDay", {
     category = "description",
     bNoDisplay = true, -- Handled by physBirthMonth's picker
     OnValidate = function(self, value, payload, client)
-        value = tonumber(value)
+        -- Birth day is a value DERIVED from the month/age picker, not free user input, so clamp
+        -- it into the valid range instead of rejecting. The untouched default (e.g. January 1)
+        -- only flows through the picker's OnPostSetup, never its change handler, so a missing or
+        -- out-of-range day must fall back to a valid day rather than block character creation.
+        -- ws.birthdata.ValidateDay clamps to 1..GetMaxDay(month, age) (Feb 29 only in a leap year).
         local month = tonumber(payload.physBirthMonth) or 1
         local age = tonumber(payload.physAge) or 25
-        local maxDay = ws.birthdata.GetMaxDay(month, age)
-
-        if not value or value < 1 or value > maxDay then
-            return false, "invalidBirthDay"
-        end
-        return math.floor(value)
+        return ws.birthdata.ValidateDay(month, value, age)
     end
 })
 
