@@ -98,7 +98,6 @@ LANGUAGE = {
 	cChangeSkin = "%s 가 %s's 의 스킨을 %s 로 바꾸었습니다.",
 	cChangeGroups = "%s 가 %s 의 \"%s\" 바디그룹을 %s 로 바꾸었습니다.",
 	playerCharBelonging = "이 물건은 당신의 다른 캐릭터의 물건입니다.",
-	spawnAdd = "%s 개의 시작지점을 추가하였습니다.",
 	spawnDeleted = "%s개의 시작지점을 삭제하였습니다.",
 	someone = "누군가",
 	rgnLookingAt = "당신이 보고 있는 사람이 당신을 인식하도록 선언.",
