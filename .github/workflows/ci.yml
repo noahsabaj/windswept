@@ -38,6 +38,13 @@ jobs:
       working-directory: windswept
       run: bash tools/check-net-handlers.sh
 
+    # Char-creation validators must accept their own defaults even with content-less appearance,
+    # or a default/derived value blocks creation -- the reject-vs-clamp class (physBirthDay, skin
+    # tone, hair, eye, facial hair). Pure Lua, no GMod needed.
+    - name: Char-var validator test
+      working-directory: windswept
+      run: lua tests/validators_accept_defaults.lua
+
   docs:
     runs-on: ubuntu-latest
     permissions:

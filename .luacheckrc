@@ -117,7 +117,8 @@ files = {
 
 -- ignore third party files
 exclude_files = {
-	"gamemode/core/libs/thirdparty/**/*.lua"
+	"gamemode/core/libs/thirdparty/**/*.lua",
+	"tests/**/*.lua"   -- pure-Lua test harnesses shim stdlib/ws; not shipped code
 }
 
 -- gmod
