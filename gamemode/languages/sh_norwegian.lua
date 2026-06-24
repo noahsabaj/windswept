@@ -97,7 +97,6 @@ LANGUAGE = {
 	cChangeSkin = "%s endret %s's skin til %s.",
 	cChangeGroups = "%s endret %s's \"%s\" kroppsgruppe to %s.",
 	playerCharBelonging = "Dette objektet tilhører en av dine andre karakterer.",
-	spawnAdd = "Du har lagt til spawnen for %s.",
 	spawnDeleted = "Du har fjernet %s spawn punkt(er).",
 	someone = "Noen",
 	rgnLookingAt = "Tillat personen du ser på å gjenkjenne deg.",

@@ -90,7 +90,6 @@ LANGUAGE = {
 	cChangeModel = "%s veranderde %s's model naar %s.",
 	cChangeName = "%s veranderde %s's naam naar %s.",
 	playerCharBelonging = "Dit object behoort aan je andere karakter toe.",
-	spawnAdd = "Je hebt een spawn toegevoegd voor de %s 'faction'.",
 	spawnDeleted = "Je hebt (een) %s spawn punt(en) verwijderd.",
 	someone = "Iemand",
 	rgnLookingAt = "Toestaan dat de persoon waar je naar kijkt je herkent.",

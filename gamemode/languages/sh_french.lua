@@ -158,7 +158,6 @@ LANGUAGE = {
 	cChangeSkin = "%s a changé le skin de %s en %s.",
 	cChangeGroups = "%s a changé le Bodygroup de %s \"%s\" en %s.",
 	playerCharBelonging = "Cet objet appartient à votre autre personnage !",
-	spawnAdd = "Vous avez ajouté un spawn pour le %s.",
 	spawnDeleted = "Vous avez supprimé le point d'apparition de %s.",
 	someone = "Quelqu'un",
 	rgnLookingAt = "Permettre à la personne que vous regardez de vous reconnaître.",

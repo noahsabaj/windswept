@@ -18,8 +18,6 @@ stds.windswept.globals = {
 	"ATTRIBUTE",
 	"NAME",
 	"LANGUAGE",
-	"FACTION",
-	"CLASS",
 	"CHAT_RECOGNIZED",
 	"ALWAYS_RAISED",
 	"ICON_RENDER_QUEUE",
