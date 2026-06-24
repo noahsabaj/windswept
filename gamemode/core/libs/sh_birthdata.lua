@@ -96,9 +96,14 @@ function ws.birthdata.IsValidLocation(location)
     return false
 end
 
--- Get the current in-game date (real month/day, in-game year)
+-- Get the current in-game date (real month/day, live in-game year). Uses the framework's living
+-- year (ws.config "year" advances real-year + offset each boot) so the "current" date doesn't
+-- freeze at the schema's era anchor; falls back to CURRENT_YEAR if config isn't ready. Birth-year
+-- math (GetBirthYear/FormatDate) deliberately stays on the frozen CURRENT_YEAR -- ages don't age,
+-- so a character's birth year must not drift as the live year advances.
 function ws.birthdata.GetCurrentDate()
     local realDate = os.date("*t")
     local monthName = ws.birthdata.months[realDate.month]
-    return string.format("%s %d, %d", monthName, realDate.day, ws.birthdata.CURRENT_YEAR)
+    local year = (ws.config and ws.config.Get and ws.config.Get("year")) or ws.birthdata.CURRENT_YEAR
+    return string.format("%s %d, %d", monthName, realDate.day, year)
 end
