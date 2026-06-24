@@ -1,5 +1,5 @@
 
--- luacheck: globals VENDOR_BUY VENDOR_SELL VENDOR_BOTH VENDOR_WELCOME VENDOR_LEAVE VENDOR_NOTRADE VENDOR_PRICE
+-- luacheck: globals VENDOR_BUY VENDOR_SELL VENDOR_BOTH VENDOR_PRICE
 -- luacheck: globals VENDOR_STOCK VENDOR_MODE VENDOR_MAXSTOCK VENDOR_SELLANDBUY VENDOR_SELLONLY VENDOR_BUYONLY VENDOR_TEXT
 
 local PLUGIN = PLUGIN
@@ -24,11 +24,6 @@ CAMI.RegisterPrivilege({
 VENDOR_BUY = 1
 VENDOR_SELL = 2
 VENDOR_BOTH = 3
-
--- Keys for vendor messages.
-VENDOR_WELCOME = 1
-VENDOR_LEAVE = 2
-VENDOR_NOTRADE = 3
 
 -- Keys for item information.
 VENDOR_PRICE = 1
@@ -482,7 +477,6 @@ else
 		entity.money = net.ReadUInt(16)
 		entity.items = net.ReadTable()
 		entity.scale = net.ReadFloat()
-		entity.messages = net.ReadTable()
 
 		ws.gui.vendor = vgui.Create("wsVendor")
 		ws.gui.vendor:SetReadOnly(true)
@@ -707,7 +701,6 @@ properties.Add("vendor_edit", {
 			net.WriteUInt(entity.money or 0, 16)
 			net.WriteTable(itemsTable)
 			net.WriteFloat(entity.scale or 0.5)
-			net.WriteTable(entity.messages)
 		net.Send(client)
 	end
 })

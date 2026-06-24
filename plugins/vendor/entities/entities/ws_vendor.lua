@@ -28,7 +28,6 @@ function ENT:Initialize()
 		end)
 
 		self.items = {}
-		self.messages = {}
 
 		self:SetDisplayName("John Doe")
 		self:SetDescription("")
@@ -170,20 +169,12 @@ if (SERVER) then
 		local character = activator:GetCharacter()
 
 		if (!self:CanAccess(activator) or hook.Run("CanPlayerUseVendor", activator, self) == false) then
-			if (self.messages[VENDOR_NOTRADE]) then
-				activator:ChatPrint(self:GetDisplayName()..": "..self.messages[VENDOR_NOTRADE])
-			else
-				activator:NotifyLocalized("vendorNoTrade")
-			end
+			activator:NotifyLocalized("vendorNoTrade")
 
 			return
 		end
 
 		self.receivers[#self.receivers + 1] = activator
-
-		if (self.messages[VENDOR_WELCOME]) then
-			activator:ChatPrint(self:GetDisplayName()..": "..self.messages[VENDOR_WELCOME])
-		end
 
 		local items = {}
 
