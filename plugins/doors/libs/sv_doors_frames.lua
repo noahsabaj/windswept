@@ -209,7 +209,7 @@ end
 
 -- Hide all map doors (make them invisible and non-solid)
 function ws.doors.HideMapDoors()
-    for mapID, frameData in pairs(ws.doors.frames) do
+    for _, frameData in pairs(ws.doors.frames) do
         local mapDoor = frameData.mapEntity
 
         if IsValid(mapDoor) then

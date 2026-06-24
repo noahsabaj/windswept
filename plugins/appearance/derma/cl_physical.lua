@@ -182,7 +182,7 @@ function PANEL:SetOptions(options)
     self.combo:Clear()
     self.options = options or {}
 
-    for i, option in ipairs(self.options) do
+    for _, option in ipairs(self.options) do
         self.combo:AddChoice(option, option)
     end
 

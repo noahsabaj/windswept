@@ -147,29 +147,6 @@ end
 
 vgui.Register("wsHelpMenu", PANEL, "EditablePanel")
 
-local function DrawWindswept(width, height, color) -- luacheck: ignore 211
-	local segments = 76
-	local radius = math.min(width, height) * 0.375
-
-	surface.SetTexture(-1)
-
-	for i = 1, math.ceil(segments) do
-		local angle = math.rad((i / segments) * -360)
-		local x = width * 0.5 + math.sin(angle + math.pi * 2) * radius
-		local y = height * 0.5 + math.cos(angle + math.pi * 2) * radius
-		local barOffset = math.sin(SysTime() + i * 0.5)
-		local barHeight = barOffset * radius * 0.25
-
-		if (barOffset > 0) then
-			surface.SetDrawColor(color)
-		else
-			surface.SetDrawColor(color.r * 0.5, color.g * 0.5, color.b * 0.5, color.a)
-		end
-
-		surface.DrawTexturedRectRotated(x, y, 4, barHeight, math.deg(angle))
-	end
-end
-
 hook.Add("CreateMenuButtons", "wsHelpMenu", function(tabs)
 	tabs["help"] = function(container)
 		container:Add("wsHelpMenu")

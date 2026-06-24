@@ -102,7 +102,7 @@ end
 -- Track E key hold state for tap vs hold detection
 local useKeyDownTime = nil
 local useKeyTarget = nil
-local reviveSent = false  -- Prevent sending multiple revive requests
+local _ = false  -- Prevent sending multiple revive requests
 
 -- Custom target ID drawing for knocked bodies (works with ragdolls)
 hook.Add("HUDDrawTargetID", "wsKnockedTargetID", function()
@@ -237,7 +237,7 @@ hook.Add("Think", "wsKnockedCPR", function()
             -- Update the shared variables for HUD drawing
             useKeyDownTime = cprStartTime
             useKeyTarget = cprTarget
-            reviveSent = false
+            _ = false
         elseif cprTarget == knockedEnt then
             -- Still holding on same target
             local plugin = ws.plugin.Get("permadeath")
@@ -250,7 +250,7 @@ hook.Add("Think", "wsKnockedCPR", function()
                 ws.action.Send("wsKnockoutRevive", nil, knockedEnt)
 
                 cprSent = true
-                reviveSent = true
+                _ = true
             end
         else
             -- Changed target, reset
@@ -259,7 +259,7 @@ hook.Add("Think", "wsKnockedCPR", function()
             cprSent = false
             useKeyDownTime = cprStartTime
             useKeyTarget = cprTarget
-            reviveSent = false
+            _ = false
         end
     else
         if wasLMBDown or not validTarget or not hasHandsLowered then
@@ -269,7 +269,7 @@ hook.Add("Think", "wsKnockedCPR", function()
             cprSent = false
             useKeyDownTime = nil
             useKeyTarget = nil
-            reviveSent = false
+            _ = false
         end
     end
 

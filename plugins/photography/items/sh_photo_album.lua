@@ -342,7 +342,7 @@ if CLIENT then
         local photoCount = net.ReadUInt(8)
 
         local metadata = {}
-        for i = 1, photoCount do
+        for _ = 1, photoCount do
             local photoID = net.ReadString()
             local photoTitle = net.ReadString()
             table.insert(metadata, {
@@ -415,7 +415,7 @@ if CLIENT then
         local photoCount = net.ReadUInt(8)
 
         local metadata = {}
-        for i = 1, photoCount do
+        for _ = 1, photoCount do
             local photoID = net.ReadString()
             local photoTitle = net.ReadString()
             table.insert(metadata, {

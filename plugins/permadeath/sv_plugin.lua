@@ -403,7 +403,7 @@ function PLUGIN:CompleteRevivalAttempt(reviver, knockedEntity, hasDefib, defibIt
 
     -- Calculate success using probabilistic squared
     -- hasDefib is false for hold-E revival (CPR-style, low chance)
-    local success, actualChance = self:CalculateRevivalChance(hasDefib)
+    local success = self:CalculateRevivalChance(hasDefib)
 
     if success then
         -- Revival succeeded!
@@ -761,7 +761,7 @@ function PLUGIN:ConsumeDefibCharge(item, client)
         end
     end
 
-    local character, inventory = ws.access.GetCharacterInventory(client)
+    local _, inventory = ws.access.GetCharacterInventory(client)
 
     -- Auto-eject: remove non-full batteries if enabled (0up and partial).
     -- Transactional: only drop the slot from the array once the inventory Add has
@@ -856,7 +856,7 @@ function PLUGIN:RestoreKnockoutState(client, character, remainingTime)
 
     -- Fallback: if not in table, search by character ID (handles edge cases)
     if not IsValid(existingEntity) then
-        for steamID, ent in pairs(self.knockedEntities) do
+        for _, ent in pairs(self.knockedEntities) do
             if IsValid(ent) and ent:GetCharacterID() == character:GetID() then
                 existingEntity = ent
                 break
