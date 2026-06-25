@@ -41,7 +41,8 @@ end
 
 function TOOL:GetServerInfo(property)
 	local mode = self:GetMode()
-	return GetConVarString(mode .. "_" .. property)
+	local convar = GetConVar(mode .. "_" .. property)
+	return convar and convar:GetString() or ""
 end
 
 function TOOL:BuildConVarList()
@@ -84,7 +85,7 @@ function TOOL:GetSWEP()
 end
 
 function TOOL:GetOwner()
-	return self:GetSWEP().Owner or self.Owner
+	return self:GetSWEP():GetOwner() or self.Owner
 end
 
 function TOOL:GetWeapon()
