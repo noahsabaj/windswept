@@ -79,7 +79,7 @@ if (CLIENT) then
 			end
 
 			local x, y = gui.MousePos()
-			local x2, y2 = surface.ScreenWidth() * 0.5, surface.ScreenHeight() * 0.5
+			local x2, y2 = ScrW() * 0.5, ScrH() * 0.5
 			local frameTime = FrameTime() * 0.5
 
 			y3 = Lerp(frameTime, y3, math.Clamp((y - y2) / y2, -1, 1) * -6)
