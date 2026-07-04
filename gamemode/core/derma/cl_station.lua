@@ -55,7 +55,9 @@
     Documented in docs/manual/station-uis.md.
 ]]--
 
-local COLOR_BACKGROUND = Color(35, 35, 35, 250)
+-- Fully opaque: at 250 the world bled through visibly across large panels
+-- (windswept-colony#57).
+local COLOR_BACKGROUND = Color(35, 35, 35, 255)
 local COLOR_OUTLINE = Color(60, 60, 60, 255)
 local COLOR_TAB_ACTIVE = Color(50, 50, 50, 255)
 local COLOR_TAB_INACTIVE = Color(38, 38, 38, 255)
