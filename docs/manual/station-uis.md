@@ -76,10 +76,42 @@ net.Receive("wsLocksmithOpen", function()
 end)
 ```
 
+## Station controls
+
+Two registered controls ship with the base (same file) for entity-backed
+settings panels:
+
+- **`wsStationSlider`** (base `DSlider`) — dark track, visible knob.
+  `SetFraction(f)` positions it **without firing events** (and is ignored
+  mid-drag); `GetFraction()` reads it; `OnUserChanged(f)` fires only from real
+  user input, throttled to one call per 0.25s while dragging with a guaranteed
+  final fire on release. Reflect the server's netvar with `SetFraction` from
+  your Think; send from `OnUserChanged`.
+- **`wsStationToggle`** (base `DButton`) — ON/OFF chip.
+  `SetStateText(onText, offText)`, `SetState(bool)` (display only, no events),
+  `GetState()`, per-instance `onColor`. Wire `DoClick` yourself; let the
+  netvar drive `SetState`.
+
+For text input, use the existing **`wsTextEntry`**
+(`gamemode/core/derma/cl_generic.lua`) — already dark with light text; set
+your font after creating it.
+
 ## Rules
 
 - Widgets parent to `self.body`, not to the frame — the frame's top is the
   header and its bottom belongs to the button bar.
+- **Never send actions from netvar-driven programmatic updates.** Stock
+  `DSlider:SetSlideX()` fires `OnValueChanged` unconditionally
+  (dslider.lua:173) — reflecting a netvar into a stock slider every Think
+  echoes one action per frame. That flood saturated the dispatch console's
+  action rate limit and silently starved every other control on the same
+  action (windswept-colony#52). Use `wsStationSlider:SetFraction` /
+  `wsStationToggle:SetState` for display updates; they never fire events.
+- **Server actions share a per-name rate limit** (`ws.action` charges its
+  `rateLimit` per action name per client). Pace your sends — a panel-level
+  coalescing queue at ~0.22s guarantees no user click is ever silently
+  dropped; per-control debounce alone still lets two different controls
+  collide inside one window.
 - Don't override `Think` or `OnRemove` unless you must; if you must, call the
   base first: `vgui.GetControlTable("wsStationFrame").Think(self)`. The
   pre-standard station UIs overrode `Think` bare and silently broke DFrame
