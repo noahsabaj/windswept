@@ -5,6 +5,12 @@
     Handles writing, reading, erasing, and signatures.
 ]]--
 
+-- Network strings owned by this plugin, so it is self-contained: a schema that includes the
+-- documents plugin gets these without having to register them itself. util.AddNetworkString is
+-- idempotent, so this is safe even if a schema also registers them. (fw-low-docnet)
+util.AddNetworkString("wsDocumentData")   -- Server->Client: send document content
+util.AddNetworkString("wsSignatureSave")  -- Client->Server: save signature to character
+
 -- ============================================================================
 -- DOCUMENT WRITE HANDLER
 -- ============================================================================
@@ -50,7 +56,6 @@ ws.action.Register("wsDocumentWrite", {
     end,
     run = function(client, ctx)
         local item = ctx.item
-        local char = ctx.char
         local toolItem = ctx.toolItem
         local content = ctx.data.content
         local hasSignature = ctx.data.hasSignature
@@ -160,9 +165,11 @@ ws.action.Register("wsDocumentWrite", {
                 docData.signatures = docData.signatures or {}
 
                 -- Add new signature with color
+                -- Fog of war: the drawn strokes ARE the signature -- the mark the character
+                -- physically made. We do NOT store the character's real name, so nothing on
+                -- the wire links a signature to an identity. (fw-fogofwar-1)
                 table.insert(docData.signatures, {
                     strokes = sigData,
-                    authorName = char:GetName(),
                     timestamp = os.time(),
                     color = strokeColor,
                     type = toolType  -- "handwritten" for pen, "pencil" for pencil
@@ -403,6 +410,15 @@ ws.action.Register("wsContainerRename", {
 -- ============================================================================
 
 net.Receive("wsSignatureSave", function(len, client)
+    if not IsValid(client) then return end
+
+    -- Rate-limit and size-bound before the JSON parse: signature saves are a rare, deliberate
+    -- action, so drop spam and oversized payloads cheaply. `len` is the message size in bits;
+    -- ~37 KB is far above any real signature and well under GMod's 64 KB net cap. (fw-low-signature)
+    if client.wsNextSigSave and client.wsNextSigSave > CurTime() then return end
+    if len > 300000 then return end
+    client.wsNextSigSave = CurTime() + 1
+
     local signatureJSON = net.ReadString()
 
     -- Validate character

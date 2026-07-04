@@ -206,7 +206,7 @@ ITEM.functions.Give = {
 
 		Derma_StringRequest(
 			"Give " .. item.name,
-			"How many " .. item.unitNamePlural .. " do you want to give to " .. target:Nick() .. "?",
+			"How many " .. item.unitNamePlural .. " do you want to give?",
 			tostring(quantity),
 			function(text)
 				local amount = tonumber(text)

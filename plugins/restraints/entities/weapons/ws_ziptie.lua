@@ -78,6 +78,11 @@ if SERVER then
         local weapon = client:GetActiveWeapon()
         if not IsValid(weapon) or weapon:GetClass() ~= "ws_ziptie" then return end
 
+        -- Per-player rate limit: this is a raw handler (not ws.weapon.NetReceive, which supplies
+        -- one), so add a small cooldown to stop notify/sound spam before a tie begins. (fw-low-ziptie)
+        if client.wsNextZipTie and client.wsNextZipTie > CurTime() then return end
+        client.wsNextZipTie = CurTime() + 0.5
+
         -- Must be raised
         if not client:IsWepRaised() then
             client:Notify("You must raise the zip tie first.")

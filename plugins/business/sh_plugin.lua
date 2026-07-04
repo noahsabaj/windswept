@@ -119,6 +119,15 @@ if (SERVER) then
 				return
 			end
 
+			-- wsShipment can persist across character loss (post-permadeath, sitting in the menu);
+			-- a replayed packet would otherwise nil-deref the character below. (fw-medium-M1)
+			local character = client:GetCharacter()
+			if (!character) then
+				client.wsShipment = nil
+
+				return
+			end
+
 			local amount = entity.items[uniqueID]
 
 			-- The dead inner `entity.items[uniqueID] <= 0` branch was removed; the
@@ -128,11 +137,11 @@ if (SERVER) then
 					ws.item.Spawn(uniqueID, entity:GetPos() + Vector(0, 0, 16), function(item, itemEntity)
 						if (IsValid(client)) then
 							itemEntity.wsSteamID = client:SteamID()
-							itemEntity.wsCharID = client:GetCharacter():GetID()
+							itemEntity.wsCharID = character:GetID()
 						end
 					end)
 				else
-					local status, _ = client:GetCharacter():GetInventory():Add(uniqueID)
+					local status, _ = character:GetInventory():Add(uniqueID)
 
 					if (!status) then
 						return client:NotifyLocalized("noFit")

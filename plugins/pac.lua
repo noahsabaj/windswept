@@ -153,7 +153,11 @@ if (SERVER) then
 
 		-- If exiting of observer, re-add all parts.
 		if (!state) then
+			-- Observer is gated on admin access, not on having a loaded character, so the
+			-- observed player may be characterless on exit. (fw-medium-M6)
 			local character = client:GetCharacter()
+			if (!character) then return end
+
 			local inventory = character:GetInventory()
 
 			for k, _ in inventory:Iter() do
@@ -233,6 +237,7 @@ else
 		if (!pac) then return end
 
 		local wearer = net.ReadEntity()
+		if (!IsValid(wearer)) then return end -- networked entity may arrive NULL (out of PVS/removed) (fw-low-pac)
 		local uid = net.ReadString()
 
 		if (!wearer.pac_owner) then
@@ -246,6 +251,7 @@ else
 		if (!pac) then return end
 
 		local wearer = net.ReadEntity()
+		if (!IsValid(wearer)) then return end -- networked entity may arrive NULL (out of PVS/removed) (fw-low-pac)
 		local uid = net.ReadString()
 
 		if (!wearer.pac_owner) then
@@ -259,6 +265,7 @@ else
 		if (!pac) then return end
 
 		local wearer = net.ReadEntity()
+		if (!IsValid(wearer)) then return end -- networked entity may arrive NULL (out of PVS/removed) (fw-low-pac)
 		local uidList = net.ReadTable()
 
 		if (!wearer.pac_owner) then

@@ -23,7 +23,9 @@ function ENT:SetupDataTables()
     self:NetworkVar("Float", 0, "TimerStart")         -- When knockout started (CurTime)
     self:NetworkVar("Float", 1, "TimerDuration")      -- Total duration
     self:NetworkVar("String", 0, "KnockedModel")      -- Player's model
-    self:NetworkVar("String", 1, "CharacterName")     -- Character name (permanent, survives deletion)
+    -- CharacterName is intentionally NOT networked: a body must not broadcast the victim's
+    -- identity to clients (fog of war). It is stored server-only via ENT:Set/GetCharacterName
+    -- in init.lua, used for loot logs and reconnection dedup. (fw-fogofwar-1)
     self:NetworkVar("Bool", 0, "Permadead")           -- Whether character is permanently dead
     self:NetworkVar("Float", 2, "BurnProgress")       -- Cremation progress in seconds (0-240)
 end

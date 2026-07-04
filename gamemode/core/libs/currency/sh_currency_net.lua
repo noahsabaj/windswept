@@ -484,10 +484,10 @@ if SERVER then
                 item:SetData("quantity", currentQty - amount)
             end
 
-            -- Notify both parties
+            -- Notify both parties (no names -- fog of war; it's a face-to-face hand-off)
             local moneyStr = item:FormatAmount(amount)
-            client:Notify("Gave " .. moneyStr .. " to " .. target:Nick() .. ".")
-            target:Notify("Received " .. moneyStr .. " from " .. client:Nick() .. ".")
+            client:Notify("Gave " .. moneyStr .. ".")
+            target:Notify("Received " .. moneyStr .. ".")
         end
     })
 

@@ -129,7 +129,12 @@ local function ResetSubMaterials(client)
 end
 
 function ITEM:RemoveOutfit(client)
+	-- The owner can be invalid/characterless on the drop and permadeath/disconnect cleanup
+	-- paths; guard before dereferencing the character (matches sh_pacoutfit.lua). (fw-medium-M2)
+	if (!IsValid(client)) then return end
+
 	local character = client:GetCharacter()
+	if (!character) then return end
 
 	self:SetData("equipped", false)
 
@@ -237,7 +242,7 @@ ITEM:Hook("drop", function(item)
 		local client = character and character:GetPlayer() or item:GetOwner()
 
 		item.player = client
-		item:RemoveOutfit(item:GetOwner())
+		item:RemoveOutfit(client)
 	end
 end)
 

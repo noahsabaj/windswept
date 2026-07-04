@@ -211,8 +211,10 @@ if (SERVER) then
 		elseif (key == "stockDisable") then
 			local uniqueID = data[1]
 
-			entity.items[data] = entity.items[uniqueID] or {}
-			entity.items[data][VENDOR_MAXSTOCK] = nil
+			-- Key by uniqueID, not the whole `data` table, or this no-ops and leaks a junk
+			-- table-keyed entry that SaveData persists. (fw-medium-M4)
+			entity.items[uniqueID] = entity.items[uniqueID] or {}
+			entity.items[uniqueID][VENDOR_MAXSTOCK] = nil
 
 			UpdateEditReceivers(entity.receivers, key, data)
 		elseif (key == "stockMax") then
