@@ -419,6 +419,28 @@ if CLIENT then
         local weapon = LocalPlayer():GetActiveWeapon()
         if not IsValid(weapon) or weapon:GetClass() ~= "ws_camera" then return end
 
+        -- The flash must light the CAPTURE, so it is client-side: a dlight
+        -- created here (net processing runs before this frame renders) is in
+        -- the renderer's light list when CapturePhoto's PostRender RenderView
+        -- draws the world -- the photo gets real flash lighting with distance
+        -- falloff. The old server-side light_dynamic never showed up in
+        -- photos (#108). dietime outlasts the capture so the shooter also
+        -- sees the world lit briefly, matching the screen flash.
+        if weapon:GetFlashEnabled() then
+            local owner = LocalPlayer()
+            local dl = DynamicLight(owner:EntIndex())
+            if dl then
+                dl.pos = owner:EyePos() + owner:GetAimVector() * 8
+                dl.r = 255
+                dl.g = 255
+                dl.b = 255
+                dl.brightness = 5
+                dl.size = 600
+                dl.decay = 2400
+                dl.dietime = CurTime() + 0.25
+            end
+        end
+
         -- Capture the photo
         weapon:CapturePhoto()
     end)
@@ -493,6 +515,11 @@ if CLIENT then
         end)
     end
 
+    -- Cycling reserved dlight indices for bystander flashes (entity indices
+    -- belong to the shooters' own capture lights / muzzle flashes, and a
+    -- single fixed index would drop one of two simultaneous flashes).
+    local flashLightIndex = 0
+
     -- Flash effect received from server
     net.Receive("wsCameraFlashEffect", function()
         local pos = net.ReadVector()
@@ -500,6 +527,23 @@ if CLIENT then
         -- Create screen flash effect for local player if nearby
         local localPlayer = LocalPlayer()
         if localPlayer:GetPos():Distance(pos) < 500 then
+            -- Real light in the world, not just a screen overlay (#108).
+            -- Skip for our own flash -- the capture path already lit it.
+            if localPlayer:GetPos():DistToSqr(pos) > 100 then
+                flashLightIndex = (flashLightIndex + 1) % 8
+                local dl = DynamicLight(8000 + flashLightIndex)
+                if dl then
+                    dl.pos = pos + Vector(0, 0, 60) -- camera height above feet
+                    dl.r = 255
+                    dl.g = 255
+                    dl.b = 255
+                    dl.brightness = 5
+                    dl.size = 600
+                    dl.decay = 2400
+                    dl.dietime = CurTime() + 0.25
+                end
+            end
+
             -- Brief white flash on screen
             local flash = vgui.Create("DPanel")
             flash:SetSize(ScrW(), ScrH())
@@ -544,7 +588,7 @@ if SERVER then
     local ProcessCompletePhoto
 
     -- Handle photo request. ws.weapon.NetReceive supplies the active-weapon class check + a
-    -- 0.5s rate limit (each request triggers a flash light_dynamic + net broadcast); the
+    -- 0.5s rate limit (each request can trigger a flash net broadcast); the
     -- aiming / film / approval logic stays in the method. (sc-photography-2)
     ws.weapon.NetReceive("wsCameraRequestPhoto", "ws_camera", "NetRequestPhoto", { rateLimit = 0.5 })
 
@@ -575,21 +619,12 @@ if SERVER then
         -- a client can't upload an arbitrary photo we never asked for.
         client.wsCameraApproval = CurTime()
 
-        -- Resources OK - check if flash needed
+        -- Resources OK. Flash lighting is entirely client-side (#108): the
+        -- capturing client creates its own dlight in the capture frame (the
+        -- old server light_dynamic never appeared in photos), and nearby
+        -- clients build a world dlight + screen flash from this effect
+        -- message. No wait-for-light delay needed -- approve immediately.
         if weapon:GetFlashEnabled() then
-            -- Create flash BEFORE capture so it illuminates the scene
-            local light = ents.Create("light_dynamic")
-            if IsValid(light) then
-                light:SetPos(client:GetShootPos())
-                light:SetKeyValue("brightness", "6")  -- Brighter for photo
-                light:SetKeyValue("distance", "600")  -- Longer range
-                light:SetKeyValue("_light", "255 255 255 255")
-                light:Spawn()
-                light:Fire("TurnOn", "", 0)
-                light:Fire("Kill", "", 0.5)  -- Keep lit briefly
-            end
-
-            -- Notify nearby players of flash effect
             local nearby = ents.FindInSphere(client:GetPos(), 500)
             for _, ent in ipairs(nearby) do
                 if ent:IsPlayer() then
@@ -598,19 +633,10 @@ if SERVER then
                     net.Send(ent)
                 end
             end
-
-            -- Brief delay for light to illuminate scene, then capture
-            timer.Simple(0.05, function()
-                if IsValid(client) then
-                    net.Start("wsCameraApprovePhoto")
-                    net.Send(client)
-                end
-            end)
-        else
-            -- No flash - capture immediately
-            net.Start("wsCameraApprovePhoto")
-            net.Send(client)
         end
+
+        net.Start("wsCameraApprovePhoto")
+        net.Send(client)
     end
 
     -- Handle photo data from client
@@ -681,8 +707,7 @@ if SERVER then
             item:SetData("film", film)
         end
 
-        -- Flash was already fired before capture (in wsCameraRequestPhoto)
-        -- so the scene is illuminated in the photo
+        -- Flash lighting happened client-side in the capture frame (#108)
 
         -- Create photo item
         local character, inventory = ws.access.GetCharacterInventory(client)
