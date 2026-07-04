@@ -260,6 +260,23 @@ function PLUGIN:CreateKnockedEntity(client, character, pos, ang, duration)
     return entity
 end
 
+-- Drop the currently equipped weapon item next to the player (except protected
+-- classes), clearing its equipped state so the dropped/looted item isn't stuck
+-- "equipped". Shared by the knockout and suicide body flows. (#76)
+function PLUGIN:DropActiveWeapon(client)
+    local activeWeapon = client:GetActiveWeapon()
+    if not IsValid(activeWeapon) then return end
+
+    local class = activeWeapon:GetClass()
+    local protected = {["ws_hands"] = true, ["ws_handsup"] = true}
+
+    if not protected[class] and activeWeapon.wsItem then
+        local item = activeWeapon.wsItem
+        item:SetData("equipped", nil)
+        item:Transfer(nil, nil, nil, client, client:GetPos() + Vector(0, 0, 10))
+    end
+end
+
 -- Hide and freeze a knocked player
 function PLUGIN:HideKnockedPlayer(client, entity)
     client:StripWeapons()
@@ -319,20 +336,7 @@ function PLUGIN:CreateKnockout(client, character, dmgInfo)
     local entity = self:CreateKnockedEntity(client, character, pos, ang, duration)
     if not entity then return end
 
-    -- Drop currently equipped weapon (except protected items)
-    local activeWeapon = client:GetActiveWeapon()
-    if IsValid(activeWeapon) then
-        local class = activeWeapon:GetClass()
-        local protected = {["ws_hands"] = true, ["ws_handsup"] = true}
-
-        if not protected[class] and activeWeapon.wsItem then
-            local item = activeWeapon.wsItem
-            -- Clear equipped state before dropping
-            item:SetData("equipped", nil)
-            item:Transfer(nil, nil, nil, client, client:GetPos() + Vector(0, 0, 10))
-        end
-    end
-
+    self:DropActiveWeapon(client)
     self:HideKnockedPlayer(client, entity)
     self:SendKnockoutStart(client, duration, knockoutCount)
 
@@ -1136,6 +1140,24 @@ net.Receive("wsSuicideExecute", function(len, client)
     -- Apply instant permadeath (bypass knockout)
     local plugin = ws.plugin.Get("permadeath")
     if plugin then
+        -- A suicide must leave a body like every other death path.
+        -- ApplyPermadeath's body block only marks an EXISTING wsKnockedEntity
+        -- permadead, and DeleteCharacter intentionally keeps the inventory for the
+        -- body to hold -- so with no body the character's items were orphaned in the
+        -- DB forever, and suicide doubled as an instant loot-denial button for
+        -- anyone about to be captured. Create the corpse first (drop the held
+        -- weapon, hide the player, duration 0 -- every timer path is
+        -- permadead-gated), then ApplyPermadeath marks it permadead and lootable
+        -- exactly like an executed knocked body. (#76)
+        local pos = client:GetPos()
+        local ang = Angle(0, client:EyeAngles().y, 0)
+        local entity = plugin:CreateKnockedEntity(client, character, pos, ang, 0)
+
+        if entity then
+            plugin:DropActiveWeapon(client)
+            plugin:HideKnockedPlayer(client, entity)
+        end
+
         plugin:ApplyPermadeath(client, character, "suicide")
     end
 end)
