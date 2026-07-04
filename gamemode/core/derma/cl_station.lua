@@ -71,6 +71,13 @@ function PANEL:Init()
     self:SetDraggable(true)
     self:MakePopup()
 
+    -- Stock DFrame reserves its 24px title strip UNCONDITIONALLY via
+    -- DockPadding(5, 24 + 5, 5, 5) (dframe.lua:65) -- even with an empty title
+    -- and no close button. Left in place it shrinks the dock area, leaving a
+    -- dead band above our docked header and clipping the last-docked child
+    -- (windswept#104).
+    self:DockPadding(0, 0, 0, 0)
+
     self.header, self.headerClose = ws.constants.CreateHeaderBar(self, "", nil, function()
         self:Remove()
     end)
@@ -208,3 +215,162 @@ hook.Add("OnReloaded", "wsStationFrame", function()
         end
     end
 end)
+
+--[[
+    wsStationSlider
+
+    Dark slider for station UIs, with an API that separates programmatic
+    updates from user input -- stock DSlider:SetSlideX() unconditionally
+    fires OnValueChanged (dslider.lua:173), so reflecting a netvar into a
+    stock slider every Think echoes a server action per frame and saturates
+    the action's rate limit, starving every other control on that action
+    (windswept-colony#52).
+
+    - SetFraction(f)   -- position the slider WITHOUT firing any event.
+                          Ignored mid-drag so it never fights the user.
+    - GetFraction()    -- current 0..1 position
+    - OnUserChanged(f) -- fires only from real user input, throttled to one
+                          call per 0.25s while dragging, with a guaranteed
+                          final fire when the drag ends.
+]]--
+
+local SLIDER = {}
+
+local COLOR_SLIDER_TRACK = Color(25, 25, 25, 255)
+local COLOR_SLIDER_FILL = Color(30, 58, 95, 255) -- header-bar blue
+local COLOR_SLIDER_KNOB = Color(200, 200, 200, 255)
+local COLOR_SLIDER_KNOB_DRAG = Color(255, 255, 255, 255)
+
+SLIDER.userThrottle = 0.25
+
+function SLIDER:Init()
+    self:SetLockY(0.5)
+    self.lastUserSend = 0
+    self.pendingFraction = nil
+
+    self.Knob:SetSize(10, 16)
+    self.Knob.Paint = function(knob, w, h)
+        local color = self:IsEditing() and COLOR_SLIDER_KNOB_DRAG or COLOR_SLIDER_KNOB
+        draw.RoundedBox(3, 0, 0, w, h, color)
+    end
+end
+
+function SLIDER:Paint(w, h)
+    local trackY = h / 2 - 2
+    draw.RoundedBox(2, 0, trackY, w, 4, COLOR_SLIDER_TRACK)
+
+    local frac = self:GetSlideX() or 0
+    if frac > 0 then
+        draw.RoundedBox(2, 0, trackY, w * frac, 4, COLOR_SLIDER_FILL)
+    end
+end
+
+-- Position the slider without firing OnUserChanged (netvar reflection path).
+function SLIDER:SetFraction(frac)
+    if self:IsEditing() then return end
+    self.suppressEvent = true
+    self:SetSlideX(math.Clamp(tonumber(frac) or 0, 0, 1))
+    self.suppressEvent = nil
+end
+
+function SLIDER:GetFraction()
+    return math.Clamp(self:GetSlideX() or 0, 0, 1)
+end
+
+function SLIDER:OnValueChanged(x)
+    if self.suppressEvent then return end
+
+    self.pendingFraction = math.Clamp(tonumber(x) or 0, 0, 1)
+
+    if RealTime() - self.lastUserSend >= self.userThrottle then
+        self:FlushUserChange()
+    end
+end
+
+function SLIDER:FlushUserChange()
+    if self.pendingFraction == nil then return end
+
+    self.lastUserSend = RealTime()
+    local frac = self.pendingFraction
+    self.pendingFraction = nil
+
+    if self.OnUserChanged then
+        self:OnUserChanged(frac)
+    end
+end
+
+function SLIDER:OnMouseReleased(code)
+    vgui.GetControlTable("DSlider").OnMouseReleased(self, code)
+    self:FlushUserChange()
+end
+
+function SLIDER:Think()
+    vgui.GetControlTable("DSlider").Think(self)
+
+    -- Trailing flush: covers drags that end without our OnMouseReleased
+    -- (e.g. released over the knob, which has its own capture).
+    if self.pendingFraction ~= nil and not self:IsEditing() then
+        self:FlushUserChange()
+    end
+end
+
+vgui.Register("wsStationSlider", SLIDER, "DSlider")
+
+--[[
+    wsStationToggle
+
+    ON/OFF chip for station UIs (TX/RX/mic style states).
+    - SetStateText(onText, offText)
+    - SetState(bool)  -- display only, no events; wire DoClick yourself
+    - GetState()
+    - .onColor        -- per-instance ON color (default green)
+]]--
+
+local TOGGLE = {}
+
+local COLOR_TOGGLE_BG = Color(45, 45, 45, 255)
+local COLOR_TOGGLE_BG_HOVER = Color(55, 55, 55, 255)
+
+function TOGGLE:Init()
+    self.state = false
+    self.onText = "ON"
+    self.offText = "OFF"
+    self.onColor = Color(110, 255, 110)
+    self:SetText("OFF")
+    self:SetTextColor(ws.constants.COLOR_UI_NEUTRAL)
+end
+
+function TOGGLE:SetStateText(onText, offText)
+    self.onText = onText
+    self.offText = offText
+    self:ApplyState()
+end
+
+function TOGGLE:SetState(on)
+    on = tobool(on)
+    if self.state == on then return end
+    self.state = on
+    self:ApplyState()
+end
+
+function TOGGLE:GetState()
+    return self.state
+end
+
+function TOGGLE:ApplyState()
+    self:SetText(self.state and self.onText or self.offText)
+    self:SetTextColor(self.state and self.onColor or ws.constants.COLOR_UI_NEUTRAL)
+end
+
+function TOGGLE:Paint(w, h)
+    draw.RoundedBox(4, 0, 0, w, h, self:IsHovered() and COLOR_TOGGLE_BG_HOVER or COLOR_TOGGLE_BG)
+
+    if self.state then
+        surface.SetDrawColor(self.onColor.r, self.onColor.g, self.onColor.b, 160)
+    else
+        surface.SetDrawColor(0, 0, 0, 180)
+    end
+    surface.DrawOutlinedRect(0, 0, w, h)
+end
+
+vgui.Register("wsStationToggle", TOGGLE, "DButton")
