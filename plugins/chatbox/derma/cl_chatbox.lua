@@ -335,8 +335,11 @@ function PANEL:AddLine(elements, bShouldScroll)
 			-- No factions: everyone's name uses the neutral UI colour (anti-metagaming).
 			local color = ws.config.Get("color")
 
+			-- Steam name, never the character name: no chat class passes a Player
+			-- entity for IC speech anymore, but if one ever reaches this renderer it
+			-- must not leak IC identity (fog of war). (#53)
 			buffer[#buffer + 1] = string.format("<color=%d,%d,%d>%s", color.r, color.g, color.b,
-				v:GetName():gsub("<", "&lt;"):gsub(">", "&gt;"))
+				v:SteamName():gsub("<", "&lt;"):gsub(">", "&gt;"))
 		else
 			buffer[#buffer + 1] = tostring(v):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub("%b**", function(value)
 				local inner = value:utf8sub(2, -2)

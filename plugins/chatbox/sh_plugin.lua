@@ -139,7 +139,9 @@ if (CLIENT) then
 				text[#text + 1] = v
 			elseif (isentity(v) and v:IsPlayer()) then
 				text[#text + 1] = team.GetColor(v:Team())
-				text[#text + 1] = v:Name()
+				-- Steam name, never the character name: a Player entity reaching
+				-- chat rendering must not leak IC identity (fog of war). (#53)
+				text[#text + 1] = v:SteamName()
 			elseif (type(v) != "IMaterial") then
 				text[#text + 1] = tostring(v)
 			end

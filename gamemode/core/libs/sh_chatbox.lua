@@ -531,7 +531,9 @@ do
 
 				icon = Material(hook.Run("GetPlayerIcon", speaker) or icon)
 
-				chat.AddText(icon, Color(255, 50, 50), "[OOC] ", speaker, color_white, ": "..text)
+				-- OOC channel: out-of-character Steam name, never the character name.
+				-- Passing the Player entity would render Nick() = character name. (#53)
+				chat.AddText(icon, Color(255, 50, 50), "[OOC] ", color_white, speaker:SteamName()..": "..text)
 			end,
 			prefix = {"//", "/OOC"},
 			description = "@cmdOOC",
