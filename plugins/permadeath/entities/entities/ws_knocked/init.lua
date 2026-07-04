@@ -556,19 +556,16 @@ function ENT:OpenInventory(client)
     local soundPos = IsValid(ragdoll) and ragdoll:GetPos() or self:GetPos()
     sound.Play(lootSounds[math.random(#lootSounds)], soundPos, 60, 100, 0.8)
 
-    -- Get character name for display (stored permanently on entity)
-    local name = self:GetCharacterName()
-    if not name or name == "" then
-        name = "Unknown"
-    end
-
     -- Use Windswept storage system
     -- IMPORTANT: Pass the ragdoll as the entity, not self (ws_knocked is invisible)
     -- DoStaredAction traces to check if player is looking at the entity,
     -- so we need to pass the visible ragdoll they're actually looking at
+    -- Fog of war: the title must not identify the victim. The character name is held
+    -- server-only on this entity, and ws.storage.Sync net.WriteStrings the title to the
+    -- looter -- "<Name>'s Body" would hand the dead character's name to any client. (#71)
     local stareEntity = IsValid(ragdoll) and ragdoll or self
     ws.storage.Open(client, inventory, {
-        name = name .. "'s Body",
+        name = "Body",
         entity = stareEntity,
         searchTime = 1,
         bMultipleUsers = true
