@@ -2758,12 +2758,47 @@ net.Receive(<span class="string">"wsLocksmithOpen"</span>, <span class="keyword"
 </pre>
 
 
+<p><a name="Station_controls"></a></p>
+<h2>Station controls</h2>
+
+<p>Two registered controls ship with the base (same file) for entity-backed
+settings panels:</p>
+
+<ul>
+    <li>**<code>wsStationSlider</code>** (base <code>DSlider</code>) — dark track, visible knob.
+    <code>SetFraction(f)</code> positions it <strong>without firing events</strong> (and is ignored
+    mid-drag); <code>GetFraction()</code> reads it; <code>OnUserChanged(f)</code> fires only from real
+    user input, throttled to one call per 0.25s while dragging with a guaranteed
+    final fire on release. Reflect the server's netvar with <code>SetFraction</code> from
+    your Think; send from <code>OnUserChanged</code>.</li>
+    <li>**<code>wsStationToggle</code>** (base <code>DButton</code>) — ON/OFF chip.
+    <code>SetStateText(onText, offText)</code>, <code>SetState(bool)</code> (display only, no events),
+    <code>GetState()</code>, per-instance <code>onColor</code>. Wire <code>DoClick</code> yourself; let the
+    netvar drive <code>SetState</code>.</li>
+</ul>
+
+<p>For text input, use the existing **<code>wsTextEntry</code>**
+(<code>gamemode/core/derma/cl_generic.lua</code>) — already dark with light text; set
+your font after creating it.</p>
+
 <p><a name="Rules"></a></p>
 <h2>Rules</h2>
 
 <ul>
     <li>Widgets parent to <code>self.body</code>, not to the frame — the frame's top is the
     header and its bottom belongs to the button bar.</li>
+    <li><strong>Never send actions from netvar-driven programmatic updates.</strong> Stock
+    <code>DSlider:SetSlideX()</code> fires <code>OnValueChanged</code> unconditionally
+    (dslider.lua:173) — reflecting a netvar into a stock slider every Think
+    echoes one action per frame. That flood saturated the dispatch console's
+    action rate limit and silently starved every other control on the same
+    action (windswept-colony#52). Use <code>wsStationSlider:SetFraction</code> /
+    <code>wsStationToggle:SetState</code> for display updates; they never fire events.</li>
+    <li><strong>Server actions share a per-name rate limit</strong> (<code>ws.action</code> charges its
+    <code>rateLimit</code> per action name per client). Pace your sends — a panel-level
+    coalescing queue at ~0.22s guarantees no user click is ever silently
+    dropped; per-control debounce alone still lets two different controls
+    collide inside one window.</li>
     <li>Don't override <code>Think</code> or <code>OnRemove</code> unless you must; if you must, call the
     base first: <code>vgui.GetControlTable(&quot;wsStationFrame&quot;).Think(self)</code>. The
     pre-standard station UIs overrode <code>Think</code> bare and silently broke DFrame
