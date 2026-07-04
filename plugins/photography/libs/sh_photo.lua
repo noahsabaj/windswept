@@ -9,15 +9,20 @@
 
 ws.photo = ws.photo or {}
 
+-- Hard size cap for a single photo (matches the client's ~60KB adaptive-quality
+-- cap, with a little headroom). SHARED: the server uses it to reject oversized
+-- uploads, and the client receivers clamp net.ReadData lengths against it --
+-- defining it server-only made every client-side photo view error on math.min
+-- with nil. (#92)
+ws.photo.MAX_PHOTO_BYTES = 65536
+
 -- ============================================================================
 -- SERVER UTILITIES
 -- ============================================================================
 
 if SERVER then
-    -- Storage directory + hard size cap for a single photo (matches the client's
-    -- ~60KB adaptive-quality cap, with a little headroom).
+    -- Storage directory for photo files.
     ws.photo.DIR = "ws_photos"
-    ws.photo.MAX_PHOTO_BYTES = 65536
 
     --- Verify that a client owns an item in their inventory.
     -- Thin wrapper around ws.access.VerifyItemOwnership for API compatibility.
