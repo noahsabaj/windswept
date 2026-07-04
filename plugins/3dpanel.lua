@@ -76,8 +76,9 @@ if (SERVER) then
 
 		-- Save the plugin data if we actually changed anything.
 		if (#panelsDeleted > 0) then
-			-- Invert index table to delete from highest -> lowest
-			panelsDeleted = table.Reverse(panelsDeleted)
+			-- Sort descending so table.remove always deletes the highest index first; the keys
+			-- come from pairs() (unordered), so table.Reverse couldn't guarantee that. (fw-medium-M9)
+			table.sort(panelsDeleted, function(a, b) return a > b end)
 
 			for _, v in ipairs(panelsDeleted) do
 				-- Remove the panel from the list of panels.

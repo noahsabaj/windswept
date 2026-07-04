@@ -69,8 +69,9 @@ if (SERVER) then
 		end
 
 		if (#textDeleted > 0) then
-			-- Invert index table to delete from highest -> lowest
-			textDeleted = table.Reverse(textDeleted)
+			-- Sort descending so table.remove always deletes the highest index first; the keys
+			-- come from pairs() (unordered), so table.Reverse couldn't guarantee that. (fw-medium-M9)
+			table.sort(textDeleted, function(a, b) return a > b end)
 
 			for _, v in ipairs(textDeleted) do
 				table.remove(self.list, v)

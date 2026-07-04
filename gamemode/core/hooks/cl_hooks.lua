@@ -674,6 +674,13 @@ function GM:ShouldPopulateEntityInfo(entity)
 	if (vgui.CursorVisible() or !client:Alive() or IsValid(ragdoll) or entity == client or entityPlayer == client) then
 		return false
 	end
+
+	-- Fog of war: never show an info panel over another player. Identity is purely visual
+	-- (face, clothing, demeanor) -- nothing is read off a HUD. Only the live-player branch is
+	-- suppressed; world-entity tooltips (items, doors) and body status are unaffected. (fw-fogofwar-1)
+	if (entity:IsPlayer()) then
+		return false
+	end
 end
 
 local injTextTable = {
@@ -691,43 +698,9 @@ function GM:GetInjuredText(client)
 	end
 end
 
-function GM:PopulateImportantCharacterInfo(client, character, container)
-	-- All players use same gray color (no faction color metagaming)
-	local color = Color(200, 200, 200)
-	container:SetArrowColor(color)
-
-	-- name
-	local name = container:AddRow("name")
-	name:SetImportant()
-	name:SetText(hookRun("GetCharacterName", client) or character:GetName())
-	name:SetBackgroundColor(color)
-	name:SizeToContents()
-
-	-- injured text
-	local injureText, injureTextColor = hookRun("GetInjuredText", client)
-
-	if (injureText) then
-		local injure = container:AddRow("injureText")
-
-		injure:SetText(L(injureText))
-		injure:SetBackgroundColor(injureTextColor)
-		injure:SizeToContents()
-	end
-end
-
-function GM:PopulateCharacterInfo(client, character, container)
-	-- description
-	local descriptionText = character:GetDescription()
-	descriptionText = (descriptionText:utf8len() > 128 and
-		string.format("%s...", descriptionText:utf8sub(1, 125)) or
-		descriptionText)
-
-	if (descriptionText != "") then
-		local description = container:AddRow("description")
-		description:SetText(descriptionText)
-		description:SizeToContents()
-	end
-end
+-- GM:PopulateImportantCharacterInfo / GM:PopulateCharacterInfo intentionally removed.
+-- The look-at panel no longer shows ANY player identity (name/description) -- it is suppressed
+-- for players entirely in GM:ShouldPopulateEntityInfo above. Identity is purely visual. (fw-fogofwar-1)
 
 function GM:KeyRelease(client, key)
 	if (!IsFirstTimePredicted()) then

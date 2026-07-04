@@ -170,6 +170,7 @@ else
 
 			-- Do it the next frame since the player can not be moved right now.
 			timer.Simple(0, function()
+				if (!IsValid(client)) then return end -- may disconnect within the frame (fw-low-observer)
 				client:SetPos(position)
 				client:SetEyeAngles(angles)
 				client:SetVelocity(Vector(0, 0, 0))

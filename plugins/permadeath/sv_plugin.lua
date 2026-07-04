@@ -749,17 +749,26 @@ function PLUGIN:PlayerHasDefibReady(client)
     return false, nil
 end
 
+--- Deplete one full battery on the defib. Returns true only if a charge was actually
+-- spent; false when there is nothing to spend, so the caller can refuse the shock instead
+-- of delivering it for free (the H2 free-shock fix). (sc-permadeath-12)
 function PLUGIN:ConsumeDefibCharge(item, client)
     local batteries = item:GetData("batteries", {})
-    if #batteries == 0 then return end
+    if #batteries == 0 then return false end
 
-    -- Find first FULL battery (100up) and deplete it
+    -- Find first FULL battery (100up) and deplete it, tracking whether one was spent.
+    local consumed = false
     for i, charge in ipairs(batteries) do
         if charge == 100 then
             batteries[i] = 0  -- Deplete, don't remove
+            consumed = true
             break
         end
     end
+
+    -- Nothing to spend (only depleted/partial batteries loaded): make no changes and
+    -- signal the caller to abort the shock.
+    if not consumed then return false end
 
     local _, inventory = ws.access.GetCharacterInventory(client)
 
@@ -808,6 +817,8 @@ function PLUGIN:ConsumeDefibCharge(item, client)
     if usableCount == 0 then
         client:NotifyLocalized("defibNoBattery")
     end
+
+    return true
 end
 
 -- ============================================================================

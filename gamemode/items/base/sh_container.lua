@@ -278,14 +278,9 @@ if CLIENT then
         end
     end
 
-    net.Receive("wsBagDrop", function()
-        local index = net.ReadUInt(32)
-        local panel = ws.gui["inv"..index]
-
-        if panel and panel:IsVisible() then
-            panel:Close()
-        end
-    end)
+    -- The wsBagDrop client handler (close the panel keyed by inventory id) is registered once in
+    -- sh_bags.lua and serves containers too. Registering it again here would silently overwrite
+    -- that one (last-loaded net.Receive wins). (fw-low-bagdrop)
 end
 
 -- ============================================================================

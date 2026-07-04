@@ -81,10 +81,6 @@ wsLocalVarSet
 wsLocksmithOpen
 wsLocksmithResult
 wsLogStream
-wsMapSceneAdd
-wsMapSceneAddPair
-wsMapSceneRemove
-wsMapSceneRemovePair
 wsMapSceneSync
 wsNetVarDelete
 wsNetVarSet
@@ -106,8 +102,6 @@ wsPlayerDeath
 wsRadioVoiceStart
 wsRadioVoiceStop
 wsRadioVolume
-wsRecognizeDone
-wsRecognizeMenu
 wsSequenceReset
 wsSequenceSet
 wsShipmentClose

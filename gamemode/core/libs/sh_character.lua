@@ -325,6 +325,12 @@ do
 		fieldType = ws.type.string,
 		default = "John Doe",
 		index = 1,
+		-- Fog of war: a character's name is networked ONLY to its owner, never to other
+		-- clients. Identity is reconstructed in-world (voice, face, clothing), never read
+		-- off the wire. isLocal makes CHAR:Sync skip this for non-owners and the change
+		-- setter Send only to the owner. The server still holds it (DB-backed via `field`),
+		-- so server-side GetName() for logs/admin is unaffected. (fw-fogofwar-1)
+		isLocal = true,
 		OnValidate = function(self, value, payload, client)
 			if (!value) then
 				return false, "invalid", "name"
@@ -375,6 +381,9 @@ do
 		fieldType = ws.type.text,
 		default = "",
 		index = 2,
+		-- Fog of war: like `name`, the physical description is owner-only. Other players
+		-- learn what you look like by looking at you, not by reading a networked field. (fw-fogofwar-1)
+		isLocal = true,
 		OnValidate = function(self, value, payload)
 			value = string.Trim((tostring(value):gsub("\r\n", ""):gsub("\n", "")))
 			local minLength = ws.config.Get("minDescriptionLength", 16)

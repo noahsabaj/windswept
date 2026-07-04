@@ -151,9 +151,12 @@ function ws.chat.Register(chatType, data)
 
 		function data:OnChatAdd(speaker, text, anonymous, info)
 			local color = self.color
+			-- No character names in chat. This default path serves OOC/meta classes, which use the
+			-- out-of-character Steam name; in-character speech (ic/me/w/y) defines its own nameless
+			-- OnChatAdd below. Character names are owner-only and never reach other clients. (fw-fogofwar-1)
 			local name = anonymous and
-				L"someone" or hook.Run("GetCharacterName", speaker, chatType) or
-				(IsValid(speaker) and speaker:Name() or "Console")
+				L"someone" or
+				(IsValid(speaker) and speaker:SteamName() or "Console")
 
 			if (self.GetColor) then
 				color = self:GetColor(speaker, text, info)
@@ -403,8 +406,12 @@ do
 	hook.Add("InitializedConfig", "wsChatTypes", function()
 		-- The default in-character chat.
 		ws.chat.Register("ic", {
-			format = "%s says \"%s\"",
 			indicator = "chatTalking",
+			-- No name -- identify the speaker by sight and voice, not text. Looking at them
+			-- tints the line (GetColor) as the only "who" cue. (fw-fogofwar-1)
+			OnChatAdd = function(self, speaker, text)
+				chat.AddText(self:GetColor(speaker, text), "\""..text.."\"")
+			end,
 			GetColor = function(self, speaker, text)
 				-- If you are looking at the speaker, make it greener to easier identify who is talking.
 				if (LocalPlayer():GetEyeTrace().Entity == speaker) then
@@ -419,8 +426,11 @@ do
 
 		-- Actions and such.
 		ws.chat.Register("me", {
-			format = "** %s %s",
 			GetColor = ws.chat.classes.ic.GetColor,
+			-- Action emote, no name -- you see who is performing it. (fw-fogofwar-1)
+			OnChatAdd = function(self, speaker, text)
+				chat.AddText(self:GetColor(speaker, text), "** "..text)
+			end,
 			CanHear = ws.config.Get("chatRange", 280) * 2,
 			prefix = {"/Me", "/Action"},
 			description = "@cmdMe",
@@ -442,12 +452,15 @@ do
 
 		-- Whisper chat.
 		ws.chat.Register("w", {
-			format = "%s whispers \"%s\"",
 			GetColor = function(self, speaker, text)
 				local color = ws.chat.classes.ic:GetColor(speaker, text)
 
 				-- Make the whisper chat slightly darker than IC chat.
 				return Color(color.r - 35, color.g - 35, color.b - 35)
+			end,
+			-- No name; the parenthetical conveys the (audible) manner, not identity. (fw-fogofwar-1)
+			OnChatAdd = function(self, speaker, text)
+				chat.AddText(self:GetColor(speaker, text), "(whisper) \""..text.."\"")
 			end,
 			CanHear = ws.config.Get("chatRange", 280) * 0.25,
 			prefix = {"/W", "/Whisper"},
@@ -457,12 +470,15 @@ do
 
 		-- Yelling out loud.
 		ws.chat.Register("y", {
-			format = "%s yells \"%s\"",
 			GetColor = function(self, speaker, text)
 				local color = ws.chat.classes.ic:GetColor(speaker, text)
 
 				-- Make the yell chat slightly brighter than IC chat.
 				return Color(color.r + 35, color.g + 35, color.b + 35)
+			end,
+			-- No name; the parenthetical conveys the (audible) manner, not identity. (fw-fogofwar-1)
+			OnChatAdd = function(self, speaker, text)
+				chat.AddText(self:GetColor(speaker, text), "(yell) \""..text.."\"")
 			end,
 			CanHear = ws.config.Get("chatRange", 280) * 2,
 			prefix = {"/Y", "/Yell"},
@@ -543,7 +559,8 @@ do
 				speaker.wsLastLOOC = CurTime()
 			end,
 			OnChatAdd = function(self, speaker, text)
-				chat.AddText(Color(255, 50, 50), "[LOOC] ", ws.config.Get("chatColor"), speaker:Name()..": "..text)
+				-- OOC channel: out-of-character Steam name, not the IC character name. (fw-fogofwar-1)
+				chat.AddText(Color(255, 50, 50), "[LOOC] ", ws.config.Get("chatColor"), speaker:SteamName()..": "..text)
 			end,
 			CanHear = ws.config.Get("chatRange", 280),
 			prefix = {".//", "[[", "/LOOC"},
@@ -559,11 +576,8 @@ do
 			deadCanChat = true,
 			OnChatAdd = function(self, speaker, text, bAnonymous, data)
 				local max = data.max or 100
-				local translated = L2(self.uniqueID.."Format", speaker:Name(), text, max)
-
-				chat.AddText(self.color, translated and "** "..translated or string.format(self.format,
-					speaker:Name(), text, max
-				))
+				-- No name -- you see who is rolling. (fw-fogofwar-1)
+				chat.AddText(self.color, string.format("** A roll of %s out of %s.", text, max))
 			end
 		})
 
@@ -572,20 +586,8 @@ do
 	end)
 end
 
--- Private messages between players.
-ws.chat.Register("pm", {
-	format = "[PM] %s -> %s: %s",
-	color = Color(125, 150, 75, 255),
-	deadCanChat = true,
-
-	OnChatAdd = function(self, speaker, text, bAnonymous, data)
-		chat.AddText(self.color, string.format(self.format, speaker:GetName(), data.target:GetName(), text))
-
-		if (LocalPlayer() != speaker) then
-			surface.PlaySound("hl1/fvox/bell.wav")
-		end
-	end
-})
+-- Private messages removed: a direct, non-physical, identity-linked channel between players
+-- violates the anti-metagaming / fog-of-war pillar. There is no PM in Windswept. (fw-medium-pm)
 
 -- Global events.
 ws.chat.Register("event", {

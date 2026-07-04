@@ -9,6 +9,16 @@ AddCSLuaFile("shared.lua")
 AddCSLuaFile("cl_init.lua")
 include("shared.lua")
 
+-- Server-only character name (NOT networked -- fog of war; see shared.lua SetupDataTables).
+-- Persists for loot logs and reconnection dedup, but never reaches a client. (fw-fogofwar-1)
+function ENT:SetCharacterName(name)
+    self.wsCharacterName = name
+end
+
+function ENT:GetCharacterName()
+    return self.wsCharacterName or ""
+end
+
 function ENT:Initialize()
     -- This entity is invisible - we use a prop_ragdoll for visuals
     self:SetNoDraw(true)
@@ -424,8 +434,9 @@ function ENT:OnTakeDamage(dmgInfo)
     end
 
     if isHeadshot then
-        -- 50% instant execution, 50% halve timer
-        if math.random() < 0.5 then
+        -- config% chance of instant execution, else halve the timer. Honors the same
+        -- permadeathHeadshotChance config as the alive-player path (was hardcoded 50%). (fw-low-headshot)
+        if math.random() < ws.config.Get("permadeathHeadshotChance", 50) / 100 then
             -- Execution
             local charID = self:GetCharacterID()
             local character = ws.char.loaded[charID]

@@ -62,15 +62,8 @@ if (CLIENT) then
 							self.orderedIndex = 1
 						end
 					else
-						local keys = {}
-
-						for k, _ in pairs(scenes) do
-							if (isvector(k)) then
-								keys[#keys + 1] = k
-							end
-						end
-
-						self.index = keys[ math.random( #keys ) ]
+						-- Re-pick any random scene by its (stable integer) key. (fw-medium-M5)
+						_, self.index = table.Random(scenes)
 					end
 				end
 			elseif (value) then
@@ -98,41 +91,11 @@ if (CLIENT) then
 		end
 	end
 
-	net.Receive("wsMapSceneAdd", function()
-		local data = net.ReadTable()
-
-		PLUGIN.scenes[#PLUGIN.scenes + 1] = data
-	end)
-
-	net.Receive("wsMapSceneRemove", function()
-		local index = net.ReadUInt(16)
-
-		PLUGIN.scenes[index] = nil
-	end)
-
-	net.Receive("wsMapSceneAddPair", function()
-		local data = net.ReadTable()
-		local origin = net.ReadVector()
-
-		PLUGIN.scenes[origin] = data
-
-		table.insert(PLUGIN.ordered, {origin, data})
-	end)
-
-	net.Receive("wsMapSceneRemovePair", function()
-		local key = net.ReadVector()
-
-		PLUGIN.scenes[key] = nil
-
-		for k, v in ipairs(PLUGIN.ordered) do
-			if (v[1] == key) then
-				table.remove(PLUGIN.ordered, k)
-
-				break
-			end
-		end
-	end)
-
+	-- Add/remove are admin-only and rare, so the server broadcasts the full scene list on every
+	-- change (single wsMapSceneSync) instead of incremental per-item add/remove messages. This
+	-- removes the old client/server key mismatch (pairs were Vector-keyed on the client but
+	-- integer-keyed on the server, so they could never be removed) and the array holes that
+	-- corrupted the save round-trip. (fw-medium-M5)
 	net.Receive("wsMapSceneSync", function()
 		local length = net.ReadUInt(32)
 		local data = net.ReadData(length)
@@ -143,22 +106,20 @@ if (CLIENT) then
 			return
 		end
 
-		-- Set the list of texts to the ones provided by the server.
-		PLUGIN.scenes = util.JSONToTable(uncompressed)
+		PLUGIN.scenes = util.JSONToTable(uncompressed) or {}
+		PLUGIN.ordered = {}
+		PLUGIN.index = nil
+		PLUGIN.orderedIndex = nil
 
-		for k, v in pairs(PLUGIN.scenes) do
-			if (v.origin or isvector(k)) then
-				table.insert(PLUGIN.ordered, {v.origin and v.origin or k, v})
+		-- Rebuild the moving-camera cycle from the pair scenes (identified by .origin).
+		for _, v in pairs(PLUGIN.scenes) do
+			if (v.origin) then
+				table.insert(PLUGIN.ordered, {v.origin, v})
 			end
 		end
 	end)
 else
 	util.AddNetworkString("wsMapSceneSync")
-	util.AddNetworkString("wsMapSceneAdd")
-	util.AddNetworkString("wsMapSceneRemove")
-
-	util.AddNetworkString("wsMapSceneAddPair")
-	util.AddNetworkString("wsMapSceneRemovePair")
 
 	function PLUGIN:SaveScenes()
 		self:SetData(self.scenes)
@@ -168,7 +129,8 @@ else
 		self.scenes = self:GetData() or {}
 	end
 
-	function PLUGIN:PlayerInitialSpawn(client)
+	-- Broadcast the full scene list, or send it to a single receiver. (fw-medium-M5)
+	function PLUGIN:SyncScenes(receiver)
 		local json = util.TableToJSON(self.scenes)
 		local compressed = util.Compress(json)
 		local length = compressed:len()
@@ -176,30 +138,27 @@ else
 		net.Start("wsMapSceneSync")
 			net.WriteUInt(length, 32)
 			net.WriteData(compressed, length)
-		net.Send(client)
+
+		if (receiver) then
+			net.Send(receiver)
+		else
+			net.Broadcast()
+		end
+	end
+
+	function PLUGIN:PlayerInitialSpawn(client)
+		self:SyncScenes(client)
 	end
 
 	function PLUGIN:AddScene(position, angles, position2, angles2)
-		local data
-
 		if (position2) then
-			data = {origin=position, position2, angles, angles2}
-			self.scenes[#self.scenes + 1] = data
-
-			net.Start("wsMapSceneAddPair")
-				net.WriteTable(data)
-				net.WriteVector(position)
-			net.Broadcast()
+			self.scenes[#self.scenes + 1] = {origin = position, position2, angles, angles2}
 		else
-			data = {position, angles}
-			self.scenes[#self.scenes + 1] = data
-
-			net.Start("wsMapSceneAdd")
-				net.WriteTable(data)
-			net.Broadcast()
+			self.scenes[#self.scenes + 1] = {position, angles}
 		end
 
 		self:SaveScenes()
+		self:SyncScenes()
 	end
 end
 
@@ -238,40 +197,32 @@ ws.command.Add("MapSceneRemove", {
 		radius = radius or 280
 
 		local position = client:GetPos()
-		local i = 0
+		local toRemove = {}
 
 		for k, v in pairs(PLUGIN.scenes) do
-			local delete = false
+			-- single: v[1] = position. pair: v.origin = start, v[1] = end position.
+			local origin = v.origin or v[1]
+			local endPos = v.origin and v[1]
 
-			if (isvector(k)) then
-				if (k:Distance(position) <= radius or v[1]:Distance(position) <= radius) then
-					delete = true
-				end
-			elseif (v[1]:Distance(position) <= radius) then
-				delete = true
-			end
-
-			if (delete) then
-				if (isvector(k)) then
-					net.Start("wsMapSceneRemovePair")
-						net.WriteVector(k)
-					net.Broadcast()
-				else
-					net.Start("wsMapSceneRemove")
-						net.WriteUInt(k, 16) -- match the client's ReadUInt(16); k is a sequential integer index (fw-plugins-world-4)
-					net.Broadcast()
-				end
-
-				PLUGIN.scenes[k] = nil
-
-				i = i + 1
+			if ((origin and origin:Distance(position) <= radius) or
+				(endPos and endPos:Distance(position) <= radius)) then
+				toRemove[#toRemove + 1] = k
 			end
 		end
 
-		if (i > 0) then
+		-- Remove the highest index first so table.remove doesn't shift the lower indices,
+		-- keeping the array contiguous (clean save + sync). (fw-medium-M5)
+		table.sort(toRemove, function(a, b) return a > b end)
+
+		for _, k in ipairs(toRemove) do
+			table.remove(PLUGIN.scenes, k)
+		end
+
+		if (#toRemove > 0) then
 			PLUGIN:SaveScenes()
+			PLUGIN:SyncScenes()
 		end
 
-		return "@mapDel", i
+		return "@mapDel", #toRemove
 	end
 })
