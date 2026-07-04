@@ -298,7 +298,22 @@ if (SERVER) then
 				value = string.format("[%s]", tostring(value))
 			end
 
-			ws.util.NotifyLocalized("cfgSet", nil, client:Name(), key, tostring(value))
+			-- Fog of war: a nil recipient is net.Broadcast, which handed the acting admin's
+			-- character name to every client. Config-change toasts are admin tooling --
+			-- scope them to players who can manage the config. Clients still receive the
+			-- value itself through the config replication. (#74)
+			local receivers = {}
+
+			for _, v in player.Iterator() do
+				if (CAMI.PlayerHasAccess(v, "Windswept - Manage Config", nil)) then
+					receivers[#receivers + 1] = v
+				end
+			end
+
+			if (#receivers > 0) then
+				ws.util.NotifyLocalized("cfgSet", receivers, client:Name(), key, tostring(value))
+			end
+
 			ws.log.Add(client, "cfgSet", key, value)
 		end
 	})
@@ -344,7 +359,19 @@ if (SERVER) then
 			if ((bShouldEnable and bUnloaded) or (!bShouldEnable and !bUnloaded)) then
 				ws.plugin.SetUnloaded(uniqueID, !bShouldEnable) -- flip bool since we're setting unloaded, not enabled
 
-				ws.util.NotifyLocalized(bShouldEnable and "pluginLoaded" or "pluginUnloaded", nil, client:GetName(), uniqueID)
+				-- Scoped to config managers for the same reason as cfgSet above. (#74)
+				local receivers = {}
+
+				for _, v in player.Iterator() do
+					if (CAMI.PlayerHasAccess(v, "Windswept - Manage Config", nil)) then
+						receivers[#receivers + 1] = v
+					end
+				end
+
+				if (#receivers > 0) then
+					ws.util.NotifyLocalized(bShouldEnable and "pluginLoaded" or "pluginUnloaded", receivers, client:GetName(), uniqueID)
+				end
+
 				ws.log.Add(client, bShouldEnable and "pluginLoaded" or "pluginUnloaded", uniqueID)
 
 				net.Start("wsConfigPluginToggle")
