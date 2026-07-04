@@ -30,10 +30,6 @@ function ITEM:HasTitle()
     return self:GetData("titleSet", false)
 end
 
-function ITEM:GetPhotographer()
-    return self:GetData("photographer", "Unknown")
-end
-
 function ITEM:GetTimestamp()
     return self:GetData("timestamp", 0)
 end
@@ -51,14 +47,14 @@ function ITEM:GetName()
     return self.name
 end
 
--- Override GetDescription to show photographer and date
+-- Override GetDescription to show the date. Fog of war: no photographer name --
+-- the image is the only identity a photo carries (see wsPhotoScrub below). (#72)
 function ITEM:GetDescription()
-    local photographer = self:GetPhotographer()
     local timestamp = self:GetTimestamp()
 
     if timestamp > 0 then
         local dateStr = os.date("%B %d, %Y", timestamp)
-        return string.format("A photograph taken by %s on %s.", photographer, dateStr)
+        return string.format("A photograph taken on %s.", dateStr)
     end
 
     return self.description
@@ -185,6 +181,26 @@ function ITEM:OnRemoved()
     if SERVER then
         ws.photo.DeletePhotoFile(self:GetData("photoID", ""))
     end
+end
+
+if SERVER then
+    -- Photos created before #72 carry the photographer's real character name in their
+    -- item data, which networks wholesale to whoever holds the item. Scrub it before
+    -- the data can reach a client, and persist the removal so the scrub is one-time.
+    -- receivers=false: nothing has synced yet on either path, so there is no stale
+    -- client copy to correct. (#72)
+    local function ScrubLegacyPhotographer(item)
+        if item:GetData("photographer") ~= nil then
+            item:SetData("photographer", nil, false)
+        end
+    end
+
+    -- Inventory path: runs during inventory restore, before the owner gets the sync.
+    function ITEM:OnRestored()
+        ScrubLegacyPhotographer(self)
+    end
+
+    ITEM.wsScrubLegacyPhotographer = ScrubLegacyPhotographer
 end
 
 -- ============================================================================
@@ -351,6 +367,12 @@ end
 function ITEM:OnEntityCreated(entity)
     if SERVER then
         entity:SetUseType(SIMPLE_USE)
+
+        -- World path: legacy ground photos restored by saveitems skip OnRestored, so
+        -- scrub here. SetData on a world item (invID == 0) also rewrites the entity's
+        -- "data" netvar in the same tick, and saveitems restores at map load before
+        -- any player connects -- connecting clients only ever see the scrubbed state. (#72)
+        self.wsScrubLegacyPhotographer(self)
     end
 end
 
