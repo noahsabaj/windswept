@@ -11,7 +11,12 @@
 
 ITEM.name = "Camera"
 ITEM.description = "A camera for taking photographs. Requires film."
-ITEM.model = "models/weapons/infra/w_camera.mdl"
+-- Base-game camera prop (the one sandbox's gmod_cameraprop uses): has a real physics
+-- hull, so the dropped item sits still, and renders for players without the INFRA
+-- addon. The INFRA w_camera.mdl has NO .phy -- as a world item it fell back to a box
+-- around re-exported viewmodel geometry and tumbled uncontrollably. The ws_camera
+-- SWEP keeps the INFRA view/world models for in-hand visuals. (#100)
+ITEM.model = "models/dav0r/camera.mdl"
 ITEM.width = 2
 ITEM.height = 2
 ITEM.category = "Equipment"
