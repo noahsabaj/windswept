@@ -57,6 +57,10 @@ function PLUGIN:LoadData()
 								if (itemTable and itemID) then
 									local item = ws.item.New(uniqueID, itemID)
 									item.data = data or {}
+									-- Set invID before Spawn so item callbacks fired during entity
+									-- creation (OnEntityCreated) see a consistent world item
+									-- (invID == 0), matching the ws.item.Instance spawn path. (#72)
+									item.invID = 0
 
 									local itemInfo = info[itemID]
 									local position, angles, bMovable = itemInfo[1], itemInfo[2], true
@@ -74,7 +78,6 @@ function PLUGIN:LoadData()
 										physicsObject:EnableMotion(bMovable)
 									end
 
-									item.invID = 0
 									loadedItems[#loadedItems + 1] = item
 
 									if (item.isBag) then

@@ -702,11 +702,13 @@ if SERVER then
         -- Save raw JPEG binary to file (centralized so disk usage stays tracked)
         ws.photo.WritePhotoFile(photoID, imageData)
 
-        -- Item only stores the ID reference, not the actual image data
+        -- Item only stores the ID reference, not the actual image data.
+        -- Fog of war: no photographer name -- item data networks wholesale to whoever
+        -- holds the item, so a stored character name would travel with every trade,
+        -- drop and loot. The image itself is the only identity a photo carries. (#72)
         local photoData = {
             photoID = photoID,  -- Reference to file, NOT the actual image
             timestamp = os.time(),
-            photographer = character:GetName(),
             title = "",
             titleSet = false
         }
