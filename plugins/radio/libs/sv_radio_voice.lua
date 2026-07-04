@@ -189,20 +189,34 @@ timer.Create("wsRadioVoiceReceiverDrain", 1, 0, function()
             continue
         end
 
-        local frequency = txData.frequency
+        -- Transmitter record contract: handhelds store `frequency` (one
+        -- string); stationary consoles store `frequencies` (a set of
+        -- freq -> volume, keyed by an entity, isStationary = true). Reading
+        -- only the singular field crashed this timer the moment a console
+        -- mic went live (#70). Normalize to a set and test the receiver's
+        -- own frequency against it.
+        local frequencies = txData.frequencies
+        if frequencies == nil and txData.frequency ~= nil then
+            frequencies = {[txData.frequency] = true}
+        end
+        if frequencies == nil then continue end
 
-        -- Find all receivers on this frequency
+        -- Find all receivers tuned to any frequency this transmitter is on
         for _, ply in ipairs(player.GetAll()) do
             if ply == transmitter then continue end
 
-            local drainKey = ply:SteamID64() .. "_" .. frequency
-            if frequencyDrained[drainKey] then continue end  -- Already drained this player for this frequency
-
             local radio = GetActiveRadio(ply)
-            if radio and radio:GetData("frequency", "100.0") == frequency then
-                -- Drain 1 second of active usage
-                radio:DrainActive(1)
-                frequencyDrained[drainKey] = true
+            if radio then
+                local plyFreq = radio:GetData("frequency", "100.0")
+
+                if frequencies[plyFreq] ~= nil then
+                    local drainKey = ply:SteamID64() .. "_" .. plyFreq
+                    if not frequencyDrained[drainKey] then
+                        -- Drain 1 second of active usage
+                        radio:DrainActive(1)
+                        frequencyDrained[drainKey] = true
+                    end
+                end
             end
         end
     end
