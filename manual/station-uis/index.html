@@ -2,13 +2,18 @@
 
 <html>
 	<head>
-		<title>ws.anim - Windswept Documentation</title>
+		<title>Station UIs - Windswept Documentation</title>
 
 		<meta property="og:type" content="website" />
-		<meta property="og:title" content="ws.anim - Windswept Documentation" />
+		<meta property="og:title" content="Station UIs - Windswept Documentation" />
 		<meta property="og:site_name" content="Windswept Documentation" />
 
-			<meta property="og:description" content="Player model animation." />
+			<meta property="og:description" content="
+
+Any usable entity that opens a window — a locksmith machine, a typewriter, a
+dispatch console, whatever you build next — uses **one** panel base:
+`wsStationFrame` (`gamemode&#47;core&#47;derma&#47;cl_station.lua`). Don&#39;t hand-roll a
+`DFrame` for a deployable. T..." />
 
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Code+Pro" />
 		<link rel="stylesheet" href="../../ldoc.css" />
@@ -1141,7 +1146,7 @@ ws.resource.Transfer											</a>
 									</details>
 							</li>
 							<li>
-									<details open>
+									<details >
 									<summary><a href="../../libraries/ws.anim/">ws.anim</a></summary>
 
 									<ul>
@@ -2667,130 +2672,112 @@ ToggleWepRaised											</a>
 			<article>
 					<div class="wrapper">
 
-<header class="module">
-	<h1>ws.anim</h1>
-	<h2>Player model animation.</h2>
-</header>
+<h1>Station UIs</h1>
 
-<p>Windswept comes with support for using NPC animations/models as regular player models by manually translating
-animations. There are
-a few standard animation sets that are built-in that should cover most non-player models:</p>
-<pre><code>citizen_male
-citizen_female
-metrocop
-overwatch
-vortigaunt
-player
-zombie
-fastZombie
-</code></pre>
+<p>Any usable entity that opens a window — a locksmith machine, a typewriter, a
+dispatch console, whatever you build next — uses <strong>one</strong> panel base:
+<code>wsStationFrame</code> (<code>gamemode/core/derma/cl_station.lua</code>). Don't hand-roll a
+<code>DFrame</code> for a deployable. The base gives every station the same look and the
+same lifecycle, so a new station UI is just its widgets.</p>
 
-<p>If you find that your models are T-posing when they work elsewhere, you'll probably need to set the model class for your
-model with <a href="../../libraries/ws.anim/#ws.anim.SetModelClass">ws.anim.SetModelClass</a> in order for the correct animations to be used. If you'd like to add your own animation
-class, simply add to the <a href="../../libraries/ws.anim/#">ws.anim</a> table with a model class name and the required animation translation table.</p>
+<p><a name="What_the_base_provides"></a></p>
+<h2>What the base provides</h2>
 
-	<h1 class="title">Functions</h1>
+<p><strong>Look</strong> — Windswept header bar (title + close button), opaque dark rounded
+body, standard bottom button bar. All of it built on the shared helpers in
+<code>ws.constants</code> (<code>CreateHeaderBar</code>, <code>CreateButtonBar</code>), so stations match the
+rest of the UI for free.</p>
 
-		<section class="method">
-			<header>
-				<a class="anchor" id="ws.anim.GetModelClass">
-					<h1><span class="realm shared"></span></span>ws.anim.GetModelClass(model)</h1>
-				</a>
+<p><strong>Lifecycle</strong> — with <code>SetStation(ent)</code> the panel closes itself when:</p>
 
+<ul>
+    <li>the entity is removed,</li>
+    <li>the local player dies,</li>
+    <li>the player walks out of range (<code>maxUseDistance</code>, default 200; the base
+    adopts <code>ent.MaxUseDistance</code> when the entity defines one — keep it in sync
+    with whatever range the server enforces),</li>
+    <li>the server hands the station to another user (checked via <code>ent:GetUser()</code>,
+    only after we've been the user once, so the netvar race on open can't
+    insta-close the panel).</li>
+</ul>
 
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_anims.lua#L377">View source &raquo;</a>
+<p><strong>Session close</strong> — set <code>self.closeMessage = &quot;wsMyStationClose&quot;</code> and the base
+sends that <code>ws.action</code> message exactly once when the panel is removed, however
+it died (close button, ESC, range, entity gone). The server frees the user
+session in that one place.</p>
 
-					<p>Gets a model's animation class.</p>
-			</header>
-
-
-					<h3>Parameters</h3>
+<p><a name="Building_a_station_UI"></a></p>
+<h2>Building a station UI</h2>
 
 
-					<ul>
+<pre>
+<span class="keyword">local</span> PANEL = {}
 
-							<li>
-								<span class="tag parameter">model</span>
+<span class="keyword">function</span> PANEL:Init()
+    self:SetSize(<span class="number">450</span>, <span class="number">400</span>)
+    self:SetStationTitle(<span class="string">"Locksmith"</span>)
+    self:Center()
+    self.closeMessage = <span class="string">"wsLocksmithClose"</span>
 
-									<span class="tag"><a class="type" href="https://www.lua.org/manual/5.2/manual.html#6.4">string</a></span>
+    <span class="comment">-- widgets go in self.body (a DPanel docked FILL under the header)
+</span>    self.tabs = self:AddTabs()          <span class="comment">-- dark-styled DPropertySheet, optional
+</span>
+    self:AddButtonBar({                 <span class="comment">-- standard bottom bar, optional
+</span>        {<span class="string">"Cancel"</span>, <span class="number">80</span>, RIGHT, <span class="keyword">function</span>() self:Remove() <span class="keyword">end</span>},
+        {<span class="string">"Save"</span>, <span class="number">80</span>, RIGHT, <span class="keyword">function</span>() self:Save() <span class="keyword">end</span>},
+    })
+<span class="keyword">end</span>
 
+<span class="keyword">function</span> PANEL:OnStationSet(station)
+    <span class="comment">-- optional: populate from the entity (called by SetStation)
+</span><span class="keyword">end</span>
 
-								<p> Model to get the animation class for</p>
-							</li>
-					</ul>
-
-
-				<h3>Returns</h3>
-				<ul>
-
-							<li>
-									<a class="type" href="https://www.lua.org/manual/5.2/manual.html#6.4">string</a>
-
-								<p>Animation class of the model</p>
-							</li>
-
-							<div class="or"><span>OR</span></div>
-
-							<li>
-									<span class="type">nil</span>
-
-								<p>If there was no animation associated with the given model</p>
-							</li>
-
-				</ul>
-
-				<h3>Example Usage</h3>
-					<pre><code>ws.anim.GetModelClass("models/police.mdl")
- > metrocop
-</code></pre>
-
-		</section>
-		<section class="method">
-			<header>
-				<a class="anchor" id="ws.anim.SetModelClass">
-					<h1><span class="realm shared"></span></span>ws.anim.SetModelClass(model, class)</h1>
-				</a>
+vgui.Register(<span class="string">"wsLocksmithMenu"</span>, PANEL, <span class="string">"wsStationFrame"</span>)
+</pre>
 
 
-					<a class="reference" href="https://github.com/noahsabaj/windswept/tree/master/gamemode/core/libs/sh_anims.lua#L362">View source &raquo;</a>
-
-					<p>Sets a model's animation class.</p>
-			</header>
+<p>Opening it from the server's "open" net message:</p>
 
 
-					<h3>Parameters</h3>
+<pre>
+net.Receive(<span class="string">"wsLocksmithOpen"</span>, <span class="keyword">function</span>()
+    <span class="keyword">local</span> ent = net.ReadEntity()
+    <span class="keyword">if</span> <span class="keyword">not</span> IsValid(ent) <span class="keyword">then</span> <span class="keyword">return</span> <span class="keyword">end</span>
+
+    <span class="comment">-- Re-open replaces the old panel. Nil closeMessage FIRST: the old panel's
+</span>    <span class="comment">-- removal must not tell the server to end the session we just started.
+</span>    <span class="keyword">local</span> old = ws.gui.locksmith
+    <span class="keyword">if</span> IsValid(old) <span class="keyword">then</span>
+        old.closeMessage = <span class="keyword">nil</span>
+        old:Remove()
+    <span class="keyword">end</span>
+
+    ws.gui.locksmith = vgui.Create(<span class="string">"wsLocksmithMenu"</span>)
+    ws.gui.locksmith:SetStation(ent)
+<span class="keyword">end</span>)
+</pre>
 
 
-					<ul>
+<p><a name="Rules"></a></p>
+<h2>Rules</h2>
 
-							<li>
-								<span class="tag parameter">model</span>
+<ul>
+    <li>Widgets parent to <code>self.body</code>, not to the frame — the frame's top is the
+    header and its bottom belongs to the button bar.</li>
+    <li>Don't override <code>Think</code> or <code>OnRemove</code> unless you must; if you must, call the
+    base first: <code>vgui.GetControlTable(&quot;wsStationFrame&quot;).Think(self)</code>. The
+    pre-standard station UIs overrode <code>Think</code> bare and silently broke DFrame
+    dragging.</li>
+    <li>Popups that belong to a station but aren't entity-backed (result dialogs,
+    pickers) still use <code>wsStationFrame</code> — just never call <code>SetStation</code>, and the
+    lifecycle checks stay off.</li>
+    <li>The cross-repo CI panel guard (<code>tools/check-panels.sh</code>) knows about base
+    classes: a schema registering panels on <code>wsStationFrame</code> passes because the
+    framework registers it.</li>
+</ul>
 
-									<span class="tag"><a class="type" href="https://www.lua.org/manual/5.2/manual.html#6.4">string</a></span>
-
-
-								<p> Model name to set the animation class for</p>
-							</li>
-					</ul>
-
-					<ul>
-
-							<li>
-								<span class="tag parameter">class</span>
-
-									<span class="tag"><a class="type" href="https://www.lua.org/manual/5.2/manual.html#6.4">string</a></span>
-
-
-								<p> Animation class to assign to the model</p>
-							</li>
-					</ul>
-
-
-				<h3>Example Usage</h3>
-					<pre><code>ws.anim.SetModelClass("models/police.mdl", "metrocop")
-</code></pre>
-
-		</section>
+<p>Reference ports: the colony schema's locksmith, typewriter, stationary-radio,
+and radio-frequency panels (windswept-colony <code>schema/derma/</code>).</p>
 
 					</div>
 			</article>
