@@ -296,13 +296,12 @@ function ENT:CompleteCremation()
     -- Mark inventory as already cleaned so OnRemove doesn't try again
     self:SetInventoryID(0)
 
-    -- Spawn Human Remains item
-    ws.item.Spawn("human_remains", pos, function(item, entity)
-        if item then
-            -- Store original character name as data (but not displayed - fog of war)
-            item:SetData("originalCharacter", charName)
-        end
-    end)
+    -- Spawn Human Remains item. Fog of war: do NOT store the character's name on the
+    -- item -- SetData on a world item broadcasts its data table to every client, and
+    -- nothing ever read the field (the remains item is deliberately anonymous; players
+    -- label ashes themselves via Rename). The cremation log above is the server-side
+    -- record of whose remains these are. (#73)
+    ws.item.Spawn("human_remains", pos)
 
     -- Remove this entity (OnRemove handles ragdoll cleanup)
     self:Remove()
