@@ -63,7 +63,8 @@ if (CLIENT) then
 						end
 					else
 						-- Re-pick any random scene by its (stable integer) key. (fw-medium-M5)
-						_, self.index = table.Random(scenes)
+						local _, sceneKey = table.Random(scenes)
+						self.index = sceneKey
 					end
 				end
 			elseif (value) then
