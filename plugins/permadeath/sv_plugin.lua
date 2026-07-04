@@ -78,6 +78,16 @@ function PLUGIN:EntityTakeDamage(entity, dmgInfo)
     -- If player is already knocked out, ignore (damage goes to entity instead)
     if IsValid(client.wsKnockedEntity) then return end
 
+    -- Reconnect window: a knocked/expired character spawns normally on choose and is
+    -- only re-hidden/finalized by a deferred timer (PlayerLoadedCharacter). Lethal
+    -- damage in that gap would run CreateKnockout again, creating a SECOND body whose
+    -- orphaned twin later finalizes as "offline" and deletes the character being
+    -- actively played. Block all damage until the restore completes. (#78)
+    if client.wsPendingKnockoutRestore then
+        dmgInfo:ScaleDamage(0)
+        return true
+    end
+
     -- Prevent race condition: if we're already processing lethal damage for this player
     -- (e.g., multiple bullets in same frame), ignore subsequent damage
     if client.wsProcessingLethalDamage then return end
@@ -318,6 +328,17 @@ end
 -- ============================================================================
 
 function PLUGIN:CreateKnockout(client, character, dmgInfo)
+    -- Never create a second body for the same character: if one already exists
+    -- (reconnect window or any future path that slips past the damage block),
+    -- reattach to it with its remaining time instead of forking a duplicate whose
+    -- orphaned twin would later finalize as "offline". (#78)
+    local existing = self.knockedEntities[client:SteamID64()]
+
+    if IsValid(existing) and existing:GetCharacterID() == character:GetID() and not existing:GetPermadead() then
+        self:RestoreKnockoutState(client, character, existing:GetTimeRemaining())
+        return
+    end
+
     -- Increment knockout count (permanent, never resets)
     local knockoutCount = (character:GetData("knockoutCount") or 0) + 1
     character:SetData("knockoutCount", knockoutCount)
@@ -766,6 +787,33 @@ function PLUGIN:OnKnockoutExpired(knockedEntity)
     if IsValid(owner) then
         self:ApplyPermadeath(owner, character, "timer_expired")
     else
+        -- Never delete a character someone is actively playing: wsOwner nil plus a
+        -- connected player on this character means this entity is a stale duplicate
+        -- (the #78 reconnect fork), not a genuine offline expiry. Detach everything
+        -- it shares with the live character before removing: its inventory link
+        -- (OnRemove on a permadead body deletes inventory rows -- here the LIVE
+        -- character's) and its steamid key (OnRemove would deregister whichever
+        -- entity currently owns that slot). (#78)
+        for _, ply in player.Iterator() do
+            if ply:GetCharacter() == character then
+                ErrorNoHalt("[Permadeath] Orphaned ws_knocked expired for actively played character #"
+                    .. charID .. "; removing the stale body without finalizing.\n")
+
+                knockedEntity.wsSteamID64 = nil
+                knockedEntity:SetInventoryID(0)
+                knockedEntity:Remove()
+
+                -- The wipe at the top of this function may have deregistered the
+                -- player's CURRENT body (same steamid key); restore it.
+                local liveBody = ply.wsKnockedEntity
+                if IsValid(liveBody) and liveBody ~= knockedEntity and liveBody.wsSteamID64 then
+                    self.knockedEntities[liveBody.wsSteamID64] = liveBody
+                end
+
+                return
+            end
+        end
+
         -- Player offline - apply permadeath and delete character
         local steamID = knockedEntity.wsSteamID64
         knockedEntity.wsOwner = nil
@@ -886,10 +934,19 @@ function PLUGIN:PlayerLoadedCharacter(client, character, lastChar)
     local knockoutExpires = character:GetData("knockoutExpires")
 
     if knockoutExpires then
+        -- Damage is blocked until the deferred restore/finalize below runs, so the
+        -- 0.5-1s spawned-and-exposed gap cannot fork a second knockout. Cleared
+        -- unconditionally in both callbacks (even on a character switch) so the
+        -- immunity can never outlive the window. (#78)
+        client.wsPendingKnockoutRestore = true
+
         if knockoutExpires < os.time() then
             -- Timer expired while offline - permadeath
             timer.Simple(1, function()
-                if IsValid(client) and client:GetCharacter() == character then
+                if not IsValid(client) then return end
+                client.wsPendingKnockoutRestore = nil
+
+                if client:GetCharacter() == character then
                     self:ApplyPermadeath(client, character, "timer_expired_offline")
                 end
             end)
@@ -897,7 +954,10 @@ function PLUGIN:PlayerLoadedCharacter(client, character, lastChar)
             -- Still knocked - recreate the knockout state
             local remaining = knockoutExpires - os.time()
             timer.Simple(0.5, function()
-                if IsValid(client) and client:GetCharacter() == character then
+                if not IsValid(client) then return end
+                client.wsPendingKnockoutRestore = nil
+
+                if client:GetCharacter() == character then
                     self:RestoreKnockoutState(client, character, remaining)
                 end
             end)
