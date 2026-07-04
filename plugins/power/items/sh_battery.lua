@@ -33,23 +33,9 @@ if CLIENT then
     function ITEM:PaintOver(item, w, h)
         local charge = item:GetData("charge", 100)
 
-        -- Background bar
-        surface.SetDrawColor(30, 30, 30, 200)
-        surface.DrawRect(4, h - 12, w - 8, 8)
-
-        -- Charge fill with color based on level
-        local chargeWidth = ((w - 8) / 100) * charge
-        local color
-        if charge > 50 then
-            color = Color(50, 200, 50)  -- Green
-        elseif charge > 25 then
-            color = Color(200, 200, 50)  -- Yellow
-        else
-            color = Color(200, 50, 50)  -- Red
-        end
-
-        surface.SetDrawColor(color)
-        surface.DrawRect(4, h - 12, chargeWidth, 8)
+        -- The standard consumable fullness bar (shared with film packs etc.);
+        -- exact numbers live in the hover tooltip. (#93)
+        ws.constants.DrawDurabilityBar(w, h, charge / 100, ws.constants.GetChargeColor(charge))
     end
 
     function ITEM:PopulateTooltip(tooltip)

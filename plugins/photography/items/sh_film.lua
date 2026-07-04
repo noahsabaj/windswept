@@ -57,33 +57,12 @@ end
 if CLIENT then
     function ITEM:PaintOver(item, w, h)
         local shots = item:GetData("shots", item.maxShots)
-        local maxShots = item.maxShots
+        local fraction = shots / item.maxShots
 
-        -- Draw shot count in corner
-        local text = string.format("%d/%d", shots, maxShots)
-
-        surface.SetFont("wsSmallFont")
-        local textW, textH = surface.GetTextSize(text)
-
-        -- Background
-        surface.SetDrawColor(0, 0, 0, 180)
-        surface.DrawRect(w - textW - 8, h - textH - 4, textW + 6, textH + 2)
-
-        -- Text color based on shots remaining
-        local color
-        if shots >= maxShots then
-            color = Color(50, 200, 50)      -- GREEN (full)
-        elseif shots >= maxShots / 2 then
-            color = Color(200, 200, 50)     -- YELLOW
-        elseif shots > 0 then
-            color = Color(200, 100, 50)     -- ORANGE
-        else
-            color = Color(150, 50, 50)      -- RED (empty)
-        end
-
-        surface.SetTextColor(color)
-        surface.SetTextPos(w - textW - 5, h - textH - 3)
-        surface.DrawText(text)
+        -- The standard consumable fullness bar (same as batteries). The old "10/10"
+        -- text clipped off a 1x1 icon and read as "0/10"; exact counts live in the
+        -- hover tooltip. (#93)
+        ws.constants.DrawDurabilityBar(w, h, fraction, ws.constants.GetChargeColor(fraction * 100))
     end
 
     function ITEM:PopulateTooltip(tooltip)
