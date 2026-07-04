@@ -392,7 +392,12 @@ if (SERVER) then
 			ws.item.pendingNetSync[itemID] = pending
 		end
 
-		pending.changes[key] = value
+		-- nil marks a deletion; encode it so the queue table can hold it (#91)
+		if (value == nil) then
+			pending.changes[key] = ws.item.DELETED
+		else
+			pending.changes[key] = value
+		end
 
 		-- Update receivers if provided (use most recent)
 		if (receivers) then
