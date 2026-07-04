@@ -12,6 +12,14 @@ ws.item.inventories = ws.item.inventories or {
 }
 ws.item.inventoryTypes = ws.item.inventoryTypes or {}
 
+-- Wire sentinel for item-data DELETIONS: a Lua table cannot hold a nil value, so
+-- SetData(key, nil) could never ride the batched sync queue -- the server and DB
+-- dropped the key but the client was never told, leaving stale data (the
+-- equipped-state desync, #91). QueueNetSync encodes nil as this value and the
+-- wsInventoryDataBatch receiver decodes it back to nil. It exists only in the
+-- queue and on the wire; item.data itself always stores real nil.
+ws.item.DELETED = "@@wsItemDataDeleted"
+
 ws.util.Include(ws.FRAMEWORK_FOLDER.."/gamemode/core/meta/sh_item.lua")
 
 -- Declare some supports for logic inventory
@@ -422,9 +430,13 @@ do
 			if (item and changes) then
 				item.data = item.data or {}
 
-				-- Apply all changes from the batch
+				-- Apply all changes from the batch (the sentinel marks a deletion, #91)
 				for key, value in pairs(changes) do
-					item.data[key] = value
+					if (value == ws.item.DELETED) then
+						item.data[key] = nil
+					else
+						item.data[key] = value
+					end
 				end
 
 				-- Update tooltip once for all changes
