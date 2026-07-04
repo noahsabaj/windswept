@@ -281,6 +281,83 @@ if CLIENT then
         return btnPanel, created
     end
 
+    -- Restyle a DListView to the dark Windswept look. The derma skin has no
+    -- list style, so stock DListViews render the Default skin's white body and
+    -- light headers -- jarring inside dark panels (station UIs, editors).
+    -- Call once right after creating the list; AddColumn/AddLine are wrapped,
+    -- so populate code needs no changes. Sorting and selection keep working
+    -- (only Paint and text colors are replaced).
+    local COLOR_LIST_BG = Color(30, 30, 30, 255)
+    local COLOR_LIST_HEADER = Color(45, 45, 45, 255)
+    local COLOR_LIST_LINE = Color(34, 34, 34, 255)
+    local COLOR_LIST_LINE_ALT = Color(38, 38, 38, 255)
+    local COLOR_LIST_LINE_HOVER = Color(60, 60, 60, 255)
+    local COLOR_LIST_LINE_SELECTED = Color(30, 58, 95, 255) -- header-bar blue
+
+    local function StyleListColumn(column)
+        if not IsValid(column) or not IsValid(column.Header) then return end
+
+        column.Header:SetTextColor(C.COLOR_UI_NEUTRAL)
+        column.Header.Paint = function(btn, w, h)
+            surface.SetDrawColor(COLOR_LIST_HEADER)
+            surface.DrawRect(0, 0, w, h)
+            surface.SetDrawColor(0, 0, 0, 180)
+            surface.DrawOutlinedRect(0, 0, w, h)
+        end
+    end
+
+    function C.StyleListView(listView)
+        listView.Paint = function(pnl, w, h)
+            surface.SetDrawColor(COLOR_LIST_BG)
+            surface.DrawRect(0, 0, w, h)
+            surface.SetDrawColor(0, 0, 0, 180)
+            surface.DrawOutlinedRect(0, 0, w, h)
+        end
+
+        for _, column in ipairs(listView.Columns or {}) do
+            StyleListColumn(column)
+        end
+
+        local addColumn = listView.AddColumn
+        listView.AddColumn = function(pnl, ...)
+            local column = addColumn(pnl, ...)
+            StyleListColumn(column)
+            return column
+        end
+
+        local addLine = listView.AddLine
+        listView.AddLine = function(pnl, ...)
+            local line = addLine(pnl, ...)
+
+            line.Paint = function(l, w, h)
+                local color
+                if l:IsLineSelected() then
+                    color = COLOR_LIST_LINE_SELECTED
+                elseif l.Hovered then
+                    color = COLOR_LIST_LINE_HOVER
+                elseif l.m_bAlt then
+                    color = COLOR_LIST_LINE_ALT
+                else
+                    color = COLOR_LIST_LINE
+                end
+                surface.SetDrawColor(color)
+                surface.DrawRect(0, 0, w, h)
+            end
+
+            -- Explicit SetTextColor wins over the label's skin-driven
+            -- UpdateColours (which would pick a dark, unreadable color).
+            for _, label in pairs(line.Columns or {}) do
+                if IsValid(label) then
+                    label:SetTextColor(color_white)
+                end
+            end
+
+            return line
+        end
+
+        return listView
+    end
+
     -- Process SWEP input: cursor check, LMB/RMB polling, edge detection
     -- Returns lmbPressed, rmbPressed (true only on the frame the button was first pressed)
     function C.ProcessSWEPInput(weapon)
