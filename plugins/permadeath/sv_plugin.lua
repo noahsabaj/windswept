@@ -27,6 +27,11 @@ ws.log.AddType("permadeath", function(client, charName, reason)
         client:Name(), charName, reason)
 end, FLAG_DANGER)
 
+-- Offline finalizations have no valid client to Name(); log the character only. (#75)
+ws.log.AddType("permadeath_offline", function(client, charName, reason)
+    return string.format("Offline character '%s' died permanently (%s)", charName, reason)
+end, FLAG_DANGER)
+
 ws.log.AddType("knockout_giveup", function(client)
     return string.format("%s gave up while knocked out", client:Name())
 end, FLAG_WARNING)
@@ -727,6 +732,10 @@ function PLUGIN:OnKnockoutExpired(knockedEntity)
         -- Player offline - apply permadeath and delete character
         local steamID = knockedEntity.wsSteamID64
         knockedEntity.wsOwner = nil
+
+        -- Every finalization path leaves a log trace (the online path logs via
+        -- ApplyPermadeath). (#75)
+        ws.log.Add(nil, "permadeath_offline", character:GetName(), "timer_expired_offline")
 
         -- Delete the character from database (scoped to its owning steamid). (sc-permadeath-6)
         self:DeleteCharacterOffline(charID, steamID)
