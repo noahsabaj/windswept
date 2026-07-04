@@ -30,11 +30,16 @@ ws.radio.transmitters = ws.radio.transmitters or {}
 -- Cache radio-related entities to avoid ents.FindByClass() in voice hooks
 -- ============================================================================
 
+-- No prop_ragdoll cache: nothing in the codebase ever sets wsCharID on a ragdoll
+-- (only on dropped item entities), so the old GetRagdollRadio path could never find a
+-- radio -- while paying an all-inventories walk per ragdoll per pair-call if it ever
+-- had. Body eavesdropping is fully served by the ws_knocked path: in this gamemode a
+-- body IS a ws_knocked entity plus its visual ragdoll. (#79)
 ws.radio.entityCache = ws.radio.entityCache or {
-    ragdolls = {},           -- prop_ragdoll entities
     knockedBodies = {},      -- ws_knocked entities
     stationaryRadios = {},   -- ws_stationary_radio entities
 }
+ws.radio.entityCache.ragdolls = nil
 
 -- Helper to add entity to cache
 local function CacheEntity(ent, cacheTable)
@@ -45,10 +50,10 @@ end
 hook.Add("OnEntityCreated", "wsRadioEntityCache", function(ent)
     if not IsValid(ent) then return end
 
-    -- Only the 3 relevant classes are worth deferring; skip the timer churn for
+    -- Only the relevant classes are worth deferring; skip the timer churn for
     -- every other entity created on the map. (sc-schema-glue-3)
     local class = ent:GetClass()
-    if (class ~= "prop_ragdoll" and class ~= "ws_knocked" and class ~= ws.radio.stationaryClass) then
+    if (class ~= "ws_knocked" and class ~= ws.radio.stationaryClass) then
         return
     end
 
@@ -56,9 +61,7 @@ hook.Add("OnEntityCreated", "wsRadioEntityCache", function(ent)
     timer.Simple(0, function()
         if not IsValid(ent) then return end
 
-        if class == "prop_ragdoll" then
-            CacheEntity(ent, ws.radio.entityCache.ragdolls)
-        elseif class == "ws_knocked" then
+        if class == "ws_knocked" then
             CacheEntity(ent, ws.radio.entityCache.knockedBodies)
         elseif class == ws.radio.stationaryClass then
             CacheEntity(ent, ws.radio.entityCache.stationaryRadios)
@@ -71,21 +74,16 @@ hook.Add("EntityRemoved", "wsRadioEntityUncache", function(ent)
     if not ent then return end
 
     -- Remove from all caches (cheaper than checking class)
-    ws.radio.entityCache.ragdolls[ent] = nil
     ws.radio.entityCache.knockedBodies[ent] = nil
     ws.radio.entityCache.stationaryRadios[ent] = nil
 end)
 
 -- Rebuild cache on map cleanup (fallback safety)
 hook.Add("PostCleanupMap", "wsRadioEntityCacheRebuild", function()
-    ws.radio.entityCache.ragdolls = {}
     ws.radio.entityCache.knockedBodies = {}
     ws.radio.entityCache.stationaryRadios = {}
 
     -- Repopulate caches
-    for _, ent in ipairs(ents.FindByClass("prop_ragdoll")) do
-        CacheEntity(ent, ws.radio.entityCache.ragdolls)
-    end
     for _, ent in ipairs(ents.FindByClass("ws_knocked")) do
         CacheEntity(ent, ws.radio.entityCache.knockedBodies)
     end
@@ -97,9 +95,6 @@ end)
 -- Initialize caches on server start
 hook.Add("InitPostEntity", "wsRadioEntityCacheInit", function()
     timer.Simple(1, function()
-        for _, ent in ipairs(ents.FindByClass("prop_ragdoll")) do
-            CacheEntity(ent, ws.radio.entityCache.ragdolls)
-        end
         for _, ent in ipairs(ents.FindByClass("ws_knocked")) do
             CacheEntity(ent, ws.radio.entityCache.knockedBodies)
         end
@@ -126,30 +121,6 @@ local function GetActiveRadio(client)
     for _, radio in ipairs(radios) do
         if radio:GetData("enabled") and radio:CanOperate() then
             return radio
-        end
-    end
-
-    return nil
-end
-
--- Get radio on a ragdoll entity (dead player)
-local function GetRagdollRadio(ragdoll)
-    if not IsValid(ragdoll) then return nil end
-
-    -- Check if this is a Windswept ragdoll with inventory
-    local charID = ragdoll.wsCharID
-    if not charID then return nil end
-
-    -- Find inventory by character ID
-    for _, inv in pairs(ws.item.inventories) do
-        if inv:GetOwner() == charID then
-            local radios = inv:GetItemsByUniqueID(ws.radio.itemID, true)
-            for _, radio in ipairs(radios) do
-                if radio:GetData("enabled") and radio:CanOperate() then
-                    return radio
-                end
-            end
-            break
         end
     end
 
@@ -272,25 +243,6 @@ local function IsSpeakerInRangeOfPosition(speaker, pos, speakerAmplitude)
     return distSqr <= (voiceRange * voiceRange)
 end
 
--- Helper: Get all frequencies a speaker is being broadcast on (via stationary radios)
-local function GetStationaryRadioBroadcastFrequencies(speaker, speakerAmplitude)
-    local frequencies = {}
-
-    for _, txData in pairs(ws.radio.transmitters) do
-        if txData.isStationary and IsValid(txData.entity) then
-            -- Check if speaker is within voice range of the stationary radio
-            if IsSpeakerInRangeOfPosition(speaker, txData.entity:GetPos(), speakerAmplitude) then
-                -- Add all TX frequencies from this stationary radio
-                for freq, _ in pairs(txData.frequencies) do
-                    frequencies[freq] = txData.entity
-                end
-            end
-        end
-    end
-
-    return frequencies
-end
-
 -- Helper: Check if listener is at a stationary radio receiving on any of these frequencies
 local function IsListenerAtStationaryRadioReceiving(listener, frequencies)
     for _, txData in pairs(ws.radio.transmitters) do
@@ -305,6 +257,122 @@ local function IsListenerAtStationaryRadioReceiving(listener, frequencies)
         end
     end
     return false, 0
+end
+
+-- ============================================================================
+-- VOICE SNAPSHOT CACHE
+--
+-- PlayerCanHearPlayersVoice runs per (listener, speaker) PAIR on the engine's
+-- ~0.3s voice-mask cadence -- O(players^2) calls, continuously. The old code did
+-- its full radio scan (every player's inventory via GetActiveRadio, every cached
+-- body, every stationary RX table) inside each pair-call, i.e. O(n^2 x n x
+-- inventory) during any transmission, plus 2 table allocations per call even
+-- when nobody transmitted. All of that work is pair-independent: it depends
+-- only on world state. Snapshot it here at most once per interval and let every
+-- pair-call in the window read the same tables. Staleness is bounded by the
+-- interval, which matches the voice-mask cadence itself. (#79)
+-- ============================================================================
+
+local VOICE_CACHE_INTERVAL = 0.25
+
+local voiceCache = {
+    builtAt = -1,
+    playerRadios = {},   -- [player] = {freq, volume} for enabled+operable handhelds
+    worldReceivers = {}, -- flat {pos, freq, volume} list: body radios + stationary RX
+    speakerFreqs = {},   -- per-speaker broadcast-frequency memo, lazy within a window
+}
+
+local function RebuildVoiceCache()
+    local now = CurTime()
+    if (now - voiceCache.builtAt) < VOICE_CACHE_INTERVAL then return end
+
+    voiceCache.builtAt = now
+    voiceCache.speakerFreqs = {}
+
+    -- One GetActiveRadio (inventory walk) per PLAYER per interval -- the old code
+    -- did one per player per pair-call.
+    local playerRadios = {}
+    for _, ply in player.Iterator() do
+        local radio = GetActiveRadio(ply)
+        if radio then
+            playerRadios[ply] = {
+                freq = radio:GetData("frequency", "100.0"),
+                volume = radio:GetData("volume", 50) / 100,
+            }
+        end
+    end
+    voiceCache.playerRadios = playerRadios
+
+    -- Every powered world receiver an eavesdropper could stand next to.
+    local receivers = {}
+
+    for ent in pairs(ws.radio.entityCache.knockedBodies) do
+        if IsValid(ent) and ent.GetInventory then
+            local inv = ent:GetInventory()
+            if inv then
+                local radios = inv:GetItemsByUniqueID(ws.radio.itemID, true)
+                for _, radio in ipairs(radios) do
+                    if radio:GetData("enabled") and radio:CanOperate() then
+                        receivers[#receivers + 1] = {
+                            pos = ent:GetPos(),
+                            freq = radio:GetData("frequency", "100.0"),
+                            volume = radio:GetData("volume", 50) / 100,
+                        }
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    for ent in pairs(ws.radio.entityCache.stationaryRadios) do
+        if IsValid(ent) then
+            local pos = ent:GetPos()
+            for freq, volume in pairs(ent:GetRXFrequencies()) do
+                receivers[#receivers + 1] = {pos = pos, freq = freq, volume = volume / 100}
+            end
+        end
+    end
+
+    voiceCache.worldReceivers = receivers
+end
+
+-- All frequencies this speaker is being broadcast on (handheld TX + stationary
+-- mic pickup), memoized per speaker within the cache window so the stationary
+-- range checks and the table run once per SPEAKER, not once per pair. Returns
+-- false (memo-able) when the speaker is not on the air.
+local function GetSpeakerBroadcastFreqs(speaker, speakerAmplitude)
+    local cached = voiceCache.speakerFreqs[speaker]
+    if cached ~= nil then return cached end
+
+    local freqs = false
+
+    local txData = ws.radio.transmitters[speaker]
+    if txData and not txData.isStationary then
+        freqs = {[txData.frequency] = true}
+    end
+
+    for _, tx in pairs(ws.radio.transmitters) do
+        if tx.isStationary and IsValid(tx.entity)
+        and IsSpeakerInRangeOfPosition(speaker, tx.entity:GetPos(), speakerAmplitude) then
+            for freq in pairs(tx.frequencies) do
+                freqs = freqs or {}
+                freqs[freq] = true
+            end
+        end
+    end
+
+    voiceCache.speakerFreqs[speaker] = freqs
+    return freqs
+end
+
+-- Normal proximity voice with amplitude scaling.
+-- Whisper (0.0-0.2): 100-200 units / Normal: 200-400 / Loud: 400-600 / Yell: 600-800
+local function CanHearProximity(listener, speaker, speakerAmplitude)
+    local distance = listener:EyePos():Distance(speaker:EyePos())
+    local voiceRange = 100 + (speakerAmplitude * 700)
+
+    return distance <= voiceRange, false
 end
 
 -- Main voice hearing logic
@@ -330,118 +398,54 @@ function PLUGIN:PlayerCanHearPlayersVoice(listener, speaker)
     -- Get speaker's current voice amplitude
     local speakerAmplitude = ws.radio.amplitudes[speaker] or 0.5
 
-    -- Check if speaker is transmitting on handheld radio
-    local txData = ws.radio.transmitters[speaker]
-    local handheldFrequency = nil
-
-    if txData and not txData.isStationary then
-        -- Speaker is transmitting on handheld radio
-        handheldFrequency = txData.frequency
+    -- Fast path: nobody anywhere is on the air -> pure proximity voice, zero
+    -- allocations (the common case; the old code allocated 2 tables per pair-call
+    -- even here). (#79)
+    if next(ws.radio.transmitters) == nil then
+        return CanHearProximity(listener, speaker, speakerAmplitude)
     end
 
-    -- Check if speaker is being picked up by any stationary radios with MIC on
-    local stationaryFrequencies = GetStationaryRadioBroadcastFrequencies(speaker, speakerAmplitude)
+    RebuildVoiceCache()
 
-    -- Combine all frequencies speaker is being broadcast on
-    local allBroadcastFrequencies = {}
-    if handheldFrequency then
-        allBroadcastFrequencies[handheldFrequency] = true
-    end
-    for freq, _ in pairs(stationaryFrequencies) do
-        allBroadcastFrequencies[freq] = true
-    end
+    local broadcastFreqs = GetSpeakerBroadcastFreqs(speaker, speakerAmplitude)
 
     -- If speaker is being broadcast on any frequency, check if listener can receive
-    if not table.IsEmpty(allBroadcastFrequencies) then
-        -- Check if listener has handheld radio on any broadcast frequency
-        local listenerRadio = GetActiveRadio(listener)
-        if listenerRadio then
-            local listenerFreq = listenerRadio:GetData("frequency", "100.0")
-            if allBroadcastFrequencies[listenerFreq] then
-                return true, false  -- Direct radio reception
-            end
+    if broadcastFreqs then
+        -- Direct reception on the listener's handheld (cached; no inventory walk)
+        local listenerRadio = voiceCache.playerRadios[listener]
+        if listenerRadio and broadcastFreqs[listenerRadio.freq] then
+            return true, false  -- Direct radio reception
         end
 
         -- Check if listener is at a stationary radio receiving on any broadcast frequency
-        local atStationary = IsListenerAtStationaryRadioReceiving(listener, allBroadcastFrequencies)
+        local atStationary = IsListenerAtStationaryRadioReceiving(listener, broadcastFreqs)
         if atStationary then
             return true, false  -- Receiving via stationary radio
         end
 
-        -- Check eavesdropping: listener is near someone/something with a receiving radio
+        -- Eavesdropping: listener near someone/something with a receiving radio.
+        -- Both source sets come from the snapshot -- only radio HOLDERS are
+        -- iterated, and no inventories are touched in the pair-call.
         local listenerPos = listener:GetPos()
         local closestReceiverDist = math.huge
         local closestReceiverVolume = 0
 
-        -- Check living players with handheld radios
-        for _, ply in ipairs(player.GetAll()) do
-            if ply ~= speaker and ply ~= listener then
-                local radio = GetActiveRadio(ply)
-                if radio then
-                    local radioFreq = radio:GetData("frequency", "100.0")
-                    if allBroadcastFrequencies[radioFreq] then
-                        local dist = listenerPos:Distance(ply:GetPos())
-                        if dist < closestReceiverDist then
-                            closestReceiverDist = dist
-                            closestReceiverVolume = radio:GetData("volume", 50) / 100
-                        end
-                    end
+        for ply, radio in pairs(voiceCache.playerRadios) do
+            if ply ~= speaker and ply ~= listener and IsValid(ply) and broadcastFreqs[radio.freq] then
+                local dist = listenerPos:Distance(ply:GetPos())
+                if dist < closestReceiverDist then
+                    closestReceiverDist = dist
+                    closestReceiverVolume = radio.volume
                 end
             end
         end
 
-        -- Check ragdolls (knocked/dead) - uses cached entities
-        for ent, _ in pairs(ws.radio.entityCache.ragdolls) do
-            if IsValid(ent) then
-                local radio = GetRagdollRadio(ent)
-                if radio then
-                    local radioFreq = radio:GetData("frequency", "100.0")
-                    if allBroadcastFrequencies[radioFreq] then
-                        local dist = listenerPos:Distance(ent:GetPos())
-                        if dist < closestReceiverDist then
-                            closestReceiverDist = dist
-                            closestReceiverVolume = radio:GetData("volume", 50) / 100
-                        end
-                    end
-                end
-            end
-        end
-
-        -- Check ws_knocked entities - uses cached entities
-        for ent, _ in pairs(ws.radio.entityCache.knockedBodies) do
-            if IsValid(ent) and ent.GetInventory then
-                local inv = ent:GetInventory()
-                if inv then
-                    local radios = inv:GetItemsByUniqueID(ws.radio.itemID, true)
-                    for _, radio in ipairs(radios) do
-                        if radio:GetData("enabled") and radio:CanOperate() then
-                            local radioFreq = radio:GetData("frequency", "100.0")
-                            if allBroadcastFrequencies[radioFreq] then
-                                local dist = listenerPos:Distance(ent:GetPos())
-                                if dist < closestReceiverDist then
-                                    closestReceiverDist = dist
-                                    closestReceiverVolume = radio:GetData("volume", 50) / 100
-                                end
-                                break
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        -- Check stationary radios (eavesdrop from their speaker) - uses cached entities
-        for ent, _ in pairs(ws.radio.entityCache.stationaryRadios) do
-            if IsValid(ent) then
-                local rxFreqs = ent:GetRXFrequencies()
-                for freq, volume in pairs(rxFreqs) do
-                    if allBroadcastFrequencies[freq] then
-                        local dist = listenerPos:Distance(ent:GetPos())
-                        if dist < closestReceiverDist then
-                            closestReceiverDist = dist
-                            closestReceiverVolume = volume / 100
-                        end
-                    end
+        for _, rx in ipairs(voiceCache.worldReceivers) do
+            if broadcastFreqs[rx.freq] then
+                local dist = listenerPos:Distance(rx.pos)
+                if dist < closestReceiverDist then
+                    closestReceiverDist = dist
+                    closestReceiverVolume = rx.volume
                 end
             end
         end
@@ -453,27 +457,13 @@ function PLUGIN:PlayerCanHearPlayersVoice(listener, speaker)
             return true, false  -- Can hear via eavesdrop
         end
 
-        -- If speaker was ONLY broadcasting via radio (not also speaking locally), stop here
-        if handheldFrequency then
+        -- If speaker was ONLY broadcasting via radio (not also speaking locally), stop
+        -- here. Handheld TX suppresses local voice; talking near a stationary mic does not.
+        local txData = ws.radio.transmitters[speaker]
+        if txData and not txData.isStationary then
             return false, false
         end
     end
 
-    -- Normal proximity voice with amplitude scaling
-    local listenerPos = listener:EyePos()
-    local speakerPos = speaker:EyePos()
-    local distance = listenerPos:Distance(speakerPos)
-
-    -- Scale voice range by amplitude
-    -- Whisper (0.0-0.2): 100-200 units
-    -- Normal (0.2-0.5): 200-400 units
-    -- Loud (0.5-0.8): 400-600 units
-    -- Yelling (0.8-1.0): 600-800 units
-    local voiceRange = 100 + (speakerAmplitude * 700)
-
-    if distance <= voiceRange then
-        return true, false
-    end
-
-    return false, false
+    return CanHearProximity(listener, speaker, speakerAmplitude)
 end
