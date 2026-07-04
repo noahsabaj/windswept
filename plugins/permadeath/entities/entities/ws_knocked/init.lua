@@ -445,12 +445,20 @@ function ENT:OnTakeDamage(dmgInfo)
                 if IsValid(owner) then
                     plugin:ApplyPermadeath(owner, character, "executed_headshot")
                 else
-                    -- Offline execution
-                    character:SetData("permadead", true)
-                    character:SetData("permaDeathReason", "executed_headshot_offline")
-                    character:SetData("permaDeathTime", os.time())
-                    character:SetData("knocked", nil)
-                    character:SetData("knockoutExpires", nil)
+                    -- Offline execution: permadeath persists as ROW DELETION, the same
+                    -- model as every other finalization path. The old SetData-only
+                    -- branch mutated the in-memory character and nothing ever saved it
+                    -- (no autosave for offline characters), so the "executed" character
+                    -- loaded alive again after a restart. Mirror OnKnockoutExpired's
+                    -- offline path; the body stays for looting. (#75)
+                    ws.log.Add(nil, "permadeath_offline", character:GetName(), "executed_headshot_offline")
+
+                    if self.wsSteamID64 then
+                        plugin.knockedEntities[self.wsSteamID64] = nil
+                    end
+
+                    self.wsOwner = nil
+                    plugin:DeleteCharacterOffline(charID, self.wsSteamID64)
                     self:SetPermadead(true)
                 end
             else
