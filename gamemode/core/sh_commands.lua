@@ -51,9 +51,14 @@ ws.command.Add("CharGiveFlag", {
 
 		target:GiveFlags(flags)
 
+		-- Fog of war: the named phrase goes to command-privileged admins only. The target
+		-- still learns what happened to them via a nameless variant -- never the acting
+		-- admin's character name. Same pattern for every admin char command below. (#74)
 		for _, v in player.Iterator() do
-			if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+			if (self:OnCheckAccess(v)) then
 				v:NotifyLocalized("flagGive", client:GetName(), target:GetName(), flags)
+			elseif (v == target:GetPlayer()) then
+				v:NotifyLocalized("flagGiveTarget", flags)
 			end
 		end
 	end
@@ -77,8 +82,10 @@ ws.command.Add("CharTakeFlag", {
 		target:TakeFlags(flags)
 
 		for _, v in player.Iterator() do
-			if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+			if (self:OnCheckAccess(v)) then
 				v:NotifyLocalized("flagTake", client:GetName(), flags, target:GetName())
+			elseif (v == target:GetPlayer()) then
+				v:NotifyLocalized("flagTakeTarget", flags)
 			end
 		end
 	end
@@ -107,8 +114,10 @@ ws.command.Add("CharSetModel", {
 		target:GetPlayer():SetupHands()
 
 		for _, v in player.Iterator() do
-			if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+			if (self:OnCheckAccess(v)) then
 				v:NotifyLocalized("cChangeModel", client:GetName(), target:GetName(), model)
+			elseif (v == target:GetPlayer()) then
+				v:NotifyLocalized("cChangeModelTarget", model)
 			end
 		end
 	end
@@ -126,8 +135,10 @@ ws.command.Add("CharSetSkin", {
 		target:GetPlayer():SetSkin(skin or 0)
 
 		for _, v in player.Iterator() do
-			if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+			if (self:OnCheckAccess(v)) then
 				v:NotifyLocalized("cChangeSkin", client:GetName(), target:GetName(), skin or 0)
+			elseif (v == target:GetPlayer()) then
+				v:NotifyLocalized("cChangeSkinTarget", skin or 0)
 			end
 		end
 	end
@@ -154,7 +165,15 @@ ws.command.Add("CharSetBodygroup", {
 			target:SetData("groups", groups)
 			target:GetPlayer():SetBodygroup(index, value or 0)
 
-			ws.util.NotifyLocalized("cChangeGroups", nil, client:GetName(), target:GetName(), bodygroup, value or 0)
+			-- Was a full net.Broadcast (nil recipient) -- the only bodygroup command that
+			-- told every client. Scoped like its siblings. (#74)
+			for _, v in player.Iterator() do
+				if (self:OnCheckAccess(v)) then
+					v:NotifyLocalized("cChangeGroups", client:GetName(), target:GetName(), bodygroup, value or 0)
+				elseif (v == target:GetPlayer()) then
+					v:NotifyLocalized("cChangeGroupsTarget", bodygroup, value or 0)
+				end
+			end
 		else
 			return "@invalidArg", 2
 		end
@@ -219,8 +238,10 @@ ws.command.Add("CharSetName", {
 		end
 
 		for _, v in player.Iterator() do
-			if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+			if (self:OnCheckAccess(v)) then
 				v:NotifyLocalized("cChangeName", client:GetName(), target:GetName(), newName)
+			elseif (v == target:GetPlayer()) then
+				v:NotifyLocalized("cChangeNameTarget", newName)
 			end
 		end
 
@@ -297,8 +318,10 @@ ws.command.Add("CharKick", {
 		end)
 
 		for _, v in player.Iterator() do
-			if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+			if (self:OnCheckAccess(v)) then
 				v:NotifyLocalized("charKick", client:GetName(), target:GetName())
+			elseif (v == target:GetPlayer()) then
+				v:NotifyLocalized("charKickTarget")
 			end
 		end
 	end
@@ -321,8 +344,10 @@ ws.command.Add("CharBan", {
 		target:Save()
 
 		for _, v in player.Iterator() do
-			if (self:OnCheckAccess(v) or v == target:GetPlayer()) then
+			if (self:OnCheckAccess(v)) then
 				v:NotifyLocalized("charBan", client:GetName(), target:GetName())
+			elseif (v == target:GetPlayer()) then
+				v:NotifyLocalized("charBanTarget")
 			end
 		end
 	end
@@ -347,8 +372,10 @@ ws.command.Add("CharUnban", {
 				end
 
 				for _, v2 in player.Iterator() do
-					if (self:OnCheckAccess(v2) or v2 == v:GetPlayer()) then
+					if (self:OnCheckAccess(v2)) then
 						v2:NotifyLocalized("charUnBan", client:GetName(), v:GetName())
+					elseif (v2 == v:GetPlayer()) then
+						v2:NotifyLocalized("charUnBanTarget")
 					end
 				end
 
