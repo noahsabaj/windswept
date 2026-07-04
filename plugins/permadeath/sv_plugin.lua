@@ -558,6 +558,26 @@ function PLUGIN:DeleteCharacter(client, character)
     -- NOTE: We intentionally do NOT delete the inventory here!
     -- The dead body (ws_knocked entity) needs the inventory for looting.
     -- The inventory will be cleaned up when the body is removed.
+    --
+    -- But the rows must stop referencing the dead character id NOW: under SQLite
+    -- (and MySQL <8 after restart) the next created character can REUSE this id,
+    -- and ws.char.Restore selects ws_inventories by character_id -- which would
+    -- hand the dead character's entire inventory (bags included) to the new one.
+    -- Body looting is unaffected (in-memory instance; item/cleanup queries key on
+    -- inventory_id), and if the body never despawns cleanly (crash) the rows are
+    -- inert orphans instead of a resurrection. (#77)
+    local invQuery = mysql:Update("ws_inventories")
+        invQuery:Update("character_id", 0)
+        invQuery:Where("character_id", id)
+    invQuery:Execute()
+
+    -- Item rows carry character_id as ownership attribution (world items /
+    -- playerCharBelonging); restore keys on inventory_id, so this only strips the
+    -- dead id's claim from a future character that reuses it. (#77)
+    local itemQuery = mysql:Update("ws_items")
+        itemQuery:Update("character_id", 0)
+        itemQuery:Where("character_id", id)
+    itemQuery:Execute()
 
     -- Run post-delete hook
     hook.Run("CharacterDeleted", client, id, true)
@@ -584,6 +604,19 @@ function PLUGIN:DeleteCharacterOffline(charID, steamID)
     -- NOTE: We intentionally do NOT delete the inventory here!
     -- The dead body (ws_knocked entity) needs the inventory for looting.
     -- The inventory will be cleaned up when the body is removed.
+    --
+    -- Disassociate the rows from the (now reusable) character id so a future
+    -- character created with the same id cannot inherit them -- see the same
+    -- blocks in DeleteCharacter. (#77)
+    local invQuery = mysql:Update("ws_inventories")
+        invQuery:Update("character_id", 0)
+        invQuery:Where("character_id", charID)
+    invQuery:Execute()
+
+    local itemQuery = mysql:Update("ws_items")
+        itemQuery:Update("character_id", 0)
+        itemQuery:Where("character_id", charID)
+    itemQuery:Execute()
 
 end
 
