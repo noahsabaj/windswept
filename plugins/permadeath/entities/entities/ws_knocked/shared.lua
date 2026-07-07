@@ -15,17 +15,18 @@ ENT.RenderGroup = RENDERGROUP_BOTH
 
 -- Network variables
 function ENT:SetupDataTables()
-    self:NetworkVar("Entity", 0, "OwningPlayer")      -- Player who owns this body
     self:NetworkVar("Entity", 1, "CurrentReviver")    -- Player currently attempting revival
-    self:NetworkVar("Int", 0, "CharacterID")          -- Character database ID
     self:NetworkVar("Int", 1, "InventoryID")          -- Inventory ID for looting
     self:NetworkVar("Int", 2, "KnockedSkin")          -- Player's skin
     self:NetworkVar("Float", 0, "TimerStart")         -- When knockout started (CurTime)
     self:NetworkVar("Float", 1, "TimerDuration")      -- Total duration
     self:NetworkVar("String", 0, "KnockedModel")      -- Player's model
-    -- CharacterName is intentionally NOT networked: a body must not broadcast the victim's
-    -- identity to clients (fog of war). It is stored server-only via ENT:Set/GetCharacterName
-    -- in init.lua, used for loot logs and reconnection dedup. (fw-fogofwar-1)
+    -- OwningPlayer, CharacterID and CharacterName are intentionally NOT networked: a body must
+    -- not broadcast the victim's identity -- or a stable handle to it -- to clients (fog of war).
+    -- All three are server-only, every read is server-side (timer sync, revival, permadeath,
+    -- loot logs, reconnection dedup), stored via plain-field accessors in init.lua. Networking
+    -- CharacterID/OwningPlayer let a client tie an anonymous body to a living character. The
+    -- Entity slot 0 and Int slot 0 they used are left free rather than renumbered. (fw-fogofwar-1)
     self:NetworkVar("Bool", 0, "Permadead")           -- Whether character is permanently dead
     self:NetworkVar("Float", 2, "BurnProgress")       -- Cremation progress in seconds (0-240)
 end

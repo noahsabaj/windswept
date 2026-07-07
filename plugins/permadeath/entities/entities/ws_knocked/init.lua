@@ -19,6 +19,27 @@ function ENT:GetCharacterName()
     return self.wsCharacterName or ""
 end
 
+-- Server-only owning player and character DB id (NOT networked -- fog of war; see shared.lua
+-- SetupDataTables). Every read is server-side (timer sync, execution, revival, permadeath,
+-- offline-expiry); keeping them off the wire stops a client from tying an anonymous body to a
+-- living character. Same-named accessors replace the former NetworkVars, so callers are unchanged.
+-- (fw-fogofwar-1)
+function ENT:SetOwningPlayer(ply)
+    self.wsOwningPlayer = ply
+end
+
+function ENT:GetOwningPlayer()
+    return self.wsOwningPlayer or NULL
+end
+
+function ENT:SetCharacterID(id)
+    self.wsCharacterID = id
+end
+
+function ENT:GetCharacterID()
+    return self.wsCharacterID or 0
+end
+
 function ENT:Initialize()
     -- This entity is invisible - we use a prop_ragdoll for visuals
     self:SetNoDraw(true)

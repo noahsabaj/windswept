@@ -109,48 +109,38 @@ if (SERVER) then
 		end
 	end
 
-	--- Networks this character's information to make the given player aware of this character's existence. If the receiver is
-	-- not the owner of this character, it will only be sent a limited amount of data (as it does not need anything else).
-	-- This is done automatically by the framework.
+	--- Networks this character's information to its owning player. Fog of war: a character's data and
+	-- its persistent id are sent ONLY to the owner; other players learn nothing off the wire. Passing
+	-- a non-owner receiver is a no-op. This is done automatically by the framework.
 	-- @internal
 	-- @realm server
-	-- @player[opt=nil] receiver Player to send the information to. This will sync to all connected players if set to `nil`.
+	-- @player[opt=nil] receiver Player to send the information to. Only the owner is ever sent data; a
+	-- `nil` receiver syncs the owner alone.
 	function CHAR:Sync(receiver)
-		-- Broadcast the character information if receiver is not set.
-		if (receiver == nil) then
-			for _, v in player.Iterator() do
-				self:Sync(v)
+		-- Fog of war: a character's data AND its persistent database id are networked ONLY to the
+		-- owning client. Non-owners are told nothing off the wire -- identity (and any stable handle
+		-- to it) is reconstructed in-world, never read from a packet. A nil receiver therefore syncs
+		-- the owner alone rather than every player, and a request to sync a non-owner is a no-op.
+		-- name/description/attributes/money/data are already isLocal; this closes the last channel
+		-- (the raw id) that reached other clients. (fw-fogofwar-1)
+		local owner = self.player
+
+		if (!IsValid(owner)) then return end
+		if (receiver != nil and receiver != owner) then return end
+
+		local data = {}
+
+		for k, v in pairs(self.vars) do
+			if (ws.char.vars[k] != nil and !ws.char.vars[k].bNoNetworking) then
+				data[k] = v
 			end
-		-- Send all character information if the receiver is the character's owner.
-		elseif (receiver == self.player) then
-			local data = {}
-
-			for k, v in pairs(self.vars) do
-				if (ws.char.vars[k] != nil and !ws.char.vars[k].bNoNetworking) then
-					data[k] = v
-				end
-			end
-
-			net.Start("wsCharacterInfo")
-				net.WriteTable(data)
-				net.WriteUInt(self:GetID(), 32)
-				net.WriteUInt(self.player:EntIndex(), 8)
-			net.Send(self.player)
-		else
-			local data = {}
-
-			for k, v in pairs(ws.char.vars) do
-				if (!v.bNoNetworking and !v.isLocal) then
-					data[k] = self.vars[k]
-				end
-			end
-
-			net.Start("wsCharacterInfo")
-				net.WriteTable(data)
-				net.WriteUInt(self:GetID(), 32)
-				net.WriteUInt(self.player:EntIndex(), 8)
-			net.Send(receiver)
 		end
+
+		net.Start("wsCharacterInfo")
+			net.WriteTable(data)
+			net.WriteUInt(self:GetID(), 32)
+			net.WriteUInt(owner:EntIndex(), 8)
+		net.Send(owner)
 	end
 
 	-- Sets up the "appearance" related inforomation for the character.
@@ -165,7 +155,11 @@ if (SERVER) then
 			-- Set the model and character index for the player. Everyone shares one team.
 			local model = self:GetModel()
 
-			client:SetNetVar("char", self:GetID())
+			-- Fog of war: scope the character id netvar to its owner. Other clients must not
+			-- learn a player's persistent character id (a stable identity beacon that survives
+			-- model/skin/disguise changes). The server still stores it locally, so server-side
+			-- GetNetVar("char") lookups are unaffected. (fw-fogofwar-1)
+			client:SetNetVar("char", self:GetID(), client)
 			client:SetTeam(TEAM_PLAYER)
 			client:SetModel(istable(model) and model[1] or model)
 
