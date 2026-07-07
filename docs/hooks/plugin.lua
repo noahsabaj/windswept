@@ -119,6 +119,22 @@ end
 function CanPlayerCreateCharacter(client, payload)
 end
 
+--- Whether or not a player is allowed to delete the given `character`. Called before any deletion
+-- happens, so returning `false` fully cancels it (unlike `PreCharacterDeleted`, which is informational).
+-- @realm server
+-- @player client Player attempting to delete the character
+-- @tab character Character being deleted
+-- @treturn bool Whether or not to allow the deletion. Defaults to `true`; only return `false` to block,
+-- otherwise don't return anything so other calls to this hook still run.
+-- @treturn string Language phrase to use for the error message
+-- @usage function PLUGIN:CanPlayerDeleteCharacter(client, character)
+-- 	if (character:GetData("knocked")) then
+-- 		return false, "@knockedCannotDelete" -- can't delete a character while its body is lootable
+-- 	end
+-- end
+function CanPlayerDeleteCharacter(client, character)
+end
+
 --- Whether or not a player is allowed to drop the given `item`.
 -- @realm server
 -- @player client Player attempting to drop an item

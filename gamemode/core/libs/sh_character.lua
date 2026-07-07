@@ -980,6 +980,18 @@ do
 			local isCurrentChar = client:GetCharacter() and client:GetCharacter():GetID() == id
 
 			if (character and character.steamID == steamID) then
+				-- Allow plugins to veto deletion before anything is mutated (e.g. permadeath
+				-- blocks deleting a knocked character, which would wipe the lootable body).
+				local canDelete, reason = hook.Run("CanPlayerDeleteCharacter", client, character)
+
+				if (canDelete == false) then
+					net.Start("wsCharacterLoadFailure")
+						net.WriteString(reason or "@unknownError")
+					net.Send(client)
+
+					return
+				end
+
 				for k, v in ipairs(client.wsCharList or {}) do
 					if (v == id) then
 						table.remove(client.wsCharList, k)

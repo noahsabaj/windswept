@@ -924,6 +924,25 @@ function PLUGIN:CanPlayerUseCharacter(client, character)
     if character:GetData("permadead") then
         return false, "@characterPermadead"
     end
+
+    -- Block switching AWAY from a knocked character (the stale body would leave the new
+    -- character permadeath-immune and later hijack it). Re-selecting the same knocked
+    -- character is allowed, so a reconnecting owner is never locked out of their own body.
+    local body = client.wsKnockedEntity
+
+    if IsValid(body) and body:GetCharacterID() ~= character:GetID() then
+        return false, "@knockedCannotSwitch"
+    end
+end
+
+-- Block deleting a character while it is knocked out; deletion would wipe the lootable
+-- body inventory and let the player escape the knockout. `knocked` is persisted char data
+-- (set on knockout, cleared on revive/permadeath), so this also covers the reconnect case
+-- while still allowing a permadead character to be deleted normally.
+function PLUGIN:CanPlayerDeleteCharacter(client, character)
+    if character:GetData("knocked") then
+        return false, "@knockedCannotDelete"
+    end
 end
 
 -- Check if character was knocked out and timer expired while offline
