@@ -11,6 +11,8 @@ LANGUAGE = {
     knockedAlreadyDead = "This person is already dead.",
     knockedAlreadyBeingRevived = "Someone is already attempting to revive this person.",
     knockedPlayerDisconnected = "This person has disconnected and cannot be revived.",
+    knockedCannotSwitch = "You cannot switch characters while knocked out.",
+    knockedCannotDelete = "You cannot delete a character while it is knocked out.",
 
     -- Revival
     reviving = "Reviving...",
